@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "silmaril-workspace"
+version = "0.1.0"
+description = "Architecture intelligence for cloud engineers"
+requires-python = ">=3.12"
+license = "MIT"
+
+[tool.hatch.envs.default]
+dependencies = [
+    "silmaril @ {root:uri}/packages/core",
+    "silmaril-cli @ {root:uri}/packages/cli",
+    "silmaril-web @ {root:uri}/packages/web",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["packages/core/tests"]

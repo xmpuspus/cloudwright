@@ -1,0 +1,56 @@
+{
+  "provider": "aws",
+  "service": "s3",
+  "source": "AWS Pricing API",
+  "fetched_at": "2026-02-01",
+  "s3": {
+    "standard": {
+      "storage_per_gb": {"first_50tb": 0.023, "next_450tb": 0.022, "over_500tb": 0.021},
+      "put_per_1000": 0.005,
+      "get_per_1000": 0.0004,
+      "data_transfer_out_per_gb": {"first_10gb": 0.0, "next_40gb": 0.09, "next_100gb": 0.085, "next_350gb": 0.07}
+    },
+    "standard_ia": {
+      "storage_per_gb": 0.0125,
+      "retrieval_per_gb": 0.01,
+      "put_per_1000": 0.01,
+      "get_per_1000": 0.001
+    },
+    "glacier_instant": {
+      "storage_per_gb": 0.004,
+      "retrieval_per_gb": 0.03,
+      "put_per_1000": 0.02,
+      "get_per_1000": 0.01
+    },
+    "glacier_flexible": {
+      "storage_per_gb": 0.0036,
+      "retrieval_per_gb": 0.0264,
+      "put_per_1000": 0.03
+    }
+  },
+  "ebs": {
+    "gp3": {
+      "storage_per_gb": 0.08,
+      "iops_per_iops_beyond_3000": 0.005,
+      "throughput_per_mbps_beyond_125": 0.04
+    },
+    "gp2": {
+      "storage_per_gb": 0.10
+    },
+    "io2": {
+      "storage_per_gb": 0.125,
+      "iops_per_iops": 0.065
+    },
+    "st1": {
+      "storage_per_gb": 0.045
+    },
+    "sc1": {
+      "storage_per_gb": 0.015
+    }
+  },
+  "efs": {
+    "standard_per_gb": 0.30,
+    "ia_per_gb": 0.025,
+    "provisioned_throughput_per_mbps": 6.00
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "provider": "azure",
+  "service": "networking",
+  "source": "Azure Retail Prices API",
+  "fetched_at": "2026-02-01",
+  "app_gateway": {
+    "v2_fixed_per_hour": 0.246,
+    "capacity_unit_per_hour": 0.008,
+    "note": "WAF v2: $0.448/hr fixed + $0.008/CU. App Gateway v2: $0.246/hr + $0.008/CU"
+  },
+  "azure_lb": {
+    "standard_fixed_per_month": 18.25,
+    "rule_per_month": 0.005,
+    "data_per_gb": 0.005
+  },
+  "azure_cdn": {
+    "data_transfer_out_per_gb": {
+      "north_america_eu_first_10gb": 0.0,
+      "first_10tb": 0.087,
+      "next_40tb": 0.083,
+      "next_100tb": 0.070,
+      "next_350tb": 0.050
+    },
+    "http_https_per_10k": 0.0090
+  },
+  "azure_dns": {
+    "zone_per_month": 0.50,
+    "queries_per_million": {"first_1b": 0.40, "over_1b": 0.20}
+  },
+  "api_management": {
+    "developer_per_hour": 0.07,
+    "basic_per_hour": 0.21,
+    "standard_per_hour": 1.02,
+    "premium_per_unit_per_hour": 3.82
+  },
+  "azure_waf": {
+    "policy_per_month": 20.00,
+    "rule_per_month": 0.50,
+    "data_per_gb": 0.006
+  },
+  "service_bus": {
+    "basic_per_million_ops": 0.05,
+    "standard_base_per_month": 9.81,
+    "standard_per_million_ops": 0.80,
+    "premium_messaging_unit_per_hour": 0.928
+  },
+  "event_hubs": {
+    "basic_per_million_events": 0.028,
+    "standard_per_million_events": 0.028,
+    "standard_throughput_unit_per_hour": 0.015,
+    "premium_per_pcu_hour": 0.119,
+    "capture_per_hour": 0.112
+  },
+  "data_transfer": {
+    "same_region_per_gb": 0.0,
+    "cross_region_us_per_gb": 0.02,
+    "internet_out_per_gb_after_5gb": 0.087
+  }
+}

@@ -1,0 +1,314 @@
+{
+  "provider": "azure",
+  "source": "Azure Retail Prices API",
+  "fetched_at": "2026-02-01",
+  "instances": [
+    {
+      "name": "Standard_B1s",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 1,
+      "memory_gb": 1.0,
+      "storage_desc": "4 GB temp",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 640 Mbps",
+      "description": "Standard_B1s - 1 vCPU, 1GB RAM, burstable",
+      "pricing": [
+        {"region": "eastus", "price_type": "on_demand", "os_types": ["linux", "windows"], "prices": {"linux": 0.0104, "windows": 0.0204}},
+        {"region": "westus2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0104}},
+        {"region": "westeurope", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0118}},
+        {"region": "southeastasia", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0120}}
+      ]
+    },
+    {
+      "name": "Standard_B2s",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 2,
+      "memory_gb": 4.0,
+      "storage_desc": "8 GB temp",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 1280 Mbps",
+      "description": "Standard_B2s - 2 vCPUs, 4GB RAM, burstable",
+      "pricing": [
+        {"region": "eastus", "price_type": "on_demand", "os_types": ["linux", "windows"], "prices": {"linux": 0.0416, "windows": 0.0616}},
+        {"region": "westus2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0416}},
+        {"region": "westeurope", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0472}},
+        {"region": "southeastasia", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0480}}
+      ]
+    },
+    {
+      "name": "Standard_D2s_v5",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 2,
+      "memory_gb": 8.0,
+      "storage_desc": "Remote Storage Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 12.5 Gbps",
+      "description": "Standard_D2s_v5 - 2 vCPUs, 8GB RAM, latest gen general purpose",
+      "pricing": [
+        {"region": "eastus", "price_type": "on_demand", "os_types": ["linux", "windows"], "prices": {"linux": 0.096, "windows": 0.192}},
+        {"region": "westus2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.096}},
+        {"region": "westeurope", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.110}},
+        {"region": "southeastasia", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.113}}
+      ]
+    },
+    {
+      "name": "Standard_D4s_v5",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 4,
+      "memory_gb": 16.0,
+      "storage_desc": "Remote Storage Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 12.5 Gbps",
+      "description": "Standard_D4s_v5 - 4 vCPUs, 16GB RAM, latest gen general purpose",
+      "pricing": [
+        {"region": "eastus", "price_type": "on_demand", "os_types": ["linux", "windows"], "prices": {"linux": 0.192, "windows": 0.384}},
+        {"region": "westus2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.192}},
+        {"region": "westeurope", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.220}},
+        {"region": "southeastasia", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.226}}
+      ]
+    },
+    {
+      "name": "Standard_D8s_v5",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 8,
+      "memory_gb": 32.0,
+      "storage_desc": "Remote Storage Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 12.5 Gbps",
+      "description": "Standard_D8s_v5 - 8 vCPUs, 32GB RAM, latest gen general purpose",
+      "pricing": [
+        {"region": "eastus", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.384}},
+        {"region": "westus2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.384}},
+        {"region": "westeurope", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.440}},
+        {"region": "southeastasia", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.452}}
+      ]
+    },
+    {
+      "name": "Standard_D16s_v5",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 16,
+      "memory_gb": 64.0,
+      "storage_desc": "Remote Storage Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "12.5 Gbps",
+      "description": "Standard_D16s_v5 - 16 vCPUs, 64GB RAM, latest gen general purpose",
+      "pricing": [
+        {"region": "eastus", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.768}},
+        {"region": "westus2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.768}},
+        {"region": "westeurope", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.880}},
+        {"region": "southeastasia", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.904}}
+      ]
+    },
+    {
+      "name": "Standard_D2as_v5",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 2,
+      "memory_gb": 8.0,
+      "storage_desc": "Remote Storage Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 12.5 Gbps",
+      "description": "Standard_D2as_v5 - 2 vCPUs, 8GB RAM, AMD-based general purpose",
+      "pricing": [
+        {"region": "eastus", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0860}},
+        {"region": "westus2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0860}},
+        {"region": "westeurope", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0990}},
+        {"region": "southeastasia", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.1010}}
+      ]
+    },
+    {
+      "name": "Standard_D4as_v5",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 4,
+      "memory_gb": 16.0,
+      "storage_desc": "Remote Storage Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 12.5 Gbps",
+      "description": "Standard_D4as_v5 - 4 vCPUs, 16GB RAM, AMD-based general purpose",
+      "pricing": [
+        {"region": "eastus", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.172}},
+        {"region": "westus2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.172}},
+        {"region": "westeurope", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.198}},
+        {"region": "southeastasia", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.202}}
+      ]
+    },
+    {
+      "name": "Standard_F2s_v2",
+      "family": "Compute Optimized",
+      "family_normalized": "compute_optimized",
+      "vcpus": 2,
+      "memory_gb": 4.0,
+      "storage_desc": "16 GB temp",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 5 Gbps",
+      "description": "Standard_F2s_v2 - 2 vCPUs, 4GB RAM, compute optimized",
+      "pricing": [
+        {"region": "eastus", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0846}},
+        {"region": "westus2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0846}},
+        {"region": "westeurope", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0994}},
+        {"region": "southeastasia", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0985}}
+      ]
+    },
+    {
+      "name": "Standard_F4s_v2",
+      "family": "Compute Optimized",
+      "family_normalized": "compute_optimized",
+      "vcpus": 4,
+      "memory_gb": 8.0,
+      "storage_desc": "32 GB temp",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 5 Gbps",
+      "description": "Standard_F4s_v2 - 4 vCPUs, 8GB RAM, compute optimized",
+      "pricing": [
+        {"region": "eastus", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.1690}},
+        {"region": "westus2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.1690}},
+        {"region": "westeurope", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.1988}},
+        {"region": "southeastasia", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.1970}}
+      ]
+    },
+    {
+      "name": "Standard_F8s_v2",
+      "family": "Compute Optimized",
+      "family_normalized": "compute_optimized",
+      "vcpus": 8,
+      "memory_gb": 16.0,
+      "storage_desc": "64 GB temp",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 5 Gbps",
+      "description": "Standard_F8s_v2 - 8 vCPUs, 16GB RAM, compute optimized",
+      "pricing": [
+        {"region": "eastus", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.338}},
+        {"region": "westus2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.338}},
+        {"region": "westeurope", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.3976}},
+        {"region": "southeastasia", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.394}}
+      ]
+    },
+    {
+      "name": "Standard_F16s_v2",
+      "family": "Compute Optimized",
+      "family_normalized": "compute_optimized",
+      "vcpus": 16,
+      "memory_gb": 32.0,
+      "storage_desc": "128 GB temp",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "12.5 Gbps",
+      "description": "Standard_F16s_v2 - 16 vCPUs, 32GB RAM, compute optimized",
+      "pricing": [
+        {"region": "eastus", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.676}},
+        {"region": "westus2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.676}},
+        {"region": "westeurope", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.7952}},
+        {"region": "southeastasia", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.788}}
+      ]
+    },
+    {
+      "name": "Standard_E2s_v5",
+      "family": "Memory Optimized",
+      "family_normalized": "memory_optimized",
+      "vcpus": 2,
+      "memory_gb": 16.0,
+      "storage_desc": "Remote Storage Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 12.5 Gbps",
+      "description": "Standard_E2s_v5 - 2 vCPUs, 16GB RAM, memory optimized",
+      "pricing": [
+        {"region": "eastus", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.126}},
+        {"region": "westus2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.126}},
+        {"region": "westeurope", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.146}},
+        {"region": "southeastasia", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.150}}
+      ]
+    },
+    {
+      "name": "Standard_E4s_v5",
+      "family": "Memory Optimized",
+      "family_normalized": "memory_optimized",
+      "vcpus": 4,
+      "memory_gb": 32.0,
+      "storage_desc": "Remote Storage Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 12.5 Gbps",
+      "description": "Standard_E4s_v5 - 4 vCPUs, 32GB RAM, memory optimized",
+      "pricing": [
+        {"region": "eastus", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.252}},
+        {"region": "westus2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.252}},
+        {"region": "westeurope", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.292}},
+        {"region": "southeastasia", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.300}}
+      ]
+    },
+    {
+      "name": "Standard_E8s_v5",
+      "family": "Memory Optimized",
+      "family_normalized": "memory_optimized",
+      "vcpus": 8,
+      "memory_gb": 64.0,
+      "storage_desc": "Remote Storage Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 12.5 Gbps",
+      "description": "Standard_E8s_v5 - 8 vCPUs, 64GB RAM, memory optimized",
+      "pricing": [
+        {"region": "eastus", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.504}},
+        {"region": "westus2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.504}},
+        {"region": "westeurope", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.584}},
+        {"region": "southeastasia", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.600}}
+      ]
+    },
+    {
+      "name": "Standard_E16s_v5",
+      "family": "Memory Optimized",
+      "family_normalized": "memory_optimized",
+      "vcpus": 16,
+      "memory_gb": 128.0,
+      "storage_desc": "Remote Storage Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "12.5 Gbps",
+      "description": "Standard_E16s_v5 - 16 vCPUs, 128GB RAM, memory optimized",
+      "pricing": [
+        {"region": "eastus", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 1.008}},
+        {"region": "westus2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 1.008}},
+        {"region": "westeurope", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 1.168}},
+        {"region": "southeastasia", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 1.200}}
+      ]
+    },
+    {
+      "name": "Standard_NC6s_v3",
+      "family": "Accelerated Computing",
+      "family_normalized": "gpu",
+      "vcpus": 6,
+      "memory_gb": 112.0,
+      "storage_desc": "736 GB temp",
+      "gpu_count": 1,
+      "gpu_model": "NVIDIA V100",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 24 Gbps",
+      "description": "Standard_NC6s_v3 - 6 vCPUs, 112GB RAM, 1x NVIDIA V100 GPU",
+      "pricing": [
+        {"region": "eastus", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 3.060}},
+        {"region": "westus2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 3.060}},
+        {"region": "westeurope", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 3.550}}
+      ]
+    }
+  ]
+}

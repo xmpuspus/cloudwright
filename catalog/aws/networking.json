@@ -1,0 +1,65 @@
+{
+  "provider": "aws",
+  "source": "AWS Pricing API",
+  "fetched_at": "2026-02-01",
+  "alb": {
+    "fixed_per_month": 16.425,
+    "lcu_per_hour": 0.008,
+    "note": "Fixed = $0.0225/hr * 730hrs. LCU covers new connections, active connections, processed bytes, rule evaluations"
+  },
+  "nlb": {
+    "fixed_per_month": 16.425,
+    "lcu_per_hour": 0.006
+  },
+  "cloudfront": {
+    "data_transfer_out_per_gb": {
+      "first_10tb": 0.085,
+      "next_40tb": 0.080,
+      "next_100tb": 0.060,
+      "next_350tb": 0.040,
+      "next_524tb": 0.030,
+      "next_4pb": 0.025,
+      "over_5pb": 0.020
+    },
+    "https_requests_per_10k": 0.01,
+    "http_requests_per_10k": 0.0075
+  },
+  "route53": {
+    "hosted_zone_per_month": 0.50,
+    "queries_per_million": {"first_1b": 0.40, "over_1b": 0.20},
+    "health_check_per_month": 0.50
+  },
+  "api_gateway": {
+    "rest": {
+      "requests_per_million": {"first_333m": 3.50, "next_667m": 2.80, "next_19b": 2.38, "over_20b": 1.51}
+    },
+    "http": {
+      "requests_per_million": {"first_300m": 1.00, "over_300m": 0.90}
+    },
+    "websocket_per_million_messages": 1.00,
+    "websocket_connection_minutes_per_million": 0.25
+  },
+  "waf": {
+    "web_acl_per_month": 5.00,
+    "rule_per_month": 1.00,
+    "requests_per_million": 0.60
+  },
+  "nat_gateway": {
+    "fixed_per_hour": 0.045,
+    "data_per_gb": 0.045
+  },
+  "vpc_endpoints": {
+    "interface_per_az_per_hour": 0.01,
+    "data_per_gb": 0.01
+  },
+  "data_transfer": {
+    "same_region_per_gb": 0.01,
+    "cross_region_per_gb": 0.02,
+    "internet_out_per_gb_after_1gb": 0.09
+  },
+  "kinesis": {
+    "shard_per_hour": 0.015,
+    "put_payload_units_per_million": 0.014,
+    "extended_retention_per_shard_hour": 0.020
+  }
+}

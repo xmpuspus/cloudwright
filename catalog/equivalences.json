@@ -1,0 +1,28 @@
+{
+  "source": "Manual curation + CloudCare equivalences",
+  "fetched_at": "2026-02-01",
+  "equivalences": [
+    {"aws": "t3.micro", "gcp": "e2-micro", "azure": "Standard_B1s", "confidence": 0.85, "match_type": "spec"},
+    {"aws": "t3.small", "gcp": "e2-small", "azure": "Standard_B2s", "confidence": 0.80, "match_type": "spec"},
+    {"aws": "t3.medium", "gcp": "e2-medium", "azure": "Standard_B2s", "confidence": 0.75, "match_type": "spec"},
+    {"aws": "t3.large", "gcp": "e2-standard-2", "azure": "Standard_D2s_v5", "confidence": 0.80, "match_type": "spec"},
+    {"aws": "t3.xlarge", "gcp": "e2-standard-4", "azure": "Standard_D4s_v5", "confidence": 0.80, "match_type": "spec"},
+    {"aws": "m5.large", "gcp": "n2-standard-2", "azure": "Standard_D2s_v5", "confidence": 0.90, "match_type": "spec"},
+    {"aws": "m5.xlarge", "gcp": "n2-standard-4", "azure": "Standard_D4s_v5", "confidence": 0.90, "match_type": "spec"},
+    {"aws": "m5.2xlarge", "gcp": "n2-standard-8", "azure": "Standard_D8s_v5", "confidence": 0.90, "match_type": "spec"},
+    {"aws": "m5.4xlarge", "gcp": "n2-standard-16", "azure": "Standard_D16s_v5", "confidence": 0.90, "match_type": "spec"},
+    {"aws": "m6i.large", "gcp": "n2-standard-2", "azure": "Standard_D2s_v5", "confidence": 0.85, "match_type": "spec"},
+    {"aws": "m6i.xlarge", "gcp": "n2-standard-4", "azure": "Standard_D4s_v5", "confidence": 0.85, "match_type": "spec"},
+    {"aws": "m6i.2xlarge", "gcp": "n2-standard-8", "azure": "Standard_D8s_v5", "confidence": 0.85, "match_type": "spec"},
+    {"aws": "c5.large", "gcp": "c2-standard-4", "azure": "Standard_F4s_v2", "confidence": 0.75, "match_type": "spec"},
+    {"aws": "c5.xlarge", "gcp": "c2-standard-4", "azure": "Standard_F4s_v2", "confidence": 0.80, "match_type": "spec"},
+    {"aws": "c5.2xlarge", "gcp": "c2-standard-8", "azure": "Standard_F8s_v2", "confidence": 0.85, "match_type": "spec"},
+    {"aws": "c5.4xlarge", "gcp": "c2-standard-16", "azure": "Standard_F16s_v2", "confidence": 0.85, "match_type": "spec"},
+    {"aws": "r5.large", "gcp": "n2-highmem-2", "azure": "Standard_E2s_v5", "confidence": 0.90, "match_type": "spec"},
+    {"aws": "r5.xlarge", "gcp": "n2-highmem-4", "azure": "Standard_E4s_v5", "confidence": 0.90, "match_type": "spec"},
+    {"aws": "r5.2xlarge", "gcp": "n2-highmem-8", "azure": "Standard_E8s_v5", "confidence": 0.90, "match_type": "spec"},
+    {"aws": "r5.4xlarge", "gcp": "n2-highmem-16", "azure": "Standard_E16s_v5", "confidence": 0.90, "match_type": "spec"},
+    {"aws": "p3.2xlarge", "gcp": "a2-highgpu-1g", "azure": "Standard_NC6s_v3", "confidence": 0.70, "match_type": "workload"},
+    {"aws": "g4dn.xlarge", "gcp": "a2-highgpu-1g", "azure": "Standard_NC6s_v3", "confidence": 0.65, "match_type": "workload"}
+  ]
+}

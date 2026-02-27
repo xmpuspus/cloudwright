@@ -1,0 +1,47 @@
+{
+  "provider": "gcp",
+  "source": "GCP Cloud Billing Catalog (curated)",
+  "fetched_at": "2026-02-01",
+  "cloud_load_balancing": {
+    "forwarding_rule_per_hour": 0.025,
+    "ingress_per_gb": 0.008,
+    "note": "First 5 rules charged at $0.025/hr, additional rules at $0.01/hr"
+  },
+  "cloud_cdn": {
+    "cache_egress_per_gb": {
+      "north_america_eu": 0.08,
+      "asia_pacific": 0.12,
+      "south_america": 0.16
+    },
+    "cache_fill_per_gb": 0.01,
+    "http_request_per_10k": 0.0075
+  },
+  "cloud_dns": {
+    "zone_per_month": 0.20,
+    "queries_per_million": 0.40
+  },
+  "api_gateway": {
+    "calls_per_million": 3.50
+  },
+  "cloud_armor": {
+    "policy_per_month": 5.00,
+    "rule_per_month": 1.00,
+    "requests_per_million": 0.75,
+    "managed_protection_plus_per_month": 3000.00
+  },
+  "pub_sub": {
+    "data_per_gb_first_10gb": 0.0,
+    "data_per_gb_over_10gb": 0.04,
+    "snapshot_per_gb_month": 0.27
+  },
+  "data_transfer": {
+    "same_region_per_gb": 0.0,
+    "cross_region_us_per_gb": 0.01,
+    "internet_out_per_gb_after_1gb": 0.08
+  },
+  "dataflow": {
+    "vcpu_per_hour": 0.056,
+    "memory_gb_per_hour": 0.003557,
+    "pd_per_gb_hour": 0.000054
+  }
+}

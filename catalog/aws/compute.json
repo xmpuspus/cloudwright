@@ -1,0 +1,406 @@
+{
+  "provider": "aws",
+  "source": "AWS Bulk Pricing API",
+  "fetched_at": "2026-02-01",
+  "instances": [
+    {
+      "name": "t3.micro",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 2,
+      "memory_gb": 1.0,
+      "storage_desc": "EBS Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 5 Gbps",
+      "description": "t3.micro - 2 vCPUs, 1GB RAM, burstable general purpose",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux", "windows"], "prices": {"linux": 0.0104, "windows": 0.0152}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux", "windows"], "prices": {"linux": 0.0104, "windows": 0.0152}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux", "windows"], "prices": {"linux": 0.0114, "windows": 0.0166}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux", "windows"], "prices": {"linux": 0.0118, "windows": 0.0172}}
+      ]
+    },
+    {
+      "name": "t3.small",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 2,
+      "memory_gb": 2.0,
+      "storage_desc": "EBS Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 5 Gbps",
+      "description": "t3.small - 2 vCPUs, 2GB RAM, burstable general purpose",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux", "windows"], "prices": {"linux": 0.0208, "windows": 0.0304}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0208}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0228}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0236}}
+      ]
+    },
+    {
+      "name": "t3.medium",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 2,
+      "memory_gb": 4.0,
+      "storage_desc": "EBS Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 5 Gbps",
+      "description": "t3.medium - 2 vCPUs, 4GB RAM, burstable general purpose",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux", "windows"], "prices": {"linux": 0.0416, "windows": 0.0608}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0416}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0456}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0472}}
+      ]
+    },
+    {
+      "name": "t3.large",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 2,
+      "memory_gb": 8.0,
+      "storage_desc": "EBS Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 5 Gbps",
+      "description": "t3.large - 2 vCPUs, 8GB RAM, burstable general purpose",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux", "windows"], "prices": {"linux": 0.0832, "windows": 0.1216}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0832}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0912}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.0944}}
+      ]
+    },
+    {
+      "name": "t3.xlarge",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 4,
+      "memory_gb": 16.0,
+      "storage_desc": "EBS Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 5 Gbps",
+      "description": "t3.xlarge - 4 vCPUs, 16GB RAM, burstable general purpose",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.1664}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.1664}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.1824}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.1888}}
+      ]
+    },
+    {
+      "name": "m5.large",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 2,
+      "memory_gb": 8.0,
+      "storage_desc": "EBS Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 10 Gbps",
+      "description": "m5.large - 2 vCPUs, 8GB RAM, general purpose",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux", "windows"], "prices": {"linux": 0.096, "windows": 0.188}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.096}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.107}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.113}}
+      ]
+    },
+    {
+      "name": "m5.xlarge",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 4,
+      "memory_gb": 16.0,
+      "storage_desc": "EBS Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 10 Gbps",
+      "description": "m5.xlarge - 4 vCPUs, 16GB RAM, general purpose",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux", "windows"], "prices": {"linux": 0.192, "windows": 0.376}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.192}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.214}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.226}}
+      ]
+    },
+    {
+      "name": "m5.2xlarge",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 8,
+      "memory_gb": 32.0,
+      "storage_desc": "EBS Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 10 Gbps",
+      "description": "m5.2xlarge - 8 vCPUs, 32GB RAM, general purpose",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.384}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.384}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.428}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.452}}
+      ]
+    },
+    {
+      "name": "m5.4xlarge",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 16,
+      "memory_gb": 64.0,
+      "storage_desc": "EBS Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 10 Gbps",
+      "description": "m5.4xlarge - 16 vCPUs, 64GB RAM, general purpose",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.768}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.768}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.856}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.904}}
+      ]
+    },
+    {
+      "name": "c5.large",
+      "family": "Compute Optimized",
+      "family_normalized": "compute_optimized",
+      "vcpus": 2,
+      "memory_gb": 4.0,
+      "storage_desc": "EBS Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 10 Gbps",
+      "description": "c5.large - 2 vCPUs, 4GB RAM, compute optimized",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.085}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.085}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.096}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.098}}
+      ]
+    },
+    {
+      "name": "c5.xlarge",
+      "family": "Compute Optimized",
+      "family_normalized": "compute_optimized",
+      "vcpus": 4,
+      "memory_gb": 8.0,
+      "storage_desc": "EBS Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 10 Gbps",
+      "description": "c5.xlarge - 4 vCPUs, 8GB RAM, compute optimized",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.17}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.17}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.192}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.196}}
+      ]
+    },
+    {
+      "name": "c5.2xlarge",
+      "family": "Compute Optimized",
+      "family_normalized": "compute_optimized",
+      "vcpus": 8,
+      "memory_gb": 16.0,
+      "storage_desc": "EBS Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 10 Gbps",
+      "description": "c5.2xlarge - 8 vCPUs, 16GB RAM, compute optimized",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.34}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.34}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.384}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.392}}
+      ]
+    },
+    {
+      "name": "c5.4xlarge",
+      "family": "Compute Optimized",
+      "family_normalized": "compute_optimized",
+      "vcpus": 16,
+      "memory_gb": 32.0,
+      "storage_desc": "EBS Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "10 Gbps",
+      "description": "c5.4xlarge - 16 vCPUs, 32GB RAM, compute optimized",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.68}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.68}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.768}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.784}}
+      ]
+    },
+    {
+      "name": "r5.large",
+      "family": "Memory Optimized",
+      "family_normalized": "memory_optimized",
+      "vcpus": 2,
+      "memory_gb": 16.0,
+      "storage_desc": "EBS Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 10 Gbps",
+      "description": "r5.large - 2 vCPUs, 16GB RAM, memory optimized",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.126}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.126}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.141}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.148}}
+      ]
+    },
+    {
+      "name": "r5.xlarge",
+      "family": "Memory Optimized",
+      "family_normalized": "memory_optimized",
+      "vcpus": 4,
+      "memory_gb": 32.0,
+      "storage_desc": "EBS Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 10 Gbps",
+      "description": "r5.xlarge - 4 vCPUs, 32GB RAM, memory optimized",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.252}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.252}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.282}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.296}}
+      ]
+    },
+    {
+      "name": "r5.2xlarge",
+      "family": "Memory Optimized",
+      "family_normalized": "memory_optimized",
+      "vcpus": 8,
+      "memory_gb": 64.0,
+      "storage_desc": "EBS Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 10 Gbps",
+      "description": "r5.2xlarge - 8 vCPUs, 64GB RAM, memory optimized",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.504}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.504}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.564}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.592}}
+      ]
+    },
+    {
+      "name": "r5.4xlarge",
+      "family": "Memory Optimized",
+      "family_normalized": "memory_optimized",
+      "vcpus": 16,
+      "memory_gb": 128.0,
+      "storage_desc": "EBS Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 10 Gbps",
+      "description": "r5.4xlarge - 16 vCPUs, 128GB RAM, memory optimized",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 1.008}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 1.008}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 1.128}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 1.184}}
+      ]
+    },
+    {
+      "name": "m6i.large",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 2,
+      "memory_gb": 8.0,
+      "storage_desc": "EBS Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 12.5 Gbps",
+      "description": "m6i.large - 2 vCPUs, 8GB RAM, latest gen general purpose",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.096}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.096}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.108}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.114}}
+      ]
+    },
+    {
+      "name": "m6i.xlarge",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 4,
+      "memory_gb": 16.0,
+      "storage_desc": "EBS Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 12.5 Gbps",
+      "description": "m6i.xlarge - 4 vCPUs, 16GB RAM, latest gen general purpose",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.192}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.192}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.216}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.228}}
+      ]
+    },
+    {
+      "name": "m6i.2xlarge",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 8,
+      "memory_gb": 32.0,
+      "storage_desc": "EBS Only",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 12.5 Gbps",
+      "description": "m6i.2xlarge - 8 vCPUs, 32GB RAM, latest gen general purpose",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.384}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.384}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.432}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.456}}
+      ]
+    },
+    {
+      "name": "p3.2xlarge",
+      "family": "Accelerated Computing",
+      "family_normalized": "gpu",
+      "vcpus": 8,
+      "memory_gb": 61.0,
+      "storage_desc": "EBS Only",
+      "gpu_count": 1,
+      "gpu_model": "NVIDIA V100",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 10 Gbps",
+      "description": "p3.2xlarge - 8 vCPUs, 61GB RAM, 1x NVIDIA V100 GPU",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 3.06}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 3.06}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 3.366}}
+      ]
+    },
+    {
+      "name": "g4dn.xlarge",
+      "family": "Accelerated Computing",
+      "family_normalized": "gpu",
+      "vcpus": 4,
+      "memory_gb": 16.0,
+      "storage_desc": "125 GB NVMe SSD",
+      "gpu_count": 1,
+      "gpu_model": "NVIDIA T4",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 25 Gbps",
+      "description": "g4dn.xlarge - 4 vCPUs, 16GB RAM, 1x NVIDIA T4 GPU, inference optimized",
+      "pricing": [
+        {"region": "us-east-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.526}},
+        {"region": "us-west-2", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.526}},
+        {"region": "eu-west-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.579}},
+        {"region": "ap-southeast-1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.615}}
+      ]
+    }
+  ]
+}

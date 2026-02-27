@@ -1,0 +1,51 @@
+{
+  "provider": "azure",
+  "service": "azure_sql",
+  "source": "Azure Retail Prices API",
+  "fetched_at": "2026-02-01",
+  "azure_sql": {
+    "general_purpose": {
+      "tiers": [
+        {"vcores": 2, "memory_gb": 10.4, "pricing": {"eastus": 0.3780, "westus2": 0.3780, "westeurope": 0.4370, "southeastasia": 0.4550}},
+        {"vcores": 4, "memory_gb": 20.4, "pricing": {"eastus": 0.7560, "westus2": 0.7560, "westeurope": 0.8740, "southeastasia": 0.9100}},
+        {"vcores": 8, "memory_gb": 40.8, "pricing": {"eastus": 1.5120, "westus2": 1.5120, "westeurope": 1.7480, "southeastasia": 1.8200}},
+        {"vcores": 16, "memory_gb": 81.6, "pricing": {"eastus": 3.0240, "westus2": 3.0240, "westeurope": 3.4960, "southeastasia": 3.6400}}
+      ],
+      "storage_per_gb": 0.115,
+      "backup_per_gb": 0.05
+    },
+    "business_critical": {
+      "tiers": [
+        {"vcores": 2, "memory_gb": 10.4, "pricing": {"eastus": 1.2110, "westus2": 1.2110, "westeurope": 1.4000, "southeastasia": 1.4580}},
+        {"vcores": 4, "memory_gb": 20.4, "pricing": {"eastus": 2.4220, "westus2": 2.4220, "westeurope": 2.8000, "southeastasia": 2.9160}},
+        {"vcores": 8, "memory_gb": 40.8, "pricing": {"eastus": 4.8440, "westus2": 4.8440, "westeurope": 5.6000, "southeastasia": 5.8320}}
+      ],
+      "storage_per_gb": 0.57,
+      "backup_per_gb": 0.05
+    }
+  },
+  "cosmos_db": {
+    "provisioned": {
+      "ru_per_hour_per_100": 0.008,
+      "storage_per_gb": 0.25,
+      "backup_per_gb": 0.10
+    },
+    "serverless_per_million_ru": 0.282,
+    "autoscale_max_ru_per_hour_per_100": 0.012
+  },
+  "azure_cache_redis": {
+    "tiers": [
+      {"name": "C0", "memory_gb": 0.25, "pricing": {"eastus": 0.022, "westus2": 0.022, "westeurope": 0.026, "southeastasia": 0.027}},
+      {"name": "C1", "memory_gb": 1.0, "pricing": {"eastus": 0.069, "westus2": 0.069, "westeurope": 0.080, "southeastasia": 0.083}},
+      {"name": "C2", "memory_gb": 6.0, "pricing": {"eastus": 0.185, "westus2": 0.185, "westeurope": 0.214, "southeastasia": 0.222}},
+      {"name": "C3", "memory_gb": 13.0, "pricing": {"eastus": 0.372, "westus2": 0.372, "westeurope": 0.430, "southeastasia": 0.447}},
+      {"name": "P1", "memory_gb": 6.0, "pricing": {"eastus": 0.369, "westus2": 0.369, "westeurope": 0.427, "southeastasia": 0.444}},
+      {"name": "P2", "memory_gb": 13.0, "pricing": {"eastus": 0.752, "westus2": 0.752, "westeurope": 0.870, "southeastasia": 0.905}}
+    ]
+  },
+  "synapse": {
+    "dwu_per_hour": {"eastus": 1.20, "westus2": 1.20, "westeurope": 1.39, "southeastasia": 1.44},
+    "storage_per_tb_month": 20.48,
+    "serverless_per_tb_query": 5.00
+  }
+}

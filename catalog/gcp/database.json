@@ -1,0 +1,86 @@
+{
+  "provider": "gcp",
+  "service": "cloud_sql",
+  "source": "GCP Cloud Billing Catalog (curated)",
+  "fetched_at": "2026-02-01",
+  "tiers": [
+    {
+      "name": "db-f1-micro",
+      "vcpus": 1,
+      "memory_gb": 0.6,
+      "pricing": {"us-east1": 0.0150, "us-west1": 0.0150, "europe-west1": 0.0165, "asia-southeast1": 0.0174}
+    },
+    {
+      "name": "db-g1-small",
+      "vcpus": 1,
+      "memory_gb": 1.7,
+      "pricing": {"us-east1": 0.0500, "us-west1": 0.0500, "europe-west1": 0.0550, "asia-southeast1": 0.0580}
+    },
+    {
+      "name": "db-n1-standard-1",
+      "vcpus": 1,
+      "memory_gb": 3.75,
+      "pricing": {"us-east1": 0.0965, "us-west1": 0.0965, "europe-west1": 0.1062, "asia-southeast1": 0.1129}
+    },
+    {
+      "name": "db-n1-standard-2",
+      "vcpus": 2,
+      "memory_gb": 7.5,
+      "pricing": {"us-east1": 0.1930, "us-west1": 0.1930, "europe-west1": 0.2123, "asia-southeast1": 0.2257}
+    },
+    {
+      "name": "db-n1-standard-4",
+      "vcpus": 4,
+      "memory_gb": 15.0,
+      "pricing": {"us-east1": 0.3860, "us-west1": 0.3860, "europe-west1": 0.4246, "asia-southeast1": 0.4514}
+    },
+    {
+      "name": "db-n1-standard-8",
+      "vcpus": 8,
+      "memory_gb": 30.0,
+      "pricing": {"us-east1": 0.7720, "us-west1": 0.7720, "europe-west1": 0.8492, "asia-southeast1": 0.9028}
+    },
+    {
+      "name": "db-n1-highmem-2",
+      "vcpus": 2,
+      "memory_gb": 13.0,
+      "pricing": {"us-east1": 0.2780, "us-west1": 0.2780, "europe-west1": 0.3058, "asia-southeast1": 0.3252}
+    },
+    {
+      "name": "db-n1-highmem-4",
+      "vcpus": 4,
+      "memory_gb": 26.0,
+      "pricing": {"us-east1": 0.5560, "us-west1": 0.5560, "europe-west1": 0.6116, "asia-southeast1": 0.6504}
+    },
+    {
+      "name": "db-n1-highmem-8",
+      "vcpus": 8,
+      "memory_gb": 52.0,
+      "pricing": {"us-east1": 1.1120, "us-west1": 1.1120, "europe-west1": 1.2232, "asia-southeast1": 1.3008}
+    }
+  ],
+  "storage_per_gb": 0.17,
+  "ha_multiplier": 2.0,
+  "firestore": {
+    "reads_per_million": 0.06,
+    "writes_per_million": 0.18,
+    "deletes_per_million": 0.02,
+    "storage_per_gb": 0.108
+  },
+  "spanner": {
+    "node_per_hour": {"us-east1": 0.90, "us-west1": 0.90, "europe-west1": 1.17, "asia-southeast1": 1.17},
+    "storage_per_gb": 0.30
+  },
+  "memorystore": {
+    "basic_per_gb_hour": {"us-east1": 0.049, "us-west1": 0.049, "europe-west1": 0.054, "asia-southeast1": 0.057},
+    "standard_per_gb_hour": {"us-east1": 0.049, "us-west1": 0.049, "europe-west1": 0.054, "asia-southeast1": 0.057},
+    "note": "Standard tier (HA) is approximately 2x basic due to replica"
+  },
+  "bigquery": {
+    "storage_active_per_gb": 0.02,
+    "storage_long_term_per_gb": 0.01,
+    "query_per_tb": 5.00,
+    "streaming_insert_per_gb": 0.01,
+    "flat_rate_per_slot_hour": 0.04
+  }
+}

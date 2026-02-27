@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.env
+*.db
+!packages/core/silmaril/data/catalog.db
+node_modules/
+.vite/
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+
+# Codebase intelligence (auto-generated)
+.planning/

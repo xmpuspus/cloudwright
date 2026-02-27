@@ -1,0 +1,350 @@
+{
+  "provider": "gcp",
+  "source": "GCP Cloud Billing Catalog (curated)",
+  "fetched_at": "2026-02-01",
+  "instances": [
+    {
+      "name": "e2-micro",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 2,
+      "memory_gb": 1.0,
+      "storage_desc": "Persistent Disk",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 1 Gbps",
+      "description": "e2-micro - shared-core, 2 vCPUs, 1GB RAM, cost-efficient",
+      "pricing": [
+        {"region": "us-east1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.00838}},
+        {"region": "us-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.00838}},
+        {"region": "europe-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.00922}},
+        {"region": "asia-southeast1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.00981}}
+      ]
+    },
+    {
+      "name": "e2-small",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 2,
+      "memory_gb": 2.0,
+      "storage_desc": "Persistent Disk",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 1 Gbps",
+      "description": "e2-small - shared-core, 2 vCPUs, 2GB RAM",
+      "pricing": [
+        {"region": "us-east1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.01675}},
+        {"region": "us-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.01675}},
+        {"region": "europe-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.01843}},
+        {"region": "asia-southeast1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.01960}}
+      ]
+    },
+    {
+      "name": "e2-medium",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 2,
+      "memory_gb": 4.0,
+      "storage_desc": "Persistent Disk",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 2 Gbps",
+      "description": "e2-medium - shared-core, 2 vCPUs, 4GB RAM",
+      "pricing": [
+        {"region": "us-east1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.03351}},
+        {"region": "us-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.03351}},
+        {"region": "europe-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.03686}},
+        {"region": "asia-southeast1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.03920}}
+      ]
+    },
+    {
+      "name": "e2-standard-2",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 2,
+      "memory_gb": 8.0,
+      "storage_desc": "Persistent Disk",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 4 Gbps",
+      "description": "e2-standard-2 - 2 vCPUs, 8GB RAM, general purpose",
+      "pricing": [
+        {"region": "us-east1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.06701}},
+        {"region": "us-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.06701}},
+        {"region": "europe-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.07371}},
+        {"region": "asia-southeast1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.07840}}
+      ]
+    },
+    {
+      "name": "e2-standard-4",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 4,
+      "memory_gb": 16.0,
+      "storage_desc": "Persistent Disk",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 8 Gbps",
+      "description": "e2-standard-4 - 4 vCPUs, 16GB RAM, general purpose",
+      "pricing": [
+        {"region": "us-east1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.13402}},
+        {"region": "us-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.13402}},
+        {"region": "europe-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.14743}},
+        {"region": "asia-southeast1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.15681}}
+      ]
+    },
+    {
+      "name": "e2-standard-8",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 8,
+      "memory_gb": 32.0,
+      "storage_desc": "Persistent Disk",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 16 Gbps",
+      "description": "e2-standard-8 - 8 vCPUs, 32GB RAM, general purpose",
+      "pricing": [
+        {"region": "us-east1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.26805}},
+        {"region": "us-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.26805}},
+        {"region": "europe-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.29485}},
+        {"region": "asia-southeast1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.31362}}
+      ]
+    },
+    {
+      "name": "e2-standard-16",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 16,
+      "memory_gb": 64.0,
+      "storage_desc": "Persistent Disk",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 16 Gbps",
+      "description": "e2-standard-16 - 16 vCPUs, 64GB RAM, general purpose",
+      "pricing": [
+        {"region": "us-east1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.53610}},
+        {"region": "us-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.53610}},
+        {"region": "europe-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.58971}},
+        {"region": "asia-southeast1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.62723}}
+      ]
+    },
+    {
+      "name": "n2-standard-2",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 2,
+      "memory_gb": 8.0,
+      "storage_desc": "Persistent Disk",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 10 Gbps",
+      "description": "n2-standard-2 - 2 vCPUs, 8GB RAM, balanced general purpose",
+      "pricing": [
+        {"region": "us-east1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.09710}},
+        {"region": "us-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.09710}},
+        {"region": "europe-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.10681}},
+        {"region": "asia-southeast1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.11360}}
+      ]
+    },
+    {
+      "name": "n2-standard-4",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 4,
+      "memory_gb": 16.0,
+      "storage_desc": "Persistent Disk",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 10 Gbps",
+      "description": "n2-standard-4 - 4 vCPUs, 16GB RAM, balanced general purpose",
+      "pricing": [
+        {"region": "us-east1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.19420}},
+        {"region": "us-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.19420}},
+        {"region": "europe-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.21362}},
+        {"region": "asia-southeast1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.22721}}
+      ]
+    },
+    {
+      "name": "n2-standard-8",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 8,
+      "memory_gb": 32.0,
+      "storage_desc": "Persistent Disk",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 16 Gbps",
+      "description": "n2-standard-8 - 8 vCPUs, 32GB RAM, balanced general purpose",
+      "pricing": [
+        {"region": "us-east1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.38840}},
+        {"region": "us-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.38840}},
+        {"region": "europe-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.42724}},
+        {"region": "asia-southeast1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.45442}}
+      ]
+    },
+    {
+      "name": "n2-standard-16",
+      "family": "General Purpose",
+      "family_normalized": "general_purpose",
+      "vcpus": 16,
+      "memory_gb": 64.0,
+      "storage_desc": "Persistent Disk",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "32 Gbps",
+      "description": "n2-standard-16 - 16 vCPUs, 64GB RAM, balanced general purpose",
+      "pricing": [
+        {"region": "us-east1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.77680}},
+        {"region": "us-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.77680}},
+        {"region": "europe-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.85448}},
+        {"region": "asia-southeast1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.90884}}
+      ]
+    },
+    {
+      "name": "c2-standard-4",
+      "family": "Compute Optimized",
+      "family_normalized": "compute_optimized",
+      "vcpus": 4,
+      "memory_gb": 16.0,
+      "storage_desc": "Persistent Disk",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 10 Gbps",
+      "description": "c2-standard-4 - 4 vCPUs, 16GB RAM, compute optimized",
+      "pricing": [
+        {"region": "us-east1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.20990}},
+        {"region": "us-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.20990}},
+        {"region": "europe-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.23089}},
+        {"region": "asia-southeast1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.24558}}
+      ]
+    },
+    {
+      "name": "c2-standard-8",
+      "family": "Compute Optimized",
+      "family_normalized": "compute_optimized",
+      "vcpus": 8,
+      "memory_gb": 32.0,
+      "storage_desc": "Persistent Disk",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 16 Gbps",
+      "description": "c2-standard-8 - 8 vCPUs, 32GB RAM, compute optimized",
+      "pricing": [
+        {"region": "us-east1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.41980}},
+        {"region": "us-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.41980}},
+        {"region": "europe-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.46178}},
+        {"region": "asia-southeast1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.49116}}
+      ]
+    },
+    {
+      "name": "c2-standard-16",
+      "family": "Compute Optimized",
+      "family_normalized": "compute_optimized",
+      "vcpus": 16,
+      "memory_gb": 64.0,
+      "storage_desc": "Persistent Disk",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "32 Gbps",
+      "description": "c2-standard-16 - 16 vCPUs, 64GB RAM, compute optimized",
+      "pricing": [
+        {"region": "us-east1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.83960}},
+        {"region": "us-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.83960}},
+        {"region": "europe-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.92356}},
+        {"region": "asia-southeast1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.98232}}
+      ]
+    },
+    {
+      "name": "n2-highmem-2",
+      "family": "Memory Optimized",
+      "family_normalized": "memory_optimized",
+      "vcpus": 2,
+      "memory_gb": 16.0,
+      "storage_desc": "Persistent Disk",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 10 Gbps",
+      "description": "n2-highmem-2 - 2 vCPUs, 16GB RAM, memory optimized",
+      "pricing": [
+        {"region": "us-east1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.13106}},
+        {"region": "us-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.13106}},
+        {"region": "europe-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.14417}},
+        {"region": "asia-southeast1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.15334}}
+      ]
+    },
+    {
+      "name": "n2-highmem-4",
+      "family": "Memory Optimized",
+      "family_normalized": "memory_optimized",
+      "vcpus": 4,
+      "memory_gb": 32.0,
+      "storage_desc": "Persistent Disk",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 10 Gbps",
+      "description": "n2-highmem-4 - 4 vCPUs, 32GB RAM, memory optimized",
+      "pricing": [
+        {"region": "us-east1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.26212}},
+        {"region": "us-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.26212}},
+        {"region": "europe-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.28833}},
+        {"region": "asia-southeast1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.30668}}
+      ]
+    },
+    {
+      "name": "n2-highmem-8",
+      "family": "Memory Optimized",
+      "family_normalized": "memory_optimized",
+      "vcpus": 8,
+      "memory_gb": 64.0,
+      "storage_desc": "Persistent Disk",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 16 Gbps",
+      "description": "n2-highmem-8 - 8 vCPUs, 64GB RAM, memory optimized",
+      "pricing": [
+        {"region": "us-east1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.52424}},
+        {"region": "us-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.52424}},
+        {"region": "europe-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.57666}},
+        {"region": "asia-southeast1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 0.61336}}
+      ]
+    },
+    {
+      "name": "n2-highmem-16",
+      "family": "Memory Optimized",
+      "family_normalized": "memory_optimized",
+      "vcpus": 16,
+      "memory_gb": 128.0,
+      "storage_desc": "Persistent Disk",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "32 Gbps",
+      "description": "n2-highmem-16 - 16 vCPUs, 128GB RAM, memory optimized",
+      "pricing": [
+        {"region": "us-east1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 1.04848}},
+        {"region": "us-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 1.04848}},
+        {"region": "europe-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 1.15333}},
+        {"region": "asia-southeast1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 1.22673}}
+      ]
+    },
+    {
+      "name": "a2-highgpu-1g",
+      "family": "Accelerated Computing",
+      "family_normalized": "gpu",
+      "vcpus": 12,
+      "memory_gb": 85.0,
+      "storage_desc": "Persistent Disk",
+      "gpu_count": 1,
+      "gpu_model": "NVIDIA A100",
+      "arch": "x86_64",
+      "generation": "current",
+      "network_bandwidth": "Up to 24 Gbps",
+      "description": "a2-highgpu-1g - 12 vCPUs, 85GB RAM, 1x NVIDIA A100 GPU",
+      "pricing": [
+        {"region": "us-east1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 3.748}},
+        {"region": "us-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 3.748}},
+        {"region": "europe-west1", "price_type": "on_demand", "os_types": ["linux"], "prices": {"linux": 4.123}}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "provider": "gcp",
+  "service": "cloud_storage",
+  "source": "GCP Cloud Billing Catalog (curated)",
+  "fetched_at": "2026-02-01",
+  "cloud_storage": {
+    "standard": {
+      "storage_per_gb": {"us": 0.020, "eu": 0.020, "asia": 0.020},
+      "class_a_per_10k": 0.05,
+      "class_b_per_10k": 0.004,
+      "data_transfer_out_per_gb": {"north_america": 0.08, "eu": 0.08, "asia": 0.12}
+    },
+    "nearline": {
+      "storage_per_gb": {"us": 0.010, "eu": 0.010, "asia": 0.016},
+      "retrieval_per_gb": 0.01,
+      "class_a_per_10k": 0.10,
+      "class_b_per_10k": 0.01
+    },
+    "coldline": {
+      "storage_per_gb": {"us": 0.004, "eu": 0.007, "asia": 0.007},
+      "retrieval_per_gb": 0.02,
+      "class_a_per_10k": 0.10,
+      "class_b_per_10k": 0.05
+    },
+    "archive": {
+      "storage_per_gb": {"us": 0.0012, "eu": 0.0025, "asia": 0.0025},
+      "retrieval_per_gb": 0.05,
+      "class_a_per_10k": 0.50
+    }
+  },
+  "persistent_disk": {
+    "standard_per_gb": 0.040,
+    "ssd_per_gb": 0.170,
+    "balanced_per_gb": 0.100,
+    "extreme_per_gb": 0.125,
+    "snapshot_per_gb": 0.026
+  },
+  "filestore": {
+    "basic_hdd_per_gb": 0.20,
+    "basic_ssd_per_gb": 0.60,
+    "high_scale_ssd_per_gb": 0.49
+  }
+}

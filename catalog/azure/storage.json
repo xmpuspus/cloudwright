@@ -1,0 +1,63 @@
+{
+  "provider": "azure",
+  "service": "blob_storage",
+  "source": "Azure Retail Prices API",
+  "fetched_at": "2026-02-01",
+  "blob_storage": {
+    "hot": {
+      "storage_per_gb": {"lrs": 0.018, "grs": 0.035, "zrs": 0.023},
+      "write_per_10k": 0.05,
+      "read_per_10k": 0.004,
+      "data_retrieval_per_gb": 0.0
+    },
+    "cool": {
+      "storage_per_gb": {"lrs": 0.01, "grs": 0.02, "zrs": 0.013},
+      "write_per_10k": 0.10,
+      "read_per_10k": 0.01,
+      "data_retrieval_per_gb": 0.01
+    },
+    "cold": {
+      "storage_per_gb": {"lrs": 0.0045, "grs": 0.009},
+      "write_per_10k": 0.18,
+      "read_per_10k": 0.018,
+      "data_retrieval_per_gb": 0.03
+    },
+    "archive": {
+      "storage_per_gb": {"lrs": 0.00099, "grs": 0.0020},
+      "write_per_10k": 0.11,
+      "read_per_10k": 5.50,
+      "data_retrieval_per_gb": 0.02
+    }
+  },
+  "managed_disks": {
+    "standard_hdd": {
+      "s4_per_month": 1.54,
+      "s10_per_month": 2.31,
+      "s20_per_month": 4.10,
+      "s30_per_month": 7.17,
+      "s60_per_month": 13.45,
+      "per_gb": 0.040
+    },
+    "standard_ssd": {
+      "per_gb": 0.075
+    },
+    "premium_ssd": {
+      "p4_per_month": 5.28,
+      "p10_per_month": 19.71,
+      "p20_per_month": 73.22,
+      "p30_per_month": 135.17,
+      "per_gb": 0.135
+    },
+    "ultra_disk": {
+      "capacity_per_gb_month": 0.125,
+      "provisioned_iops_per_iops_month": 0.0572,
+      "provisioned_throughput_per_mbps_month": 0.00572
+    }
+  },
+  "azure_files": {
+    "transaction_optimized_per_gb": 0.06,
+    "hot_per_gb": 0.025,
+    "cool_per_gb": 0.015,
+    "premium_per_gb": 0.26
+  }
+}

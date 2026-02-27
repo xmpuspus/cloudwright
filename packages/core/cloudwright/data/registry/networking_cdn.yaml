@@ -1,0 +1,29 @@
+category: networking_cdn
+services:
+  aws:
+    cloudfront:
+      name: "Amazon CloudFront"
+      terraform_types: ["aws_cloudfront_distribution"]
+      pricing_formula: per_gb
+      default_config:
+        estimated_gb: 500
+        requests_per_month: 10000000
+  gcp:
+    cloud_cdn:
+      name: "Google Cloud CDN"
+      terraform_types: ["google_compute_backend_service"]
+      pricing_formula: per_gb
+      default_config:
+        estimated_gb: 500
+  azure:
+    azure_cdn:
+      name: "Azure CDN"
+      terraform_types: ["azurerm_cdn_profile", "azurerm_cdn_endpoint"]
+      pricing_formula: per_gb
+      default_config:
+        estimated_gb: 500
+
+equivalences:
+  - aws: cloudfront
+    gcp: cloud_cdn
+    azure: azure_cdn

@@ -1,0 +1,31 @@
+category: networking_dns
+services:
+  aws:
+    route53:
+      name: "Amazon Route 53"
+      terraform_types: ["aws_route53_zone", "aws_route53_record"]
+      pricing_formula: per_zone
+      default_config:
+        hosted_zones: 1
+        monthly_queries: 1000000
+  gcp:
+    cloud_dns:
+      name: "Google Cloud DNS"
+      terraform_types: ["google_dns_managed_zone", "google_dns_record_set"]
+      pricing_formula: per_zone
+      default_config:
+        hosted_zones: 1
+        monthly_queries: 1000000
+  azure:
+    azure_dns:
+      name: "Azure DNS"
+      terraform_types: ["azurerm_dns_zone", "azurerm_dns_a_record"]
+      pricing_formula: per_zone
+      default_config:
+        hosted_zones: 1
+        monthly_queries: 1000000
+
+equivalences:
+  - aws: route53
+    gcp: cloud_dns
+    azure: azure_dns

@@ -1,0 +1,25 @@
+id: "46"
+name: "Container Orchestration Comparison — EKS vs GKE vs AKS"
+tier: 3
+category: "comparison"
+prompt: >
+  Compare running the same Kubernetes workload on AWS EKS, Google GKE, and Azure AKS for a
+  team deploying 20 microservices. Workload spec: 10 nodes (4 vCPU, 16GB RAM each), 500GB
+  persistent volumes, 5TB/month egress, a managed ingress controller, and managed logging and
+  monitoring. Evaluate and score each platform on: control plane cost (EKS $0.10/hr vs GKE
+  Autopilot vs AKS free control plane), node pricing for equivalent VMs, managed add-ons
+  included vs paid (logging, monitoring, service mesh), upgrade experience and version support
+  windows, and networking model differences (AWS VPC CNI vs GKE dataplane v2 vs Azure CNI).
+  Produce a side-by-side monthly cost breakdown and a qualitative scorecard for a team that
+  prioritizes operational simplicity over raw cost.
+constraints:
+  provider: aws
+  budget_monthly: 8000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 4
+  required_services: ["eks", "ec2", "ebs", "cloudwatch"]
+  required_connections: 3
+  max_monthly_cost: 8000
+tags: ["aws", "gcp", "azure", "eks", "gke", "aks", "comparison", "kubernetes"]

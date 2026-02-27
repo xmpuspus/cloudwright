@@ -1,0 +1,25 @@
+id: "37"
+name: "Replatform to Containers from VMs"
+tier: 2
+category: "migration"
+prompt: >
+  Design a replatform migration for a logistics company moving 8 Java Spring Boot applications
+  from EC2 instances to containerized ECS Fargate, without rewriting application code. Current
+  state: 8 EC2 m5.large instances, each running a single monolithic Spring Boot app with a
+  shared RDS PostgreSQL db.m5.xlarge and a shared ElastiCache cluster. Target state: containerize
+  each app (Dockerfile generated from EC2 AMI analysis), deploy to ECS Fargate with individual
+  task definitions and auto-scaling, separate the shared database into per-service schemas with
+  connection pooling via RDS Proxy, maintain the shared ElastiCache for session data, move to
+  ECR for container registry, and add a CI/CD pipeline via CodePipeline+CodeBuild. Calculate
+  the cost delta (expect 30-40% savings from right-sized Fargate tasks vs m5.large EC2).
+constraints:
+  provider: aws
+  budget_monthly: 3000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 6
+  required_services: ["ecs", "rds", "elasticache", "ecr", "codepipeline"]
+  required_connections: 5
+  max_monthly_cost: 3000
+tags: ["aws", "migration", "replatform", "containers", "fargate", "java", "spring-boot"]

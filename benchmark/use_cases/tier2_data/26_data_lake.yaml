@@ -1,0 +1,24 @@
+id: "26"
+name: "Data Lake on AWS S3 with Athena"
+tier: 2
+category: "data"
+prompt: >
+  Design a scalable data lake architecture on AWS for a logistics company ingesting 500GB of
+  structured and semi-structured data daily from 15 operational systems. Use S3 as the storage
+  backbone with a three-tier structure (raw/curated/analytics zones), Glue for ETL jobs and
+  the Data Catalog (Hive Metastore compatible), Athena for ad-hoc SQL queries with Workgroups
+  for cost control, Lake Formation for fine-grained column and row-level data access control,
+  Kinesis Data Firehose for real-time data ingestion from event sources, and QuickSight for
+  business intelligence dashboards. Include S3 lifecycle policies to transition data to
+  Intelligent-Tiering after 30 days and Glacier Deep Archive after 2 years. Budget is $4,000/month.
+constraints:
+  provider: aws
+  budget_monthly: 4000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 6
+  required_services: ["s3", "glue", "athena", "kinesis", "lake_formation"]
+  required_connections: 5
+  max_monthly_cost: 4000
+tags: ["aws", "data-lake", "s3", "athena", "glue", "analytics", "logistics"]

@@ -1,0 +1,26 @@
+id: "35"
+name: "Real-Time Multiplayer Gaming Backend"
+tier: 2
+category: "industry"
+prompt: >
+  Design the backend infrastructure on AWS for a real-time multiplayer battle royale game
+  supporting 500,000 concurrent players across 10,000 simultaneous matches. Match sessions
+  require ultra-low latency (< 50ms to game server). Use GameLift FlexMatch for matchmaking
+  with skill-based matching, GameLift on EC2 Spot fleets (c5.2xlarge) for dedicated game
+  servers with automatic session management and interruption handling, a Global Accelerator
+  for anycast routing players to the lowest-latency region, DynamoDB Global Tables for player
+  profiles and leaderboards with global replication, ElastiCache Redis for real-time presence
+  and match state, API Gateway WebSocket for the lobby chat system, and Kinesis Data Analytics
+  for real-time cheating detection using player telemetry. Target budget is $30,000/month
+  at 500K concurrent users.
+constraints:
+  provider: aws
+  budget_monthly: 30000
+  compliance: []
+  regions: ["us-east-1", "eu-west-1", "ap-southeast-1"]
+expected:
+  min_components: 7
+  required_services: ["gamelift", "dynamodb", "elasticache", "global_accelerator", "kinesis"]
+  required_connections: 6
+  max_monthly_cost: 30000
+tags: ["aws", "gaming", "real-time", "multiplayer", "gamelift", "global", "websocket"]

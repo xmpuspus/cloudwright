@@ -1,0 +1,23 @@
+id: "18"
+name: "Import CloudFormation Template"
+tier: 1
+category: "import"
+prompt: >
+  Import and analyze a production CloudFormation template with 85 resources deployed to a
+  healthcare company's AWS account. The stack contains: a multi-AZ VPC, ECS Fargate cluster
+  with 3 services and a load balancer, RDS Aurora PostgreSQL with encryption enabled, S3 buckets
+  with SSE-KMS and versioning, CloudTrail with CloudWatch Logs integration, WAF with OWASP
+  managed rules, and Cognito user pool with MFA enabled. Parse the CloudFormation template,
+  generate an ArchSpec, run a HIPAA compliance validation against the imported architecture,
+  and identify any gaps between what CloudFormation deployed and HIPAA requirements.
+constraints:
+  provider: aws
+  budget_monthly: 3000
+  compliance: ["hipaa"]
+  regions: ["us-east-1"]
+expected:
+  min_components: 7
+  required_services: ["ecs", "rds", "s3", "cloudtrail", "waf", "cognito"]
+  required_connections: 6
+  max_monthly_cost: 3000
+tags: ["aws", "import", "cloudformation", "hipaa", "compliance-gap"]

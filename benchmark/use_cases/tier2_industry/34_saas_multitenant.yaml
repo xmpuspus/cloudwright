@@ -1,0 +1,25 @@
+id: "34"
+name: "Multi-Tenant B2B SaaS on AWS"
+tier: 2
+category: "industry"
+prompt: >
+  Design a multi-tenant SaaS platform on AWS for a project management tool serving 1,000
+  enterprise tenants with varying sizes (small: 10 users, enterprise: 10,000 users). Implement
+  a tiered isolation model: free-tier tenants share ECS tasks and an RDS database with schema
+  isolation, professional-tier tenants get dedicated ECS tasks but shared RDS with RLS, and
+  enterprise tenants get dedicated ECS tasks, dedicated RDS instances, and dedicated ElastiCache.
+  Use Cognito with custom domains for per-tenant SSO, API Gateway with usage plans and API keys
+  for rate limiting per tenant, CloudFront with Lambda@Edge for tenant routing based on subdomain,
+  and EventBridge for tenant-scoped event processing. Include a control plane ECS service for
+  tenant provisioning and billing metering. Budget is $20,000/month.
+constraints:
+  provider: aws
+  budget_monthly: 20000
+  compliance: ["soc2"]
+  regions: ["us-east-1"]
+expected:
+  min_components: 7
+  required_services: ["ecs", "rds", "elasticache", "cognito", "cloudfront", "api_gateway", "eventbridge"]
+  required_connections: 6
+  max_monthly_cost: 20000
+tags: ["aws", "saas", "multi-tenant", "soc2", "b2b", "tiered-isolation"]

@@ -1,0 +1,59 @@
+name: Three-Tier Web Application (Azure)
+version: 1
+provider: azure
+region: eastus
+constraints:
+  availability: 99.9
+components:
+  - id: gateway
+    service: application_gateway
+    provider: azure
+    label: Application Gateway
+    tier: 1
+    config:
+      sku: Standard_v2
+      waf: true
+  - id: web
+    service: virtual_machines
+    provider: azure
+    label: Web VMs
+    tier: 2
+    config:
+      vm_size: Standard_D4s_v3
+      count: 2
+      auto_scaling: true
+  - id: cache
+    service: azure_cache_redis
+    provider: azure
+    label: Azure Cache for Redis
+    tier: 3
+    config:
+      sku: Standard
+      capacity: 2
+  - id: db
+    service: azure_sql
+    provider: azure
+    label: Azure SQL Database
+    tier: 3
+    config:
+      sku: GP_Gen5_4
+      max_size_gb: 100
+      zone_redundant: true
+      encryption: true
+      backup: true
+connections:
+  - source: gateway
+    target: web
+    label: HTTPS traffic
+    protocol: HTTPS
+    port: 443
+  - source: web
+    target: cache
+    label: Session cache
+    protocol: TCP
+    port: 6380
+  - source: web
+    target: db
+    label: Database queries
+    protocol: TCP
+    port: 1433

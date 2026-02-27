@@ -1,0 +1,32 @@
+category: streaming
+description: "Real-time data streaming and ingestion services"
+
+services:
+  aws:
+    kinesis:
+      name: "Amazon Kinesis"
+      description: "Real-time data streaming service"
+      terraform_types: ["aws_kinesis_stream", "aws_kinesis_firehose_delivery_stream"]
+      pricing_formula: per_shard_hour
+      default_config: {shards: 2, data_gb_per_month: 10}
+
+  gcp:
+    dataflow:
+      name: "Google Cloud Dataflow"
+      description: "Unified stream and batch data processing"
+      terraform_types: ["google_dataflow_job"]
+      pricing_formula: per_hour
+      default_config: {vcpus: 4, memory_gb: 16, hours_per_month: 100}
+
+  azure:
+    event_hubs:
+      name: "Azure Event Hubs"
+      description: "Real-time data ingestion service"
+      terraform_types: ["azurerm_eventhub_namespace", "azurerm_eventhub"]
+      pricing_formula: per_shard_hour
+      default_config: {throughput_units: 1, retention_days: 1}
+
+equivalences:
+  - aws: kinesis
+    gcp: dataflow
+    azure: event_hubs

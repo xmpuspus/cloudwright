@@ -1,0 +1,26 @@
+id: "50"
+name: "Total Cost of Ownership — AWS vs GCP vs Azure Full Stack"
+tier: 3
+category: "comparison"
+prompt: >
+  Perform a comprehensive 3-year TCO comparison for migrating a 200-person SaaS company's
+  full infrastructure from AWS to either GCP or Azure, versus staying on AWS with optimization.
+  Current AWS spend: $45,000/month across EKS (30%), RDS Aurora (25%), ElastiCache (10%),
+  S3+CloudFront (15%), misc services (20%). Include in the TCO: 1) cloud infrastructure costs
+  (with 3-year committed use discounts vs AWS Savings Plans), 2) egress costs for cross-cloud
+  migration (estimated 500TB one-time transfer), 3) engineering migration cost (estimate 6-month
+  team of 8 engineers at $150/hr), 4) training and tooling changes, and 5) risk cost of
+  migration downtime. Model the breakeven point for switching vs staying. Also show the AWS
+  optimization scenario: switch to Graviton3, use Savings Plans, and optimize egress — what's
+  the new AWS spend with full optimization?
+constraints:
+  provider: aws
+  budget_monthly: 45000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 5
+  required_services: ["eks", "rds", "elasticache", "s3", "cloudfront"]
+  required_connections: 4
+  max_monthly_cost: 45000
+tags: ["aws", "gcp", "azure", "tco", "comparison", "cost", "migration-decision", "saas"]

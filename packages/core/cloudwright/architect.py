@@ -1,0 +1,420 @@
+"""LLM-powered architecture designer."""
+
+from __future__ import annotations
+
+import json
+import logging
+import re
+
+from cloudwright.llm import get_llm
+from cloudwright.llm.base import BaseLLM
+from cloudwright.providers import get_equivalent
+from cloudwright.spec import (
+    Alternative,
+    ArchSpec,
+    Component,
+    Connection,
+    Constraints,
+)
+
+log = logging.getLogger(__name__)
+
+# Services that are data stores — need encryption enforcement for HIPAA
+_DATA_STORE_SERVICES = {
+    "rds",
+    "aurora",
+    "dynamodb",
+    "s3",
+    "elasticache",
+    "redshift",
+    "cloud_sql",
+    "firestore",
+    "spanner",
+    "memorystore",
+    "cloud_storage",
+    "bigquery",
+    "azure_sql",
+    "cosmos_db",
+    "azure_cache",
+    "blob_storage",
+    "synapse",
+}
+
+# HIPAA required service types (by service key or category)
+_HIPAA_REQUIRED = {
+    "audit_logging": {"cloudtrail", "cloud_logging", "azure_monitor"},
+    "access_control": {"cognito", "firebase_auth", "azure_ad", "iam"},
+}
+
+_COMPLIANCE_CONTROLS: dict[str, str] = {
+    "hipaa": (
+        "REQUIRED: encryption_at_rest on all data stores, encryption_in_transit on all "
+        "connections, audit_logging service (cloudtrail/cloud_logging/azure_monitor), "
+        "access_control via auth service (cognito/firebase_auth/azure_ad), "
+        "all services must be BAA-eligible"
+    ),
+    "pci-dss": (
+        "REQUIRED: WAF/firewall on entry points, encryption on all data stores and connections, "
+        "audit logging, network segmentation (separate tiers), no cardholder data in logs"
+    ),
+    "soc2": (
+        "REQUIRED: audit logging service, encryption on data stores, access control service, "
+        "monitoring/alerting (cloudwatch/cloud_monitoring/azure_monitor)"
+    ),
+    "gdpr": (
+        "REQUIRED: encryption on all data stores, audit logging, access control service, "
+        "data residency controls — do not store data outside approved regions"
+    ),
+    "fedramp": (
+        "REQUIRED: FIPS 140-2 compliant services only, MFA/access control, audit logging, "
+        "encryption at rest and in transit, US regions only"
+    ),
+}
+
+_DESIGN_SYSTEM = """You generate cloud architectures as structured JSON.
+
+Given a natural language description, produce a JSON object with this exact structure:
+{
+  "name": "Short descriptive name for the architecture",
+  "provider": "aws|gcp|azure",
+  "region": "primary region (e.g. us-east-1, us-central1, eastus)",
+  "components": [
+    {
+      "id": "unique_snake_case_id",
+      "service": "<service_key>",
+      "provider": "aws|gcp|azure",
+      "label": "Human-readable label",
+      "description": "Brief purpose note (instance type, config)",
+      "tier": <integer 0-4>,
+      "config": {
+        "instance_type": "optional",
+        "multi_az": true,
+        "encryption": true,
+        "auto_scaling": true
+      }
+    }
+  ],
+  "connections": [
+    {
+      "source": "component_id",
+      "target": "component_id",
+      "label": "HTTPS/443",
+      "protocol": "HTTPS",
+      "port": 443
+    }
+  ]
+}
+
+TIER RULES (vertical positioning, top to bottom):
+- Tier 0: Internet-facing entry points (CDN, DNS, API gateway, WAF, users)
+- Tier 1: Load balancing and ingress
+- Tier 2: Compute (VMs, containers, serverless functions)
+- Tier 3: Data layer (databases, caches, message queues)
+- Tier 4: Storage, backup, analytics, ML, monitoring
+
+VALID SERVICE KEYS — use exactly these strings:
+AWS: cloudfront, route53, api_gateway, waf, alb, nlb, ec2, ecs, eks, lambda, fargate,
+     rds, aurora, dynamodb, elasticache, sqs, sns, s3, kinesis, redshift, emr, sagemaker,
+     cognito, iam, step_functions, eventbridge, cloudwatch, cloudtrail
+GCP: cloud_cdn, cloud_dns, cloud_load_balancing, cloud_armor, compute_engine, gke,
+     cloud_run, cloud_functions, app_engine, cloud_sql, firestore, spanner, memorystore,
+     pub_sub, cloud_storage, bigquery, dataflow, vertex_ai, firebase_auth, cloud_logging
+Azure: azure_cdn, azure_dns, app_gateway, azure_waf, azure_lb, virtual_machines, aks,
+       container_apps, azure_functions, app_service, azure_sql, cosmos_db, azure_cache,
+       service_bus, event_hubs, blob_storage, synapse, azure_ml, azure_ad, logic_apps,
+       azure_monitor
+
+RULES:
+- Use 4-12 components to keep architectures clear and practical
+- Every component must connect to at least one other component
+- Connections flow logically from entry points down to data layer
+- Include meaningful labels on connections (protocols, ports, or data type)
+- For production workloads, enable multi_az and encryption in config by default
+- Match the provider to the user's description; default to aws if unspecified
+- Respond with ONLY the JSON object — no markdown, no explanation text"""
+
+_MODIFY_SYSTEM = """You modify an existing cloud architecture based on user instructions.
+
+You will receive the current architecture JSON and a modification instruction.
+Return the COMPLETE updated architecture JSON in the same format — never return partial updates.
+Preserve all existing component IDs unless explicitly removing or renaming them.
+Apply the requested change precisely without unnecessary restructuring.
+Respond with ONLY the JSON object — no markdown, no explanation."""
+
+
+_CHAT_SYSTEM = """You are a cloud architecture assistant. You help design and refine architectures through conversation.
+
+When the user asks you to generate or modify an architecture, respond with a JSON object using the same schema as a design prompt (name, provider, region, components, connections).
+
+When the user asks questions or wants to discuss trade-offs, respond conversationally — no JSON needed.
+
+VALID SERVICE KEYS — use exactly these strings:
+AWS: cloudfront, route53, api_gateway, waf, alb, nlb, ec2, ecs, eks, lambda, fargate,
+     rds, aurora, dynamodb, elasticache, sqs, sns, s3, kinesis, redshift, emr, sagemaker,
+     cognito, iam, step_functions, eventbridge, cloudwatch, cloudtrail
+GCP: cloud_cdn, cloud_dns, cloud_load_balancing, cloud_armor, compute_engine, gke,
+     cloud_run, cloud_functions, app_engine, cloud_sql, firestore, spanner, memorystore,
+     pub_sub, cloud_storage, bigquery, dataflow, vertex_ai, firebase_auth, cloud_logging
+Azure: azure_cdn, azure_dns, app_gateway, azure_waf, azure_lb, virtual_machines, aks,
+       container_apps, azure_functions, app_service, azure_sql, cosmos_db, azure_cache,
+       service_bus, event_hubs, blob_storage, synapse, azure_ml, azure_ad, logic_apps,
+       azure_monitor"""
+
+
+class ConversationSession:
+    """Multi-turn architecture design conversation with history tracking."""
+
+    def __init__(self, llm: BaseLLM | None = None, constraints: Constraints | None = None):
+        self.llm = llm or get_llm()
+        self.constraints = constraints
+        self.history: list[dict] = []
+        self.current_spec: ArchSpec | None = None
+
+    def send(self, message: str) -> tuple[str, ArchSpec | None]:
+        """Send a user message and get response + optionally updated spec."""
+        self.history.append({"role": "user", "content": message})
+        text, _usage = self.llm.generate(self.history, _CHAT_SYSTEM, max_tokens=4000)
+        self.history.append({"role": "assistant", "content": text})
+
+        spec = self._try_parse_spec(text)
+        if spec is not None:
+            if self.constraints:
+                spec = spec.model_copy(update={"constraints": self.constraints})
+            self.current_spec = spec
+
+        return text, spec
+
+    def modify(self, instruction: str) -> ArchSpec:
+        """Modify the current spec with a natural language instruction."""
+        if self.current_spec is None:
+            raise ValueError("No current architecture to modify. Use send() to create one first.")
+
+        current_json = self.current_spec.model_dump_json(indent=2, exclude_none=True)
+        prompt = f"Current architecture:\n{current_json}\n\nModification: {instruction}"
+
+        self.history.append({"role": "user", "content": prompt})
+        text, _usage = self.llm.generate(self.history, _MODIFY_SYSTEM, max_tokens=4000)
+        self.history.append({"role": "assistant", "content": text})
+
+        data = _extract_json(text)
+        updated = _parse_arch_spec(data, self.constraints)
+
+        if self.current_spec.cost_estimate and not updated.cost_estimate:
+            updated = updated.model_copy(update={"cost_estimate": self.current_spec.cost_estimate})
+
+        self.current_spec = updated
+        return updated
+
+    def _try_parse_spec(self, text: str) -> ArchSpec | None:
+        """Try to extract an ArchSpec from LLM response. Returns None if not parseable."""
+        try:
+            data = _extract_json(text)
+            if "components" not in data or not data["components"]:
+                return None
+            return _parse_arch_spec(data, self.constraints)
+        except (ValueError, KeyError, json.JSONDecodeError):
+            return None
+
+
+class Architect:
+    def __init__(self, llm: BaseLLM | None = None):
+        self.llm = llm or get_llm()
+
+    def design(self, description: str, constraints: Constraints | None = None) -> ArchSpec:
+        system = _DESIGN_SYSTEM
+        if constraints:
+            system += _build_constraint_prompt(constraints)
+
+        messages = [{"role": "user", "content": description}]
+        text, _usage = self.llm.generate(messages, system, max_tokens=4000)
+        data = _extract_json(text)
+        return _parse_arch_spec(data, constraints)
+
+    def modify(self, spec: ArchSpec, instruction: str) -> ArchSpec:
+        current = spec.model_dump_json(indent=2, exclude_none=True)
+        prompt = f"Current architecture:\n{current}\n\nModification: {instruction}"
+        messages = [{"role": "user", "content": prompt}]
+        text, _usage = self.llm.generate(messages, _MODIFY_SYSTEM, max_tokens=4000)
+        data = _extract_json(text)
+        updated = _parse_arch_spec(data, spec.constraints)
+        # Preserve cost estimate and alternatives from original if LLM didn't regenerate them
+        if spec.cost_estimate and not updated.cost_estimate:
+            updated.cost_estimate = spec.cost_estimate
+        return updated
+
+    def compare(self, spec: ArchSpec, providers: list[str]) -> list[Alternative]:
+        from cloudwright.cost import CostEngine
+
+        engine = CostEngine()
+        return engine.compare_providers(spec, providers)
+
+
+def _build_constraint_prompt(constraints: Constraints) -> str:
+    """Build a structured constraint section to inject into the system prompt."""
+    sections: list[str] = []
+
+    if constraints.budget_monthly:
+        sections.append(
+            f"HARD LIMIT: Total monthly cost MUST NOT exceed ${constraints.budget_monthly:.0f}. "
+            "If a component would push the total over budget, use a smaller instance type or "
+            "remove non-essential components."
+        )
+
+    for framework in constraints.compliance:
+        key = framework.lower()
+        if key in _COMPLIANCE_CONTROLS:
+            sections.append(f"COMPLIANCE ({framework.upper()}): {_COMPLIANCE_CONTROLS[key]}")
+        else:
+            sections.append(f"COMPLIANCE ({framework.upper()}): Follow all controls for {framework}.")
+
+    if constraints.regions:
+        region = constraints.regions[0]
+        sections.append(f"ALL components must be in region: {region}. Do not use services unavailable in this region.")
+
+    if constraints.availability and constraints.availability > 0.99:
+        sections.append(
+            "REQUIRED: multi_az=true on all data stores, auto_scaling on compute, load balancer "
+            f"(target availability: {constraints.availability * 100:.2f}%)"
+        )
+
+    if constraints.latency_ms:
+        sections.append(
+            f"LATENCY TARGET: {constraints.latency_ms:.0f}ms max — prefer low-latency services and regions."
+        )
+
+    if constraints.data_residency:
+        regions_str = ", ".join(constraints.data_residency)
+        sections.append(
+            f"DATA RESIDENCY: Data must remain in: {regions_str}. Do not route or replicate outside these locations."
+        )
+
+    if constraints.throughput_rps:
+        sections.append(
+            f"THROUGHPUT TARGET: {constraints.throughput_rps:,} RPS — ensure auto_scaling and "
+            "sufficient capacity on compute and data layers."
+        )
+
+    if not sections:
+        return ""
+    return "\n\nCONSTRAINTS — these are non-negotiable:\n" + "\n".join(f"- {s}" for s in sections)
+
+
+def _post_validate(spec: ArchSpec, constraints: Constraints | None) -> ArchSpec:
+    """Check LLM output against constraints and apply automatic corrections."""
+    if not constraints:
+        return spec
+
+    components = [c.model_copy(deep=True) for c in spec.components]
+    changed = False
+
+    # Budget check — estimate from existing cost_estimate if available
+    if constraints.budget_monthly and spec.cost_estimate:
+        total = spec.cost_estimate.monthly_total
+        if total > constraints.budget_monthly:
+            log.warning(
+                "Architecture cost $%.2f/mo exceeds budget limit of $%.2f/mo",
+                total,
+                constraints.budget_monthly,
+            )
+
+    # HIPAA: enforce encryption on data stores
+    if "hipaa" in [c.lower() for c in constraints.compliance]:
+        for i, comp in enumerate(components):
+            if comp.service in _DATA_STORE_SERVICES:
+                cfg = dict(comp.config)
+                if not cfg.get("encryption") and not cfg.get("encryption_at_rest"):
+                    cfg["encryption_at_rest"] = True
+                    components[i] = comp.model_copy(update={"config": cfg})
+                    log.debug("Auto-added encryption_at_rest to %s (%s) for HIPAA", comp.id, comp.service)
+                    changed = True
+
+    if not changed:
+        return spec
+
+    return spec.model_copy(update={"components": components})
+
+
+def _extract_json(text: str) -> dict:
+    # Strip markdown code fences if present
+    match = re.search(r"\{[\s\S]*\}", text)
+    if not match:
+        raise ValueError(f"No JSON object found in LLM response: {text[:300]}")
+    return json.loads(match.group())
+
+
+def _parse_arch_spec(data: dict, constraints: Constraints | None) -> ArchSpec:
+    components = [
+        Component(
+            id=c["id"],
+            service=c["service"],
+            provider=c.get("provider", data.get("provider", "aws")),
+            label=c.get("label", c["id"]),
+            description=c.get("description", ""),
+            tier=c.get("tier", 2),
+            config=c.get("config", {}),
+        )
+        for c in data.get("components", [])
+    ]
+
+    connections = [
+        Connection(
+            source=conn["source"],
+            target=conn["target"],
+            label=conn.get("label", ""),
+            protocol=conn.get("protocol"),
+            port=conn.get("port"),
+        )
+        for conn in data.get("connections", [])
+    ]
+
+    spec = ArchSpec(
+        name=data.get("name", "Architecture"),
+        provider=data.get("provider", "aws"),
+        region=data.get("region", "us-east-1"),
+        constraints=constraints,
+        components=components,
+        connections=connections,
+    )
+    return _post_validate(spec, constraints)
+
+
+def _map_components(spec: ArchSpec, target_provider: str) -> ArchSpec:
+    mapped_components = []
+    for comp in spec.components:
+        equivalent = get_equivalent(comp.service, comp.provider, target_provider)
+        mapped_components.append(
+            Component(
+                id=comp.id,
+                service=equivalent or comp.service,
+                provider=target_provider,
+                label=comp.label,
+                description=comp.description,
+                tier=comp.tier,
+                config=comp.config.copy(),
+            )
+        )
+
+    return ArchSpec(
+        name=f"{spec.name} ({target_provider.upper()})",
+        provider=target_provider,
+        region=_default_region(target_provider),
+        constraints=spec.constraints,
+        components=mapped_components,
+        connections=[c.model_copy() for c in spec.connections],
+    )
+
+
+def _diff_services(original: ArchSpec, mapped: ArchSpec) -> list[str]:
+    diffs = []
+    orig_map = {c.id: c for c in original.components}
+    for comp in mapped.components:
+        orig = orig_map.get(comp.id)
+        if orig and orig.service != comp.service:
+            diffs.append(f"{orig.service} -> {comp.service}")
+        elif not orig:
+            diffs.append(f"Added {comp.service}")
+    return diffs
+
+
+def _default_region(provider: str) -> str:
+    return {"aws": "us-east-1", "gcp": "us-central1", "azure": "eastus"}.get(provider, "us-east-1")

@@ -1,0 +1,24 @@
+id: "23"
+name: "AKS Microservices Platform on Azure"
+tier: 2
+category: "microservices"
+prompt: >
+  Design a microservices platform on Azure Kubernetes Service for a retail company migrating
+  from on-premises. Use AKS with system and user node pools (Standard_D4s_v5 nodes), Azure
+  Application Gateway with AGIC for ingress, Open Service Mesh for service-to-service encryption,
+  Azure Database for PostgreSQL Flexible Server for order management, Azure Cosmos DB for
+  product catalog with global distribution, Azure Cache for Redis for session state, Azure
+  Container Registry with geo-replication, and Azure Monitor with Container Insights for
+  observability. Use Azure Key Vault with CSI driver for secrets management. Enable Azure
+  Policy for Kubernetes to enforce resource limits. Budget is $7,000/month.
+constraints:
+  provider: azure
+  budget_monthly: 7000
+  compliance: []
+  regions: ["eastus"]
+expected:
+  min_components: 7
+  required_services: ["aks", "azure_database_postgresql", "cosmos_db", "azure_cache_redis", "azure_container_registry"]
+  required_connections: 6
+  max_monthly_cost: 7000
+tags: ["azure", "aks", "kubernetes", "microservices", "retail", "migration"]

@@ -1,0 +1,25 @@
+id: "33"
+name: "E-Commerce Platform for Black Friday Scale"
+tier: 2
+category: "industry"
+prompt: >
+  Design an e-commerce platform on AWS that handles 10x traffic spikes during Black Friday —
+  normal load is 5,000 concurrent users, peak is 50,000. The architecture must scale in under
+  5 minutes. Use CloudFront with aggressive caching for the product catalog (CDN cache hit rate
+  > 80%), ECS Fargate with Application Auto Scaling for the API tier with target tracking on
+  CPU, Aurora PostgreSQL with read replicas for product/order data, ElastiCache Redis cluster
+  for cart sessions and inventory locks, SQS for order processing queue to absorb spikes, DynamoDB
+  on-demand for the session store (no capacity planning required), and a pre-warming strategy
+  for Lambda functions and Aurora serverless. Run load tests monthly and document the scale-out
+  timeline. Budget $4,000/month baseline, up to $15,000 during peak events.
+constraints:
+  provider: aws
+  budget_monthly: 4000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 7
+  required_services: ["cloudfront", "ecs", "rds", "elasticache", "sqs", "dynamodb"]
+  required_connections: 6
+  max_monthly_cost: 15000
+tags: ["aws", "ecommerce", "auto-scaling", "black-friday", "high-traffic", "performance"]

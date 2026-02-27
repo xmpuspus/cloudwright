@@ -1,0 +1,23 @@
+id: "06"
+name: "HIPAA-Compliant Healthcare Patient Portal"
+tier: 1
+category: "compliance"
+prompt: >
+  Design a HIPAA-compliant patient portal on AWS for a regional hospital network. The portal
+  allows patients to view medical records, schedule appointments, and message their care team.
+  All data storage must use encryption at rest (AES-256) and in transit (TLS 1.2+). Use RDS
+  Aurora PostgreSQL for PHI data with automated backups retained for 7 years, S3 with server-side
+  encryption for medical imaging, ECS Fargate for the application tier, and CloudTrail with
+  CloudWatch for comprehensive audit logging of all PHI access. Only use AWS services that are
+  covered under the AWS Business Associate Agreement. Implement MFA for all staff logins via Cognito.
+constraints:
+  provider: aws
+  budget_monthly: 2500
+  compliance: ["hipaa"]
+  regions: ["us-east-1"]
+expected:
+  min_components: 6
+  required_services: ["rds", "s3", "ecs", "cloudtrail", "cognito", "kms"]
+  required_connections: 5
+  max_monthly_cost: 2500
+tags: ["aws", "hipaa", "healthcare", "compliance", "phi", "encryption"]

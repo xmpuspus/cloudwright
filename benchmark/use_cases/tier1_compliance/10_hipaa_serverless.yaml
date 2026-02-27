@@ -1,0 +1,24 @@
+id: "10"
+name: "HIPAA-Compliant Serverless Telehealth API"
+tier: 1
+category: "compliance"
+prompt: >
+  Design a HIPAA-compliant serverless architecture on AWS for a telehealth startup that needs
+  to minimize operational overhead while maintaining full compliance. Use API Gateway with
+  Lambda authorizers for all PHI-touching endpoints, Lambda functions in a VPC for PHI processing
+  (required for HIPAA), DynamoDB with encryption at rest for appointment and messaging data,
+  S3 with SSE-KMS for video consultation recordings, and Macie for automated PHI discovery and
+  classification in S3. All Lambda functions must run in a private VPC subnet with no public
+  internet access — use VPC endpoints for DynamoDB and S3. CloudTrail must log all API calls.
+  Budget under $800/month at 5,000 monthly active patients.
+constraints:
+  provider: aws
+  budget_monthly: 800
+  compliance: ["hipaa"]
+  regions: ["us-east-1"]
+expected:
+  min_components: 6
+  required_services: ["api_gateway", "lambda", "dynamodb", "s3", "kms", "cloudtrail"]
+  required_connections: 5
+  max_monthly_cost: 800
+tags: ["aws", "hipaa", "serverless", "telehealth", "lambda", "compliance"]

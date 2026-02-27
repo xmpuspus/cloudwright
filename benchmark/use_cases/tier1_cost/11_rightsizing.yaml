@@ -1,0 +1,23 @@
+id: "11"
+name: "EC2 Fleet Rightsizing Optimization"
+tier: 1
+category: "cost"
+prompt: >
+  We have an over-provisioned AWS fleet that's costing $8,000/month but should cost under $3,000.
+  Current state: 20x m5.2xlarge EC2 instances (8 vCPU, 32GB RAM) running a web application where
+  CloudWatch shows average CPU at 12% and memory at 18%. They sit behind an ALB with RDS PostgreSQL
+  db.r5.2xlarge (also over-provisioned at 15% CPU). Design the rightsized architecture: recommend
+  correct instance types based on actual utilization, implement auto-scaling groups with min/max
+  limits appropriate to the workload, and switch RDS to a db.t3.large with Performance Insights.
+  Calculate the projected monthly savings.
+constraints:
+  provider: aws
+  budget_monthly: 3000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 4
+  required_services: ["ec2", "alb", "rds", "autoscaling"]
+  required_connections: 3
+  max_monthly_cost: 3000
+tags: ["aws", "cost-optimization", "rightsizing", "ec2", "finops"]

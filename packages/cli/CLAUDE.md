@@ -1,10 +1,10 @@
-# silmaril-cli
+# cloudwright-cli
 
-CLI interface for Silmaril. Wraps core package with Typer commands and Rich formatting.
+CLI interface for Cloudwright. Wraps core package with Typer commands and Rich formatting.
 
 ## Commands
 
-All commands are in `silmaril_cli/commands/`. Each is a standalone module registered in `main.py`.
+All commands are in `cloudwright_cli/commands/`. Each is a standalone module registered in `main.py`.
 
 - `design` — Generate architecture from natural language
 - `cost` — Price an ArchSpec, optional multi-cloud comparison

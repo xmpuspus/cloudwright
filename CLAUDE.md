@@ -1,12 +1,12 @@
-# Silmaril
+# Cloudwright
 
 Architecture intelligence tool for cloud engineers. Python monorepo with core library, CLI, and web UI.
 
 ## Project Structure
 
-- `packages/core/` — `pip install silmaril` — ArchSpec models, LLM-powered architect, catalog, cost engine, exporters
-- `packages/cli/` — `pip install silmaril[cli]` — Typer CLI with Rich formatting
-- `packages/web/` — `pip install silmaril[web]` — FastAPI + React web UI
+- `packages/core/` — `pip install cloudwright` — ArchSpec models, LLM-powered architect, catalog, cost engine, exporters
+- `packages/cli/` — `pip install cloudwright[cli]` — Typer CLI with Rich formatting
+- `packages/web/` — `pip install cloudwright[web]` — FastAPI + React web UI
 - `catalog/` — Service catalog JSON data (compute, database, storage, networking per provider)
 
 ## Core Concepts
@@ -15,7 +15,7 @@ Architecture intelligence tool for cloud engineers. Python monorepo with core li
 - **Architect** (`architect.py`) — LLM-powered design from natural language. Multi-turn conversation
 - **Catalog** (`catalog.py`) — SQLite service catalog with instance specs, pricing, cross-cloud equivalences
 - **CostEngine** (`cost.py`) — prices each component in an ArchSpec from catalog data
-- **Validator** (`validator.py`) — compliance checks (HIPAA, PCI-DSS, SOC 2, Well-Architected)
+- **Validator** (`validator.py`) — compliance checks (HIPAA, PCI-DSS, SOC 2, FedRAMP, GDPR, Well-Architected)
 - **Differ** (`differ.py`) — structured diff between two ArchSpecs
 - **Exporters** (`exporter/`) — Terraform, CloudFormation, Mermaid, CycloneDX SBOM, OWASP AIBOM
 
@@ -41,11 +41,11 @@ ruff check packages/
 ## Key Commands
 
 ```bash
-silmaril design "3-tier web app on AWS"
-silmaril cost spec.yaml
-silmaril validate spec.yaml --compliance hipaa
-silmaril export spec.yaml --format terraform -o ./infra
-silmaril diff v1.yaml v2.yaml
-silmaril catalog search "4 vcpu 16gb"
-silmaril chat
+cloudwright design "3-tier web app on AWS"
+cloudwright cost spec.yaml
+cloudwright validate spec.yaml --compliance hipaa
+cloudwright export spec.yaml --format terraform -o ./infra
+cloudwright diff v1.yaml v2.yaml
+cloudwright catalog search "4 vcpu 16gb"
+cloudwright chat
 ```

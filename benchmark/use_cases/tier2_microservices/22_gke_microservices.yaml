@@ -1,0 +1,24 @@
+id: "22"
+name: "GKE Microservices Platform on GCP"
+tier: 2
+category: "microservices"
+prompt: >
+  Design a production microservices platform on Google Kubernetes Engine for a media streaming
+  company. Use GKE Autopilot for zero-node-management operations, Cloud Load Balancing with
+  NEGs for container-native load balancing, Anthos Service Mesh (Istio) for mTLS between services,
+  Cloud SQL PostgreSQL for relational data, Firestore for real-time user preference data, Memorystore
+  Redis for session caching, Artifact Registry for container images, and Cloud Monitoring with
+  distributed tracing via Cloud Trace. Implement Workload Identity for secure service-to-GCP-API
+  authentication without service account keys. The platform serves 1M daily active users streaming
+  video. Budget is $8,000/month.
+constraints:
+  provider: gcp
+  budget_monthly: 8000
+  compliance: []
+  regions: ["us-central1"]
+expected:
+  min_components: 7
+  required_services: ["gke", "cloud_sql", "memorystore", "cloud_load_balancing", "artifact_registry"]
+  required_connections: 6
+  max_monthly_cost: 8000
+tags: ["gcp", "gke", "kubernetes", "microservices", "anthos", "media"]

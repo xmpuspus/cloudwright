@@ -1,0 +1,32 @@
+category: orchestration
+description: "Workflow orchestration and automation services"
+
+services:
+  aws:
+    step_functions:
+      name: "AWS Step Functions"
+      description: "Visual workflow coordination for distributed applications"
+      terraform_types: ["aws_sfn_state_machine", "aws_sfn_activity"]
+      pricing_formula: per_request
+      default_config: {monthly_state_transitions: 1000000}
+
+  gcp:
+    workflows:
+      name: "Google Cloud Workflows"
+      description: "Orchestrate and automate Google Cloud and HTTP-based services"
+      terraform_types: ["google_workflows_workflow"]
+      pricing_formula: per_request
+      default_config: {monthly_steps: 1000000}
+
+  azure:
+    logic_apps:
+      name: "Azure Logic Apps"
+      description: "Automate workflows and integrate apps and services"
+      terraform_types: ["azurerm_logic_app_workflow", "azurerm_logic_app_action_custom"]
+      pricing_formula: per_request
+      default_config: {monthly_actions: 1000000}
+
+equivalences:
+  - aws: step_functions
+    gcp: workflows
+    azure: logic_apps

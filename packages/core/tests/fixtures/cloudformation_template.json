@@ -1,0 +1,163 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Three-tier web application with CDN, ALB, EC2, RDS, ElastiCache, S3, SQS, Lambda, API Gateway, and SNS",
+  "Parameters": {
+    "Environment": {
+      "Type": "String",
+      "Default": "production"
+    }
+  },
+  "Resources": {
+    "CDN": {
+      "Type": "AWS::CloudFront::Distribution",
+      "Properties": {
+        "DistributionConfig": {
+          "Origins": [
+            {
+              "DomainName": {"Fn::GetAtt": ["ALB", "DNSName"]},
+              "Id": "ALBOrigin",
+              "CustomOriginConfig": {
+                "HTTPPort": 80,
+                "OriginProtocolPolicy": "http-only"
+              }
+            }
+          ],
+          "DefaultCacheBehavior": {
+            "TargetOriginId": "ALBOrigin",
+            "ViewerProtocolPolicy": "redirect-to-https",
+            "ForwardedValues": {"QueryString": false}
+          },
+          "Enabled": true
+        }
+      }
+    },
+    "ALB": {
+      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "Properties": {
+        "Name": "app-alb",
+        "Scheme": "internet-facing",
+        "Type": "application",
+        "Subnets": ["subnet-abc123", "subnet-def456"],
+        "SecurityGroups": [{"Ref": "WebSecurityGroup"}]
+      }
+    },
+    "WebServer": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "InstanceType": "t3.large",
+        "ImageId": "ami-0abcdef1234567890",
+        "SecurityGroupIds": [{"Ref": "WebSecurityGroup"}],
+        "SubnetId": "subnet-abc123",
+        "Tags": [{"Key": "Name", "Value": "WebServer"}]
+      }
+    },
+    "Database": {
+      "Type": "AWS::RDS::DBInstance",
+      "Properties": {
+        "DBInstanceClass": "db.r5.large",
+        "Engine": "postgres",
+        "EngineVersion": "15.4",
+        "AllocatedStorage": 200,
+        "MultiAZ": true,
+        "StorageEncrypted": true,
+        "MasterUsername": "admin",
+        "MasterUserPassword": {"Ref": "DBPassword"},
+        "VPCSecurityGroups": [{"Fn::GetAtt": ["DBSecurityGroup", "GroupId"]}]
+      }
+    },
+    "CacheCluster": {
+      "Type": "AWS::ElastiCache::CacheCluster",
+      "Properties": {
+        "CacheNodeType": "cache.r6g.large",
+        "Engine": "redis",
+        "NumCacheNodes": 1,
+        "VpcSecurityGroupIds": [{"Ref": "WebSecurityGroup"}]
+      }
+    },
+    "AssetsBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": {"Fn::Sub": "${Environment}-app-assets"},
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {"ServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}
+          ]
+        }
+      }
+    },
+    "JobQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": "job-processing",
+        "VisibilityTimeout": 300,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {"Fn::GetAtt": ["DeadLetterQueue", "Arn"]},
+          "maxReceiveCount": 3
+        }
+      }
+    },
+    "DeadLetterQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": "job-processing-dlq",
+        "MessageRetentionPeriod": 1209600
+      }
+    },
+    "NotificationTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": "app-notifications",
+        "Subscription": [
+          {"Endpoint": "ops@example.com", "Protocol": "email"}
+        ]
+      }
+    },
+    "WorkerFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": "queue-worker",
+        "Runtime": "python3.12",
+        "Handler": "worker.handler",
+        "MemorySize": 1024,
+        "Timeout": 300,
+        "Environment": {
+          "Variables": {
+            "QUEUE_URL": {"Ref": "JobQueue"},
+            "TABLE_ARN": {"Fn::GetAtt": ["Database", "Endpoint.Address"]},
+            "BUCKET_NAME": {"Ref": "AssetsBucket"},
+            "TOPIC_ARN": {"Ref": "NotificationTopic"}
+          }
+        }
+      }
+    },
+    "WebSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Web tier security group",
+        "VpcId": "vpc-abc123",
+        "SecurityGroupIngress": [
+          {"IpProtocol": "tcp", "FromPort": 80, "ToPort": 80, "CidrIp": "0.0.0.0/0"},
+          {"IpProtocol": "tcp", "FromPort": 443, "ToPort": 443, "CidrIp": "0.0.0.0/0"}
+        ]
+      }
+    },
+    "DBSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Database security group",
+        "VpcId": "vpc-abc123",
+        "SecurityGroupIngress": [
+          {"IpProtocol": "tcp", "FromPort": 5432, "ToPort": 5432, "SourceSecurityGroupId": {"Ref": "WebSecurityGroup"}}
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "ALBDNSName": {
+      "Value": {"Fn::GetAtt": ["ALB", "DNSName"]}
+    },
+    "CDNDomain": {
+      "Value": {"Fn::GetAtt": ["CDN", "DomainName"]}
+    }
+  }
+}

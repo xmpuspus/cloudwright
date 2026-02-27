@@ -1,0 +1,25 @@
+id: "31"
+name: "Fintech Crypto Exchange Platform (PCI-DSS)"
+tier: 2
+category: "industry"
+prompt: >
+  Design the AWS infrastructure for a cryptocurrency exchange platform that also handles fiat
+  currency and must maintain PCI-DSS Level 1 compliance. The platform processes 10,000 trades
+  per second at peak. Architecture: API Gateway + NLB for the trading API (NLB needed for
+  WebSocket connections for real-time order book), EKS for the matching engine with dedicated
+  m6i.metal nodes for predictable latency, ElastiCache Redis for the in-memory order book,
+  Aurora PostgreSQL for trade settlement records, Kinesis Data Streams for trade event auditing,
+  KMS with HSM backing for all cryptographic operations, GuardDuty and Security Hub for threat
+  detection, and WAF with rate limiting to prevent market manipulation bots. Hot wallet keys
+  stored in CloudHSM, not KMS.
+constraints:
+  provider: aws
+  budget_monthly: 20000
+  compliance: ["pci-dss"]
+  regions: ["us-east-1"]
+expected:
+  min_components: 8
+  required_services: ["eks", "elasticache", "rds", "kinesis", "kms", "guardduty", "waf"]
+  required_connections: 7
+  max_monthly_cost: 20000
+tags: ["aws", "fintech", "crypto", "pci-dss", "high-frequency-trading", "cloudhsm"]

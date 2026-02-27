@@ -1,0 +1,26 @@
+id: "44"
+name: "Strict Multi-Compliance — HIPAA + PCI + FedRAMP"
+tier: 3
+category: "edge"
+prompt: >
+  Design an AWS architecture for a government healthcare payment processor that must simultaneously
+  satisfy HIPAA (PHI), PCI-DSS Level 1 (payment card data), and FedRAMP Moderate (federal
+  government data). This is genuinely one of the hardest compliance combinations. Architecture
+  must use only GovCloud (us-gov-east-1) services that are FedRAMP authorized, FIPS 140-2
+  validated encryption everywhere (KMS with FIPS endpoints, TLS 1.2+ only), three completely
+  isolated VPCs for each compliance domain with no direct peering, HSM-backed encryption for
+  both PHI and cardholder data, PIV/CAC authentication for federal users via AWS SSO with
+  HSPD-12 assertion, and continuous compliance monitoring via AWS Config with NIST 800-53
+  conformance pack. Document which AWS services are available in GovCloud and which requirements
+  conflict across frameworks.
+constraints:
+  provider: aws
+  budget_monthly: 30000
+  compliance: ["hipaa", "pci-dss"]
+  regions: ["us-gov-east-1"]
+expected:
+  min_components: 8
+  required_services: ["kms", "cloudtrail", "config", "guardduty", "waf"]
+  required_connections: 6
+  max_monthly_cost: 30000
+tags: ["aws", "govcloud", "hipaa", "pci-dss", "fedramp", "multi-compliance", "government"]

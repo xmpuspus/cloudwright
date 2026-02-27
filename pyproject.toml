@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "silmaril-workspace"
+name = "cloudwright-workspace"
 version = "0.1.0"
 description = "Architecture intelligence for cloud engineers"
 requires-python = ">=3.12"
@@ -11,9 +11,9 @@ license = "MIT"
 
 [tool.hatch.envs.default]
 dependencies = [
-    "silmaril @ {root:uri}/packages/core",
-    "silmaril-cli @ {root:uri}/packages/cli",
-    "silmaril-web @ {root:uri}/packages/web",
+    "cloudwright @ {root:uri}/packages/core",
+    "cloudwright-cli @ {root:uri}/packages/cli",
+    "cloudwright-web @ {root:uri}/packages/web",
 ]
 
 [tool.ruff]

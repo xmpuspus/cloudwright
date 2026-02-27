@@ -1,0 +1,545 @@
+[
+  {
+    "case_id": "01",
+    "case_name": "Startup MVP on AWS",
+    "tool": "cloudwright",
+    "elapsed_seconds": 10.720713138580322,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 6
+      },
+      "cost_accuracy": {
+        "score": 100,
+        "estimated": 158.08,
+        "budget": 500
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "cloudfront",
+          "ecs",
+          "elasticache",
+          "rds"
+        ],
+        "missing": [],
+        "total_services": 6
+      },
+      "compliance_completeness": {
+        "score": 42.9,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 95.5,
+        "seconds": 10.7,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "01",
+    "case_name": "Startup MVP on AWS",
+    "tool": "claude_raw",
+    "elapsed_seconds": 42.49761724472046,
+    "scores": {
+      "structural_validity": {
+        "score": 80,
+        "pass": true,
+        "reason": "yaml block with components/services"
+      },
+      "cost_accuracy": {
+        "score": 100.0,
+        "estimated": 500.0,
+        "budget": 500
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "cloudfront",
+          "ecs",
+          "elasticache",
+          "rds"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 60.0,
+        "terms_found": 6,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 42.5,
+        "estimated_total_minutes": 30.7,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "06",
+    "case_name": "HIPAA-Compliant Healthcare Patient Portal",
+    "tool": "cloudwright",
+    "elapsed_seconds": 17.573648929595947,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 9
+      },
+      "cost_accuracy": {
+        "score": 50,
+        "estimated": 191.08,
+        "budget": 2500
+      },
+      "service_correctness": {
+        "score": 83.3,
+        "found": [
+          "cloudtrail",
+          "cognito",
+          "ecs",
+          "rds",
+          "s3"
+        ],
+        "missing": [
+          "kms"
+        ],
+        "total_services": 8
+      },
+      "compliance_completeness": {
+        "score": 80.0,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 92.7,
+        "seconds": 17.6,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "06",
+    "case_name": "HIPAA-Compliant Healthcare Patient Portal",
+    "tool": "claude_raw",
+    "elapsed_seconds": 42.51916289329529,
+    "scores": {
+      "structural_validity": {
+        "score": 80,
+        "pass": true,
+        "reason": "yaml block with components/services"
+      },
+      "cost_accuracy": {
+        "score": 2.0,
+        "estimated": 50.0,
+        "budget": 2500
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "cloudtrail",
+          "cognito",
+          "ecs",
+          "kms",
+          "rds",
+          "s3"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 90.0,
+        "terms_found": 9,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 42.5,
+        "estimated_total_minutes": 30.7,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "13",
+    "case_name": "Cross-Cloud Cost Comparison \u2014 3-Tier Web App",
+    "tool": "cloudwright",
+    "elapsed_seconds": 20.42154026031494,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 12
+      },
+      "cost_accuracy": {
+        "score": 50,
+        "estimated": 266.39,
+        "budget": 3000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "cloudfront",
+          "ecs",
+          "elasticache",
+          "rds"
+        ],
+        "missing": [],
+        "total_services": 12
+      },
+      "compliance_completeness": {
+        "score": 57.1,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 91.5,
+        "seconds": 20.4,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "13",
+    "case_name": "Cross-Cloud Cost Comparison \u2014 3-Tier Web App",
+    "tool": "claude_raw",
+    "elapsed_seconds": 28.882590293884277,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 94.8,
+        "estimated": 3154.7,
+        "budget": 3000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "cloudfront",
+          "ecs",
+          "elasticache",
+          "rds"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 10.0,
+        "terms_found": 1,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 28.9,
+        "estimated_total_minutes": 30.5,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "21",
+    "case_name": "EKS Microservices Platform on AWS",
+    "tool": "cloudwright",
+    "elapsed_seconds": 12.967319250106812,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 8
+      },
+      "cost_accuracy": {
+        "score": 50,
+        "estimated": 264.93,
+        "budget": 6000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "dynamodb",
+          "ecr",
+          "eks",
+          "elasticache",
+          "rds"
+        ],
+        "missing": [],
+        "total_services": 8
+      },
+      "compliance_completeness": {
+        "score": 71.4,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 94.6,
+        "seconds": 13.0,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "21",
+    "case_name": "EKS Microservices Platform on AWS",
+    "tool": "claude_raw",
+    "elapsed_seconds": 45.8038969039917,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 74.7,
+        "estimated": 4479.0,
+        "budget": 6000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "dynamodb",
+          "ecr",
+          "eks",
+          "elasticache",
+          "rds"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 20.0,
+        "terms_found": 2,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 45.8,
+        "estimated_total_minutes": 30.8,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "41",
+    "case_name": "Contradictory Requirements \u2014 CAP Theorem Stress Test",
+    "tool": "cloudwright",
+    "elapsed_seconds": 12.87641716003418,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 6
+      },
+      "cost_accuracy": {
+        "score": 50,
+        "estimated": 43.87,
+        "budget": 500
+      },
+      "service_correctness": {
+        "score": 66.7,
+        "found": [
+          "dynamodb",
+          "lambda"
+        ],
+        "missing": [
+          "cloudfront"
+        ],
+        "total_services": 6
+      },
+      "compliance_completeness": {
+        "score": 57.1,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 94.6,
+        "seconds": 12.9,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "41",
+    "case_name": "Contradictory Requirements \u2014 CAP Theorem Stress Test",
+    "tool": "claude_raw",
+    "elapsed_seconds": 29.644423007965088,
+    "scores": {
+      "structural_validity": {
+        "score": 80,
+        "pass": true,
+        "reason": "yaml block with components/services"
+      },
+      "cost_accuracy": {
+        "score": 100.0,
+        "estimated": 500.0,
+        "budget": 500
+      },
+      "service_correctness": {
+        "score": 66.7,
+        "found": [
+          "cloudfront",
+          "dynamodb"
+        ],
+        "missing": [
+          "lambda"
+        ]
+      },
+      "compliance_completeness": {
+        "score": 20.0,
+        "terms_found": 2,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 29.6,
+        "estimated_total_minutes": 30.5,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  }
+]

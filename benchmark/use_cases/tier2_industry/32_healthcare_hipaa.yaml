@@ -1,0 +1,25 @@
+id: "32"
+name: "Healthcare EHR Platform (HIPAA)"
+tier: 2
+category: "industry"
+prompt: >
+  Design the cloud infrastructure for an Electronic Health Record (EHR) platform on AWS that
+  will be used by 500 physician practices and process records for 2 million patients. The
+  platform must be fully HIPAA-compliant. Key requirements: HL7 FHIR R4 API via API Gateway
+  and Lambda for interoperability, Aurora PostgreSQL Multi-AZ for structured PHI with column-level
+  encryption using KMS, S3 with SSE-KMS for medical imaging (DICOM files, expect 50TB), a
+  dedicated VPC with no public subnets for the data tier, AWS PrivateLink for all AWS service
+  access, Macie for PHI scanning and classification, Config with custom rules for continuous
+  HIPAA evidence collection, and CloudTrail Organization Trails for a 7-year audit log retention.
+  All inter-service communication must use mutual TLS.
+constraints:
+  provider: aws
+  budget_monthly: 15000
+  compliance: ["hipaa"]
+  regions: ["us-east-1", "us-west-2"]
+expected:
+  min_components: 8
+  required_services: ["api_gateway", "lambda", "rds", "s3", "kms", "cloudtrail", "config"]
+  required_connections: 7
+  max_monthly_cost: 15000
+tags: ["aws", "healthcare", "ehr", "hipaa", "fhir", "phi", "multi-region"]

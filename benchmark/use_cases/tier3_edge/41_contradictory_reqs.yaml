@@ -1,0 +1,25 @@
+id: "41"
+name: "Contradictory Requirements — CAP Theorem Stress Test"
+tier: 3
+category: "edge"
+prompt: >
+  Design an architecture that satisfies all of the following requirements simultaneously:
+  the system must be strongly consistent (all reads reflect the latest write), available
+  (100% uptime, no downtime ever), and partition-tolerant (continues operating during network
+  splits). Additionally, the system must be globally distributed across 5 regions with sub-5ms
+  local read latency, have a budget under $500/month, and use only managed services without
+  any EC2 instances. Handle this by explicitly identifying which of the contradictory requirements
+  must be relaxed (CAP theorem — you cannot have all three), recommend the appropriate
+  consistency model for the stated use case (a global configuration service), and design the
+  best achievable architecture given the real-world constraints.
+constraints:
+  provider: aws
+  budget_monthly: 500
+  compliance: []
+  regions: ["us-east-1", "eu-west-1", "ap-southeast-1", "ap-northeast-1", "us-west-2"]
+expected:
+  min_components: 3
+  required_services: ["dynamodb", "cloudfront", "lambda"]
+  required_connections: 2
+  max_monthly_cost: 500
+tags: ["aws", "edge-case", "cap-theorem", "contradictory", "consistency", "global"]

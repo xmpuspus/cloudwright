@@ -3,7 +3,7 @@
 Requires: ANTHROPIC_API_KEY or OPENAI_API_KEY set in environment.
 """
 
-from silmaril import Architect, Validator
+from cloudwright import Architect, Validator
 
 # Design an architecture
 arch = Architect()

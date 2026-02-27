@@ -1,6 +1,6 @@
-# silmaril-web
+# cloudwright-web
 
-Web UI for Silmaril. FastAPI backend wrapping core package + React frontend.
+Web UI for Cloudwright. FastAPI backend wrapping core package + React frontend.
 
 ## Backend
 
@@ -14,6 +14,6 @@ cost tables, comparison views. Same chat experience as the CLI but visual.
 ## Running
 
 ```bash
-silmaril serve          # starts both backend and frontend
-silmaril chat --web     # same thing
+cloudwright serve          # starts both backend and frontend
+cloudwright chat --web     # same thing
 ```

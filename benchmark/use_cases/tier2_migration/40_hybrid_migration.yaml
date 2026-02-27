@@ -1,0 +1,25 @@
+id: "40"
+name: "Phased Hybrid Migration with Parallel Run"
+tier: 2
+category: "migration"
+prompt: >
+  Design a 12-month phased hybrid migration for a financial institution moving from a
+  co-located data center to AWS while maintaining regulatory compliance throughout. Phase 1
+  (months 1-3): establish the AWS landing zone with AWS Control Tower, Direct Connect 10Gbps
+  primary + VPN backup, and migrate non-critical batch workloads via MGN. Phase 2 (months 4-8):
+  parallel run of core banking application in both DC and AWS with real-time data sync via
+  DMS, Aurora PostgreSQL as the cloud replica, WAF and Shield Advanced for the cloud-facing
+  endpoints. Phase 3 (months 9-12): cut over primary traffic to AWS, decommission DC systems,
+  implement PrivateLink for third-party connections replacing dedicated circuits. Provide
+  the architecture for the end state and the intermediate Phase 2 parallel-run topology.
+constraints:
+  provider: aws
+  budget_monthly: 25000
+  compliance: ["soc2"]
+  regions: ["us-east-1", "us-west-2"]
+expected:
+  min_components: 8
+  required_services: ["direct_connect", "dms", "rds", "waf", "shield"]
+  required_connections: 7
+  max_monthly_cost: 25000
+tags: ["aws", "migration", "hybrid", "phased", "direct-connect", "banking", "control-tower"]

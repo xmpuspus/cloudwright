@@ -1,0 +1,64 @@
+category: cache
+description: "In-memory caching and data store services"
+
+services:
+  aws:
+    elasticache:
+      name: "Amazon ElastiCache"
+      description: "In-memory caching service (Redis or Memcached)"
+      terraform_types: ["aws_elasticache_cluster", "aws_elasticache_replication_group"]
+      pricing_formula: per_hour
+      default_config: {node_type: cache.t3.medium, num_nodes: 1, engine: redis}
+
+  gcp:
+    memorystore:
+      name: "Google Cloud Memorystore"
+      description: "Fully managed in-memory data store (Redis or Memcached)"
+      terraform_types: ["google_redis_instance"]
+      pricing_formula: per_gb_hour
+      default_config: {memory_gb: 4.0, engine: redis}
+
+  azure:
+    azure_cache:
+      name: "Azure Cache for Redis"
+      description: "Fully managed in-memory Redis cache"
+      terraform_types: ["azurerm_redis_cache"]
+      pricing_formula: per_hour
+      default_config: {sku: C1, size_gb: 1.0}
+
+equivalences:
+  - aws: elasticache
+    gcp: memorystore
+    azure: azure_cache
+
+feature_parity:
+  - equivalence: [elasticache, memorystore, azure_cache]
+    features:
+      redis_cluster_mode:
+        aws: true     # Redis cluster mode with sharding
+        gcp: true     # Redis Cluster (preview)
+        azure: true   # Premium tier clustering
+      memcached_support:
+        aws: true     # ElastiCache for Memcached
+        gcp: true     # Memorystore for Memcached
+        azure: false  # Redis only
+      automatic_failover:
+        aws: true     # Multi-AZ with automatic failover
+        gcp: true     # Standard tier with replica
+        azure: true   # Premium tier with replicas
+      encryption_at_rest:
+        aws: true     # At-rest encryption
+        gcp: true     # CMEK encryption
+        azure: true   # Always encrypted
+      encryption_in_transit:
+        aws: true     # TLS support
+        gcp: true     # In-transit encryption
+        azure: true   # TLS 1.2+
+      global_replication:
+        aws: true     # Global Datastore for Redis
+        gcp: false    # No cross-region replication
+        azure: true   # Active geo-replication (Enterprise tier)
+      serverless_mode:
+        aws: true     # ElastiCache Serverless
+        gcp: false    # No serverless option
+        azure: false  # No serverless Redis

@@ -3,7 +3,7 @@
 import json
 
 import pytest
-from silmaril.spec import (
+from cloudwright.spec import (
     Alternative,
     ArchSpec,
     Component,

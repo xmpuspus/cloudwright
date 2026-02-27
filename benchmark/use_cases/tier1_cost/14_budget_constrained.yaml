@@ -1,0 +1,24 @@
+id: "14"
+name: "Full-Featured App Under $100/Month"
+tier: 1
+category: "cost"
+prompt: >
+  Design a fully functional web application on AWS that costs under $100/month for a bootstrapped
+  indie developer. Requirements: serve a React SPA, a Python REST API, a PostgreSQL database,
+  user authentication, file uploads, and background job processing. Maximize serverless and managed
+  services to minimize fixed costs — the app handles 500 daily active users with traffic peaks
+  during business hours. Use Lambda for the API (pay per request), DynamoDB on-demand for the
+  database, S3+CloudFront for the frontend, Cognito for auth (50,000 MAU free tier), SQS for
+  background jobs, and RDS PostgreSQL db.t4g.micro with reserved pricing if it fits the budget.
+  Justify every component choice by its cost contribution.
+constraints:
+  provider: aws
+  budget_monthly: 100
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 5
+  required_services: ["lambda", "dynamodb", "s3", "cloudfront", "cognito"]
+  required_connections: 4
+  max_monthly_cost: 100
+tags: ["aws", "serverless", "budget", "indie", "cost-optimization", "frugal"]

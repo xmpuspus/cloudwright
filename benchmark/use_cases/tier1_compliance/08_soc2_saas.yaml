@@ -1,0 +1,24 @@
+id: "08"
+name: "SOC 2 Type II SaaS Platform"
+tier: 1
+category: "compliance"
+prompt: >
+  Design a SOC 2 Type II compliant multi-tenant SaaS platform on AWS for a B2B software company.
+  The platform serves 200 enterprise customers with strict data isolation requirements. Use EKS
+  with namespace-level tenant isolation, RDS PostgreSQL with row-level security for tenant data
+  separation, Cognito for SSO with SAML 2.0 support for enterprise identity providers, CloudTrail
+  for comprehensive change management audit trails, Config for continuous compliance monitoring,
+  and Security Hub for centralized security findings. Implement automated evidence collection for
+  SOC 2 auditors. Include a CI/CD pipeline with mandatory peer review gates via CodePipeline.
+  Budget is $5,000/month.
+constraints:
+  provider: aws
+  budget_monthly: 5000
+  compliance: ["soc2"]
+  regions: ["us-east-1"]
+expected:
+  min_components: 7
+  required_services: ["eks", "rds", "cognito", "cloudtrail", "config", "security_hub"]
+  required_connections: 6
+  max_monthly_cost: 5000
+tags: ["aws", "soc2", "saas", "multi-tenant", "compliance", "b2b"]

@@ -1,0 +1,77 @@
+category: networking_lb
+services:
+  aws:
+    alb:
+      name: "Application Load Balancer"
+      terraform_types: ["aws_lb", "aws_alb", "aws_lb_listener"]
+      pricing_formula: per_hour
+      default_config:
+        lcu_per_hour: 1.0
+    nlb:
+      # NLB uses same aws_lb resource as ALB (differentiated by load_balancer_type)
+      name: "Network Load Balancer"
+      terraform_types: []
+      pricing_formula: per_hour
+      default_config:
+        lcu_per_hour: 1.0
+  gcp:
+    cloud_load_balancing:
+      name: "Google Cloud Load Balancing"
+      terraform_types: ["google_compute_forwarding_rule", "google_compute_global_forwarding_rule"]
+      pricing_formula: per_hour
+      default_config:
+        forwarding_rules: 1
+  azure:
+    app_gateway:
+      name: "Azure Application Gateway"
+      terraform_types: ["azurerm_application_gateway"]
+      pricing_formula: per_hour
+      default_config:
+        sku: WAF_v2
+        capacity_units: 1
+    azure_lb:
+      name: "Azure Load Balancer"
+      terraform_types: ["azurerm_lb", "azurerm_lb_rule"]
+      pricing_formula: per_hour
+      default_config:
+        rules: 1
+
+equivalences:
+  - aws: alb
+    gcp: cloud_load_balancing
+    azure: app_gateway
+  - aws: nlb
+    gcp: cloud_load_balancing
+    azure: azure_lb
+
+feature_parity:
+  - equivalence: [alb, cloud_load_balancing, app_gateway]
+    features:
+      http2_support:
+        aws: true
+        gcp: true
+        azure: true
+      websocket_support:
+        aws: true
+        gcp: true
+        azure: true
+      grpc_support:
+        aws: true     # ALB gRPC support
+        gcp: true     # Native gRPC
+        azure: true   # App Gateway v2
+      waf_integration:
+        aws: true     # AWS WAF integration
+        gcp: true     # Cloud Armor
+        azure: true   # WAF on App Gateway
+      ssl_offloading:
+        aws: true
+        gcp: true
+        azure: true
+      path_based_routing:
+        aws: true     # ALB path-based routing
+        gcp: true     # URL maps
+        azure: true   # Path-based routing rules
+      cross_region:
+        aws: true     # Global Accelerator + ALB
+        gcp: true     # Global external HTTP(S) LB
+        azure: true   # Front Door + App Gateway

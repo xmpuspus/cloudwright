@@ -1,0 +1,1730 @@
+[
+  {
+    "tool": "cloudwright",
+    "case_id": "01",
+    "case_name": "Startup MVP on AWS",
+    "design_success": true,
+    "spec": {
+      "name": "Startup MVP Web Application",
+      "version": 1,
+      "provider": "aws",
+      "region": "us-east-1",
+      "constraints": {
+        "budget_monthly": 500.0,
+        "regions": [
+          "us-east-1"
+        ],
+        "latency_ms": 0,
+        "throughput_rps": 0
+      },
+      "components": [
+        {
+          "id": "cloudfront_cdn",
+          "service": "cloudfront",
+          "provider": "aws",
+          "label": "CloudFront CDN",
+          "description": "Content delivery network for React frontend",
+          "tier": 0,
+          "config": {
+            "encryption": true,
+            "auto_scaling": true
+          }
+        },
+        {
+          "id": "s3_frontend",
+          "service": "s3",
+          "provider": "aws",
+          "label": "S3 Static Hosting",
+          "description": "React app static files storage",
+          "tier": 4,
+          "config": {
+            "encryption": true
+          }
+        },
+        {
+          "id": "application_lb",
+          "service": "alb",
+          "provider": "aws",
+          "label": "Application Load Balancer",
+          "description": "Load balancer for ECS services",
+          "tier": 1,
+          "config": {
+            "multi_az": true,
+            "encryption": true
+          }
+        },
+        {
+          "id": "ecs_fargate_api",
+          "service": "fargate",
+          "provider": "aws",
+          "label": "ECS Fargate API",
+          "description": "REST API containers (0.25 vCPU, 512 MB)",
+          "tier": 2,
+          "config": {
+            "multi_az": true,
+            "auto_scaling": true
+          }
+        },
+        {
+          "id": "rds_postgres",
+          "service": "rds",
+          "provider": "aws",
+          "label": "PostgreSQL Database",
+          "description": "Primary database (db.t3.micro)",
+          "tier": 3,
+          "config": {
+            "instance_type": "db.t3.micro",
+            "multi_az": false,
+            "encryption": true
+          }
+        },
+        {
+          "id": "elasticache_redis",
+          "service": "elasticache",
+          "provider": "aws",
+          "label": "Redis Cache",
+          "description": "Session caching (cache.t3.micro)",
+          "tier": 3,
+          "config": {
+            "instance_type": "cache.t3.micro",
+            "encryption": true
+          }
+        }
+      ],
+      "connections": [
+        {
+          "source": "cloudfront_cdn",
+          "target": "s3_frontend",
+          "label": "HTTPS/443",
+          "protocol": "HTTPS",
+          "port": 443
+        },
+        {
+          "source": "cloudfront_cdn",
+          "target": "application_lb",
+          "label": "API/443",
+          "protocol": "HTTPS",
+          "port": 443
+        },
+        {
+          "source": "application_lb",
+          "target": "ecs_fargate_api",
+          "label": "HTTP/8080",
+          "protocol": "HTTP",
+          "port": 8080
+        },
+        {
+          "source": "ecs_fargate_api",
+          "target": "rds_postgres",
+          "label": "PostgreSQL/5432",
+          "protocol": "TCP",
+          "port": 5432
+        },
+        {
+          "source": "ecs_fargate_api",
+          "target": "elasticache_redis",
+          "label": "Redis/6379",
+          "protocol": "TCP",
+          "port": 6379
+        }
+      ]
+    },
+    "cost_success": true,
+    "cost_output": {
+      "estimate": {
+        "monthly_total": 158.08,
+        "breakdown": [
+          {
+            "component_id": "cloudfront_cdn",
+            "service": "cloudfront",
+            "monthly": 8.5,
+            "hourly": 0.0116,
+            "notes": ""
+          },
+          {
+            "component_id": "s3_frontend",
+            "service": "s3",
+            "monthly": 1.15,
+            "hourly": 0.0016,
+            "notes": ""
+          },
+          {
+            "component_id": "application_lb",
+            "service": "alb",
+            "monthly": 16.43,
+            "hourly": 0.0225,
+            "notes": "Multi-AZ"
+          },
+          {
+            "component_id": "ecs_fargate_api",
+            "service": "fargate",
+            "monthly": 35.0,
+            "hourly": 0.0479,
+            "notes": "Multi-AZ"
+          },
+          {
+            "component_id": "rds_postgres",
+            "service": "rds",
+            "monthly": 50.0,
+            "hourly": 0.0685,
+            "notes": "db.t3.micro"
+          },
+          {
+            "component_id": "elasticache_redis",
+            "service": "elasticache",
+            "monthly": 47.0,
+            "hourly": 0.0644,
+            "notes": "cache.t3.micro"
+          }
+        ],
+        "data_transfer_monthly": 0.0,
+        "currency": "USD",
+        "as_of": "2026-02-28"
+      }
+    },
+    "validate_success": true,
+    "validate_output": {
+      "results": [
+        {
+          "framework": "Well-Architected",
+          "passed": false,
+          "score": 0.42857142857142855,
+          "checks": [
+            {
+              "name": "multi_az",
+              "category": "reliability",
+              "passed": true,
+              "severity": "high",
+              "detail": "Multi-AZ enabled on one or more components",
+              "recommendation": "Enable multi_az=true on RDS, caches, and other stateful components."
+            },
+            {
+              "name": "auto_scaling",
+              "category": "reliability",
+              "passed": true,
+              "severity": "medium",
+              "detail": "Auto-scaling configured on compute",
+              "recommendation": "Set auto_scaling=true on EC2/ECS/GKE/AKS components."
+            },
+            {
+              "name": "backup",
+              "category": "reliability",
+              "passed": false,
+              "severity": "medium",
+              "detail": "No backup configuration on data stores",
+              "recommendation": "Enable automated backups on RDS, DynamoDB, Cloud SQL, and Cosmos DB."
+            },
+            {
+              "name": "monitoring",
+              "category": "operations",
+              "passed": false,
+              "severity": "high",
+              "detail": "No monitoring service detected",
+              "recommendation": "Add CloudWatch, Cloud Logging, or Azure Monitor."
+            },
+            {
+              "name": "no_single_point_of_failure",
+              "category": "reliability",
+              "passed": false,
+              "severity": "high",
+              "detail": "Single point of failure detected (no LB or unreplicated DB)",
+              "recommendation": "Place a load balancer in front of compute and enable multi-AZ or read replicas on databases."
+            },
+            {
+              "name": "cost_optimization",
+              "category": "cost",
+              "passed": true,
+              "severity": "low",
+              "detail": "No obviously oversized instances detected",
+              "recommendation": "Right-size instances based on actual workload metrics. Use Savings Plans or Reserved Instances."
+            },
+            {
+              "name": "security",
+              "category": "security",
+              "passed": false,
+              "severity": "high",
+              "detail": "Missing: WAF, auth/IAM",
+              "recommendation": "Add WAF, IAM/auth service, and enable encryption on all data stores."
+            }
+          ]
+        }
+      ]
+    },
+    "export_success": true,
+    "export_file_count": 1,
+    "elapsed_seconds": 10.720713138580322,
+    "expected": {
+      "min_components": 5,
+      "required_services": [
+        "cloudfront",
+        "ecs",
+        "alb",
+        "rds",
+        "elasticache"
+      ],
+      "required_connections": 4,
+      "max_monthly_cost": 500
+    }
+  },
+  {
+    "tool": "claude_raw",
+    "case_id": "01",
+    "case_name": "Startup MVP on AWS",
+    "raw_text": "```yaml\n# Startup MVP Web Application - AWS Architecture Design\n\narchitecture:\n  name: \"Startup MVP Web Application\"\n  description: \"React frontend with REST API backend, PostgreSQL database, and Redis caching\"\n  target_users: \"< 1,000 daily active users\"\n  budget_limit: \"$500/month\"\n\ncomponents:\n  frontend:\n    - name: \"react-frontend-bucket\"\n      service: \"Amazon S3\"\n      type: \"Static Website Hosting\"\n      configuration:\n        bucket_type: \"Standard\"\n        versioning: \"Enabled\"\n        encryption: \"AES-256\"\n        public_access: \"Blocked (CloudFront only)\"\n      \n    - name: \"cloudfront-distribution\"\n      service: \"Amazon CloudFront\"\n      type: \"Content Delivery Network\"\n      configuration:\n        origin: \"S3 bucket\"\n        cache_behavior: \"Default\"\n        ssl_certificate: \"Default CloudFront SSL\"\n        compression: \"Enabled\"\n        price_class: \"PriceClass_100\" # US, Europe, Asia\n        origin_access_control: \"Enabled\"\n\n  networking:\n    - name: \"main-vpc\"\n      service: \"Amazon VPC\"\n      type: \"Virtual Private Cloud\"\n      configuration:\n        cidr_block: \"10.0.0.0/16\"\n        availability_zones: 2\n        \n    - name: \"public-subnets\"\n      service: \"Amazon VPC Subnets\"\n      type: \"Public Subnets\"\n      configuration:\n        subnets:\n          - \"10.0.1.0/24\" # AZ-1a\n          - \"10.0.2.0/24\" # AZ-1b\n          \n    - name: \"private-subnets\"\n      service: \"Amazon VPC Subnets\"\n      type: \"Private Subnets\"\n      configuration:\n        subnets:\n          - \"10.0.10.0/24\" # AZ-1a\n          - \"10.0.11.0/24\" # AZ-1b\n          \n    - name: \"nat-gateway\"\n      service: \"Amazon NAT Gateway\"\n      type: \"Network Address Translation\"\n      configuration:\n        count: 1 # Cost optimization - single NAT Gateway\n        availability_zone: \"us-east-1a\"\n\n  load_balancer:\n    - name: \"api-alb\"\n      service: \"Application Load Balancer\"\n      type: \"Load Balancer\"\n      configuration:\n        scheme: \"Internet-facing\"\n        ip_address_type: \"IPv4\"\n        subnets: \"public-subnets\"\n        security_groups: [\"alb-security-group\"]\n        listeners:\n          - port: 443\n            protocol: \"HTTPS\"\n            ssl_certificate: \"AWS Certificate Manager\"\n          - port: 80\n            protocol: \"HTTP\"\n            action: \"Redirect to HTTPS\"\n\n  compute:\n    - name: \"ecs-cluster\"\n      service: \"Amazon ECS\"\n      type: \"Container Orchestration\"\n      configuration:\n        launch_type: \"Fargate\"\n        capacity_providers: [\"FARGATE_SPOT\", \"FARGATE\"] # Cost optimization\n        \n    - name: \"api-service\"\n      service: \"Amazon ECS Fargate\"\n      type: \"Containerized Application\"\n      configuration:\n        cpu: \"256\" # 0.25 vCPU\n        memory: \"512\" # 512 MB\n        desired_count: 2\n        min_capacity: 1\n        max_capacity: 4\n        target_group: \"api-alb\"\n        auto_scaling:\n          cpu_threshold: 70\n          memory_threshold: 80\n        subnets: \"private-subnets\"\n        security_groups: [\"ecs-security-group\"]\n\n  database:\n    - name: \"postgresql-rds\"\n      service: \"Amazon RDS PostgreSQL\"\n      type: \"Relational Database\"\n      configuration:\n        instance_class: \"db.t3.micro\"\n        engine_version: \"15.4\"\n        allocated_storage: \"20GB\" # gp2\n        storage_type: \"General Purpose SSD (gp2)\"\n        multi_az: false # Cost optimization for MVP\n        backup_retention: \"7 days\"\n        subnets: \"private-subnets\"\n        security_groups: [\"rds-security-group\"]\n        encryption: \"Enabled\"\n        \n  cache:\n    - name: \"redis-elasticache\"\n      service: \"Amazon ElastiCache Redis\"\n      type: \"In-Memory Cache\"\n      configuration:\n        node_type: \"cache.t3.micro\"\n        num_cache_nodes: 1\n        engine_version: \"7.0\"\n        subnet_group: \"private-subnets\"\n        security_groups: [\"elasticache-security-group\"]\n        at_rest_encryption: \"Enabled\"\n        in_transit_encryption: \"Enabled\"\n\n  security:\n    - name: \"alb-security-group\"\n      service: \"Amazon EC2 Security Groups\"\n      rules:\n        inbound:\n          - port: 80\n            protocol: \"TCP\"\n            source: \"0.0.0.0/0\"\n          - port: 443\n            protocol: \"TCP\"\n            source: \"0.0.0.0/0\"\n        outbound:\n          - port: 8080\n            protocol: \"TCP\"\n            destination: \"ecs-security-group\"\n            \n    - name: \"ecs-security-group\"\n      service: \"Amazon EC2 Security Groups\"\n      rules:\n        inbound:\n          - port: 8080\n            protocol: \"TCP\"\n            source: \"alb-security-group\"\n        outbound:\n          - port: 5432\n            protocol: \"TCP\"\n            destination: \"rds-security-group\"\n          - port: 6379\n            protocol: \"TCP\"\n            destination: \"elasticache-security-group\"\n          - port: 443\n            protocol: \"TCP\"\n            destination: \"0.0.0.0/0\"\n            \n    - name: \"rds-security-group\"\n      service: \"Amazon EC2 Security Groups\"\n      rules:\n        inbound:\n          - port: 5432\n            protocol: \"TCP\"\n            source: \"ecs-security-group\"\n            \n    - name: \"elasticache-security-group\"\n      service: \"Amazon EC2 Security Groups\"\n      rules:\n        inbound:\n          - port: 6379\n            protocol: \"TCP\"\n            source: \"ecs-security-group\"\n\n  monitoring:\n    - name: \"cloudwatch-logs\"\n      service: \"Amazon CloudWatch Logs\"\n      type: \"Log Management\"\n      configuration:\n        retention_period: \"14 days\" # Cost optimization\n        log_groups:\n          - \"/aws/ecs/api-service\"\n          - \"/aws/rds/postgresql\"\n          \n    - name: \"cloudwatch-monitoring\"\n      service: \"Amazon CloudWatch\"\n      type: \"Monitoring & Alerting\"\n      configuration:\n        basic_monitoring: \"Enabled\"\n        detailed_monitoring: \"Disabled\" # Cost optimization\n\nconnections:\n  - from: \"Internet\"\n    to: \"cloudfront-distribution\"\n    type: \"HTTPS\"\n    \n  - from: \"cloudfront-distribution\"\n    to: \"react-frontend-bucket\"\n    type: \"Origin Access Control\"\n    \n  - from: \"Internet\"\n    to: \"api-alb\"\n    type: \"HTTPS\"\n    \n  - from: \"api-alb\"\n    to: \"api-service\"\n    type: \"HTTP\"\n    port: 8080\n    \n  - from: \"api-service\"\n    to: \"postgresql-rds\"\n    type: \"TCP\"\n    port: 5432\n    \n  - from: \"api-service\"\n    to: \"redis-elasticache\"\n    type: \"TCP\"\n    port: 6379\n    \n  - from: \"api-service\"\n    to: \"nat-gateway\"\n    type: \"Internet Access\"\n\nestimated_monthly_costs:\n  compute:\n    fargate_cpu: \"$14.40\" # 256 CPU units * 2 tasks * 24h * 30d * $0.04048/vCPU-hour\n    fargate_memory: \"$3.17\" # 0.5GB * 2 tasks * 24h * 30d * $0.004445/GB-hour\n    fargate_spot_savings: \"-$8.81\" # 50% spot usage assumption\n    \n  database:\n    rds_instance: \"$13.21\" # db.t3.micro * 24h * 30d * $0.018/hour\n    rds_storage: \"$2.30\" # 20GB * $0.115/GB-month\n    \n  cache:\n    elasticache: \"$11.52\" # cache.t3.micro * 24h * 30d * $0.016/hour\n    \n  storage:\n    s3_storage: \"$1.15\" # 50GB * $0.023/GB-month\n    s3_requests: \"$0.50\" # Estimated for low traffic\n    \n  networking:\n    cloudfront: \"$8.50\" # 100GB transfer + requests\n    alb: \"$22.27\" # $0.0225/hour + $0.008/LCU-hour\n    nat_gateway: \"$45.00\" # $0.045/hour + data processing\n    data_transfer: \"$9.00\" # Inter-AZ and outbound\n    \n  monitoring:\n    cloudwatch_logs: \"$3.15\" # 15GB/month * $0.50/GB + API calls\n    cloudwatch_metrics: \"$2.10\" # Basic monitoring\n    \n  security:\n    acm_certificate: \"$0.00\" # Free for ALB/CloudFront use\n    \n  total_estimated: \"$127.14/month\"\n  \ncost_optimization_notes:\n  - \"Using Fargate Spot for 50% cost reduction on compute\"\n  - \"Single NAT Gateway instead of multi-AZ for cost savings\"\n  - \"Single RDS instance (no Multi-AZ) for MVP phase\"\n  - \"CloudWatch log retention set to 14 days\"\n  - \"Using gp2 storage instead of gp3 for simplicity\"\n  - \"CloudFront PriceClass_100 for cost optimization\"\n\nscalability_considerations:\n  - \"Auto Scaling configured for ECS tasks (1-4 instances)\"\n  - \"Can easily add Multi-AZ RDS when needed\"\n  - \"CloudFront provides global edge caching\"\n  - \"ECS Fargate allows easy horizontal scaling\"\n  - \"Can add additional NAT Gateways for high availability\"\n\nsecurity_features:\n  - \"VPC with private/public subnet isolation\"\n  - \"Security groups with least privilege access\"\n  - \"RDS and ElastiCache encryption at rest\"\n  - \"ElastiCache in-transit encryption\"\n  - \"S3 bucket public access blocked\"\n  - \"CloudFront Origin Access Control\"\n  - \"ALB with HTTPS enforcement\"\n\nbudget_status:\n  estimated_monthly_cost: \"$127.14\"\n  budget_limit: \"$500.00\"\n  remaining_budget: \"$372.86\"\n  budget_utilization: \"25.4%\"\n  buffer_for_growth: \"74.6%\"\n```\n\nThis architecture provides a robust, scalable MVP solution well under your $500/month budget. The design includes cost optimizations like Fargate Spot instances, single NAT Gateway, and appropriate monitoring retention periods while maintaining security best practices and room for growth.",
+    "design_success": true,
+    "token_usage": {
+      "input": 156,
+      "output": 2878
+    },
+    "elapsed_seconds": 42.49761724472046,
+    "expected": {
+      "min_components": 5,
+      "required_services": [
+        "cloudfront",
+        "ecs",
+        "alb",
+        "rds",
+        "elasticache"
+      ],
+      "required_connections": 4,
+      "max_monthly_cost": 500
+    }
+  },
+  {
+    "tool": "cloudwright",
+    "case_id": "06",
+    "case_name": "HIPAA-Compliant Healthcare Patient Portal",
+    "design_success": true,
+    "spec": {
+      "name": "HIPAA-Compliant Patient Portal",
+      "version": 1,
+      "provider": "aws",
+      "region": "us-east-1",
+      "constraints": {
+        "compliance": [
+          "hipaa"
+        ],
+        "budget_monthly": 2500.0,
+        "regions": [
+          "us-east-1"
+        ],
+        "latency_ms": 0,
+        "throughput_rps": 0
+      },
+      "components": [
+        {
+          "id": "cloudfront_cdn",
+          "service": "cloudfront",
+          "provider": "aws",
+          "label": "CloudFront CDN",
+          "description": "Global content delivery with TLS 1.2+ encryption",
+          "tier": 0,
+          "config": {
+            "encryption_in_transit": true,
+            "waf_enabled": true,
+            "ssl_certificate": "TLS_1_2_minimum"
+          }
+        },
+        {
+          "id": "application_lb",
+          "service": "alb",
+          "provider": "aws",
+          "label": "Application Load Balancer",
+          "description": "Multi-AZ load balancing with SSL termination",
+          "tier": 1,
+          "config": {
+            "multi_az": true,
+            "ssl_termination": true,
+            "encryption_in_transit": true
+          }
+        },
+        {
+          "id": "patient_portal_app",
+          "service": "fargate",
+          "provider": "aws",
+          "label": "Patient Portal Application",
+          "description": "ECS Fargate containers for web application",
+          "tier": 2,
+          "config": {
+            "instance_type": "2 vCPU, 4GB RAM",
+            "auto_scaling": true,
+            "encryption": true,
+            "task_definition_encryption": true
+          }
+        },
+        {
+          "id": "api_backend",
+          "service": "fargate",
+          "provider": "aws",
+          "label": "API Backend Services",
+          "description": "ECS Fargate for REST API and business logic",
+          "tier": 2,
+          "config": {
+            "instance_type": "1 vCPU, 2GB RAM",
+            "auto_scaling": true,
+            "encryption": true,
+            "task_definition_encryption": true
+          }
+        },
+        {
+          "id": "cognito_auth",
+          "service": "cognito",
+          "provider": "aws",
+          "label": "Cognito User Pool",
+          "description": "Patient and staff authentication with MFA",
+          "tier": 2,
+          "config": {
+            "mfa_enabled": true,
+            "password_policy": "strong",
+            "encryption": true,
+            "baa_eligible": true
+          }
+        },
+        {
+          "id": "aurora_postgresql",
+          "service": "aurora",
+          "provider": "aws",
+          "label": "Aurora PostgreSQL",
+          "description": "PHI database with 7-year backup retention",
+          "tier": 3,
+          "config": {
+            "instance_type": "db.r6g.large",
+            "multi_az": true,
+            "encryption_at_rest": "AES-256",
+            "backup_retention": "7_years",
+            "automated_backups": true
+          }
+        },
+        {
+          "id": "s3_medical_imaging",
+          "service": "s3",
+          "provider": "aws",
+          "label": "S3 Medical Imaging",
+          "description": "Encrypted storage for medical images and documents",
+          "tier": 4,
+          "config": {
+            "encryption_at_rest": "AES-256",
+            "versioning": true,
+            "lifecycle_policy": "7_years",
+            "access_logging": true
+          }
+        },
+        {
+          "id": "cloudtrail_audit",
+          "service": "cloudtrail",
+          "provider": "aws",
+          "label": "CloudTrail Audit Logging",
+          "description": "Comprehensive PHI access audit trail",
+          "tier": 4,
+          "config": {
+            "encryption": true,
+            "log_file_validation": true,
+            "multi_region": true,
+            "data_events": true
+          }
+        },
+        {
+          "id": "cloudwatch_monitoring",
+          "service": "cloudwatch",
+          "provider": "aws",
+          "label": "CloudWatch Monitoring",
+          "description": "Security monitoring and alerting",
+          "tier": 4,
+          "config": {
+            "log_retention": "7_years",
+            "encryption": true,
+            "security_alerts": true
+          }
+        }
+      ],
+      "connections": [
+        {
+          "source": "cloudfront_cdn",
+          "target": "application_lb",
+          "label": "HTTPS/443",
+          "protocol": "HTTPS",
+          "port": 443
+        },
+        {
+          "source": "application_lb",
+          "target": "patient_portal_app",
+          "label": "HTTPS/8080",
+          "protocol": "HTTPS",
+          "port": 8080
+        },
+        {
+          "source": "patient_portal_app",
+          "target": "api_backend",
+          "label": "HTTPS/3000",
+          "protocol": "HTTPS",
+          "port": 3000
+        },
+        {
+          "source": "patient_portal_app",
+          "target": "cognito_auth",
+          "label": "OAuth/443",
+          "protocol": "HTTPS",
+          "port": 443
+        },
+        {
+          "source": "api_backend",
+          "target": "aurora_postgresql",
+          "label": "PostgreSQL/5432",
+          "protocol": "PostgreSQL",
+          "port": 5432
+        },
+        {
+          "source": "api_backend",
+          "target": "s3_medical_imaging",
+          "label": "HTTPS/443",
+          "protocol": "HTTPS",
+          "port": 443
+        },
+        {
+          "source": "cloudtrail_audit",
+          "target": "cloudwatch_monitoring",
+          "label": "Log Stream",
+          "protocol": "AWS_LOGS",
+          "port": 443
+        }
+      ]
+    },
+    "cost_success": true,
+    "cost_output": {
+      "estimate": {
+        "monthly_total": 191.08,
+        "breakdown": [
+          {
+            "component_id": "cloudfront_cdn",
+            "service": "cloudfront",
+            "monthly": 8.5,
+            "hourly": 0.0116,
+            "notes": ""
+          },
+          {
+            "component_id": "application_lb",
+            "service": "alb",
+            "monthly": 16.43,
+            "hourly": 0.0225,
+            "notes": "Multi-AZ"
+          },
+          {
+            "component_id": "patient_portal_app",
+            "service": "fargate",
+            "monthly": 35.0,
+            "hourly": 0.0479,
+            "notes": "2 vCPU, 4GB RAM"
+          },
+          {
+            "component_id": "api_backend",
+            "service": "fargate",
+            "monthly": 35.0,
+            "hourly": 0.0479,
+            "notes": "1 vCPU, 2GB RAM"
+          },
+          {
+            "component_id": "cognito_auth",
+            "service": "cognito",
+            "monthly": 0.0,
+            "hourly": null,
+            "notes": ""
+          },
+          {
+            "component_id": "aurora_postgresql",
+            "service": "aurora",
+            "monthly": 75.0,
+            "hourly": 0.1027,
+            "notes": "db.r6g.large, Multi-AZ"
+          },
+          {
+            "component_id": "s3_medical_imaging",
+            "service": "s3",
+            "monthly": 1.15,
+            "hourly": 0.0016,
+            "notes": ""
+          },
+          {
+            "component_id": "cloudtrail_audit",
+            "service": "cloudtrail",
+            "monthly": 10.0,
+            "hourly": 0.0137,
+            "notes": ""
+          },
+          {
+            "component_id": "cloudwatch_monitoring",
+            "service": "cloudwatch",
+            "monthly": 10.0,
+            "hourly": 0.0137,
+            "notes": ""
+          }
+        ],
+        "data_transfer_monthly": 0.0,
+        "currency": "USD",
+        "as_of": "2026-02-28"
+      }
+    },
+    "validate_success": true,
+    "validate_output": {
+      "results": [
+        {
+          "framework": "HIPAA",
+          "passed": false,
+          "score": 0.8,
+          "checks": [
+            {
+              "name": "encryption_at_rest",
+              "category": "data_protection",
+              "passed": false,
+              "severity": "critical",
+              "detail": "Missing encryption on: aurora_postgresql, s3_medical_imaging",
+              "recommendation": "Set encryption=true in config for all RDS, S3, DynamoDB, and cache components."
+            },
+            {
+              "name": "encryption_in_transit",
+              "category": "data_protection",
+              "passed": true,
+              "severity": "critical",
+              "detail": "All connections use encrypted protocols",
+              "recommendation": "Use HTTPS or TLS for all connections. Avoid plain HTTP or FTP."
+            },
+            {
+              "name": "audit_logging",
+              "category": "monitoring",
+              "passed": true,
+              "severity": "high",
+              "detail": "Audit logging component present",
+              "recommendation": "Add CloudWatch + CloudTrail (AWS), Cloud Logging (GCP), or Azure Monitor."
+            },
+            {
+              "name": "access_control",
+              "category": "identity",
+              "passed": true,
+              "severity": "high",
+              "detail": "IAM/auth component present",
+              "recommendation": "Add Cognito/IAM (AWS), Firebase Auth (GCP), or Azure AD."
+            },
+            {
+              "name": "baa_eligible",
+              "category": "compliance",
+              "passed": true,
+              "severity": "high",
+              "detail": "All services are BAA-eligible",
+              "recommendation": "Replace non-BAA services or confirm BAA coverage with your provider."
+            }
+          ]
+        }
+      ]
+    },
+    "export_success": true,
+    "export_file_count": 1,
+    "elapsed_seconds": 17.573648929595947,
+    "expected": {
+      "min_components": 6,
+      "required_services": [
+        "rds",
+        "s3",
+        "ecs",
+        "cloudtrail",
+        "cognito",
+        "kms"
+      ],
+      "required_connections": 5,
+      "max_monthly_cost": 2500
+    }
+  },
+  {
+    "tool": "claude_raw",
+    "case_id": "06",
+    "case_name": "HIPAA-Compliant Healthcare Patient Portal",
+    "raw_text": "```yaml\n# HIPAA-Compliant Patient Portal Architecture for Regional Hospital Network\n\narchitecture:\n  name: \"HIPAA-Compliant Patient Portal\"\n  description: \"Secure patient portal for medical records, appointments, and messaging\"\n  compliance: \"HIPAA\"\n  \ncomponents:\n  # Network Layer\n  vpc:\n    service: \"AWS VPC\"\n    type: \"Virtual Private Cloud\"\n    configuration:\n      - \"Multi-AZ deployment across 3 availability zones\"\n      - \"Private and public subnets\"\n      - \"CIDR: 10.0.0.0/16\"\n    estimated_cost: \"$50/month\"\n\n  # Load Balancer\n  application_load_balancer:\n    service: \"AWS Application Load Balancer\"\n    type: \"Load Balancer\"\n    configuration:\n      - \"SSL/TLS termination with ACM certificates\"\n      - \"WAF integration for web application security\"\n      - \"Health checks for ECS targets\"\n    estimated_cost: \"$25/month\"\n\n  # Web Application Firewall\n  waf:\n    service: \"AWS WAF\"\n    type: \"Web Application Firewall\"\n    configuration:\n      - \"OWASP Top 10 protection rules\"\n      - \"Rate limiting\"\n      - \"IP whitelisting/blacklisting\"\n    estimated_cost: \"$15/month\"\n\n  # Application Tier\n  ecs_fargate:\n    service: \"AWS ECS Fargate\"\n    type: \"Container Orchestration\"\n    configuration:\n      - \"Auto-scaling based on CPU/memory utilization\"\n      - \"Service discovery enabled\"\n      - \"Task definition with security groups\"\n      - \"Container insights enabled\"\n    instances:\n      - type: \"Fargate vCPU: 2, Memory: 4GB\"\n      - count: \"6 tasks (2 per AZ)\"\n    estimated_cost: \"$350/month\"\n\n  # Authentication & Authorization\n  cognito:\n    service: \"AWS Cognito\"\n    type: \"Identity Management\"\n    configuration:\n      - \"User pools for patient authentication\"\n      - \"Identity pools for temporary AWS credentials\"\n      - \"MFA required for all staff accounts\"\n      - \"SAML/OIDC integration support\"\n      - \"Password policies compliant with HIPAA\"\n    estimated_cost: \"$40/month\"\n\n  # Database Layer\n  rds_aurora_postgresql:\n    service: \"AWS RDS Aurora PostgreSQL\"\n    type: \"Managed Database\"\n    configuration:\n      - \"Multi-AZ deployment\"\n      - \"Encryption at rest with AES-256 (KMS)\"\n      - \"Encryption in transit with TLS 1.2+\"\n      - \"Automated backups retained for 7 years\"\n      - \"Point-in-time recovery enabled\"\n      - \"Performance insights enabled\"\n    instances:\n      - type: \"db.r6g.large\"\n      - count: \"2 (writer + reader)\"\n    storage: \"500GB initial, auto-scaling enabled\"\n    estimated_cost: \"$480/month\"\n\n  # File Storage\n  s3_medical_imaging:\n    service: \"AWS S3\"\n    type: \"Object Storage\"\n    configuration:\n      - \"Server-side encryption with KMS (AES-256)\"\n      - \"Versioning enabled\"\n      - \"MFA delete protection\"\n      - \"Access logging enabled\"\n      - \"Lifecycle policies for archival\"\n    storage: \"2TB medical imaging data\"\n    estimated_cost: \"$50/month\"\n\n  # Content Delivery\n  cloudfront:\n    service: \"AWS CloudFront\"\n    type: \"CDN\"\n    configuration:\n      - \"HTTPS only (TLS 1.2+)\"\n      - \"Origin access control for S3\"\n      - \"Custom SSL certificate\"\n      - \"Geo-restriction capabilities\"\n    estimated_cost: \"$35/month\"\n\n  # Key Management\n  kms:\n    service: \"AWS KMS\"\n    type: \"Key Management Service\"\n    configuration:\n      - \"Customer-managed keys for PHI data\"\n      - \"Key rotation enabled (annual)\"\n      - \"Cross-service encryption key sharing\"\n      - \"CloudTrail integration for key usage logging\"\n    estimated_cost: \"$10/month\"\n\n  # Caching Layer\n  elasticache_redis:\n    service: \"AWS ElastiCache for Redis\"\n    type: \"In-Memory Cache\"\n    configuration:\n      - \"Encryption at rest and in transit\"\n      - \"Multi-AZ with automatic failover\"\n      - \"Backup and restore enabled\"\n    instances:\n      - type: \"cache.r6g.large\"\n      - count: \"2 (primary + replica)\"\n    estimated_cost: \"$160/month\"\n\n  # Message Queue\n  sqs:\n    service: \"AWS SQS\"\n    type: \"Message Queue\"\n    configuration:\n      - \"Server-side encryption with KMS\"\n      - \"Dead letter queues configured\"\n      - \"FIFO queues for critical operations\"\n    estimated_cost: \"$10/month\"\n\n  # Notification Service\n  sns:\n    service: \"AWS SNS\"\n    type: \"Notification Service\"\n    configuration:\n      - \"Encryption at rest and in transit\"\n      - \"Message filtering\"\n      - \"Email, SMS, and mobile push notifications\"\n    estimated_cost: \"$5/month\"\n\n  # Monitoring & Logging\n  cloudtrail:\n    service: \"AWS CloudTrail\"\n    type: \"Audit Logging\"\n    configuration:\n      - \"Data events logging for S3 and RDS\"\n      - \"Management events logging\"\n      - \"Log file integrity validation\"\n      - \"Multi-region trail\"\n      - \"Integration with CloudWatch Logs\"\n    estimated_cost: \"$25/month\"\n\n  cloudwatch:\n    service: \"AWS CloudWatch\"\n    type: \"Monitoring & Alerting\"\n    configuration:\n      - \"Custom metrics for application monitoring\"\n      - \"Log aggregation from all services\"\n      - \"Alarms for security and performance\"\n      - \"Dashboard for operational visibility\"\n    estimated_cost: \"$75/month\"\n\n  # Security Services\n  config:\n    service: \"AWS Config\"\n    type: \"Configuration Compliance\"\n    configuration:\n      - \"HIPAA compliance rules\"\n      - \"Resource configuration tracking\"\n      - \"Compliance dashboard\"\n    estimated_cost: \"$15/month\"\n\n  inspector:\n    service: \"AWS Inspector\"\n    type: \"Vulnerability Assessment\"\n    configuration:\n      - \"Container image scanning\"\n      - \"Runtime vulnerability assessment\"\n      - \"Integration with Security Hub\"\n    estimated_cost: \"$20/month\"\n\n  security_hub:\n    service: \"AWS Security Hub\"\n    type: \"Security Posture Management\"\n    configuration:\n      - \"CIS AWS Foundations Benchmark\"\n      - \"HIPAA security standards\"\n      - \"Centralized findings management\"\n    estimated_cost: \"$30/month\"\n\n  # Backup Service\n  backup:\n    service: \"AWS Backup\"\n    type: \"Centralized Backup\"\n    configuration:\n      - \"Cross-service backup policies\"\n      - \"7-year retention for RDS\"\n      - \"Encryption in transit and at rest\"\n      - \"Backup compliance reporting\"\n    estimated_cost: \"$200/month\"\n\nconnections:\n  - from: \"Internet\"\n    to: \"CloudFront\"\n    protocol: \"HTTPS/TLS 1.2+\"\n    \n  - from: \"CloudFront\"\n    to: \"Application Load Balancer\"\n    protocol: \"HTTPS/TLS 1.2+\"\n    \n  - from: \"Application Load Balancer\"\n    to: \"ECS Fargate\"\n    protocol: \"HTTPS/TLS 1.2+\"\n    \n  - from: \"ECS Fargate\"\n    to: \"RDS Aurora PostgreSQL\"\n    protocol: \"PostgreSQL/TLS 1.2+\"\n    \n  - from: \"ECS Fargate\"\n    to: \"S3\"\n    protocol: \"HTTPS/TLS 1.2+\"\n    \n  - from: \"ECS Fargate\"\n    to: \"ElastiCache Redis\"\n    protocol: \"Redis/TLS\"\n    \n  - from: \"ECS Fargate\"\n    to: \"Cognito\"\n    protocol: \"HTTPS/TLS 1.2+\"\n    \n  - from: \"All Services\"\n    to: \"CloudTrail\"\n    protocol: \"AWS API/TLS 1.2+\"\n    \n  - from: \"All Services\"\n    to: \"CloudWatch\"\n    protocol: \"AWS API/TLS 1.2+\"\n\nestimated_monthly_cost:\n  compute: \"$350\"\n  database: \"$480\"\n  storage: \"$50\"\n  networking: \"$125\"\n  security_compliance: \"$195\"\n  monitoring_backup: \"$300\"\n  total: \"$1,500/month\"\n  annual_estimate: \"$18,000\"\n\nhipaa_compliance_controls:\n  administrative_safeguards:\n    - \"Access Management via Cognito with MFA\"\n    - \"Audit logs via CloudTrail for all PHI access\"\n    - \"Security incident procedures via CloudWatch alarms\"\n    - \"Workforce training tracking capabilities\"\n    \n  physical_safeguards:\n    - \"AWS data center physical security (inherited)\"\n    - \"Workstation access controls via VPC security groups\"\n    - \"Media controls via S3 access policies and encryption\"\n    \n  technical_safeguards:\n    - \"Access control via Cognito user pools and IAM\"\n    - \"Audit controls via CloudTrail comprehensive logging\"\n    - \"Integrity controls via S3 versioning and checksums\"\n    - \"Transmission security via TLS 1.2+ encryption\"\n    \n  encryption_requirements:\n    - \"Data at rest: AES-256 encryption for RDS, S3, ElastiCache\"\n    - \"Data in transit: TLS 1.2+ for all communications\"\n    - \"Key management via AWS KMS with customer-managed keys\"\n    \n  backup_recovery:\n    - \"Automated RDS backups with 7-year retention\"\n    - \"S3 versioning and lifecycle policies\"\n    - \"Cross-region backup replication capability\"\n    - \"Point-in-time recovery for database\"\n\naws_baa_coverage:\n  - \"All selected AWS services are covered under AWS Business Associate Agreement\"\n  - \"Services include: RDS, S3, ECS, Cognito, CloudTrail, CloudWatch, KMS, VPC\"\n  - \"AWS assumes HIPAA compliance responsibilities for covered services\"\n  - \"Customer responsible for proper configuration and access controls\"\n\nsecurity_features:\n  network_security:\n    - \"VPC with private subnets for sensitive resources\"\n    - \"Security groups with least-privilege access\"\n    - \"NACLs for additional network-level security\"\n    - \"WAF protection against web-based attacks\"\n    \n  data_protection:\n    - \"End-to-end encryption for all data paths\"\n    - \"Customer-managed KMS keys for PHI data\"\n    - \"S3 bucket policies preventing public access\"\n    - \"Database encryption with performance insights\"\n    \n  monitoring_alerting:\n    - \"Real-time CloudWatch alarms for security events\"\n    - \"CloudTrail logging with integrity validation\"\n    - \"AWS Config for compliance drift detection\"\n    - \"Security Hub for centralized security findings\"\n```\n\nThis architecture provides a comprehensive, HIPAA-compliant patient portal solution that meets all specified requirements including encryption standards, audit logging, MFA implementation, and 7-year backup retention. The estimated cost of $1,500/month provides enterprise-grade security and compliance capabilities suitable for a regional hospital network.",
+    "design_success": true,
+    "token_usage": {
+      "input": 211,
+      "output": 2855
+    },
+    "elapsed_seconds": 42.51916289329529,
+    "expected": {
+      "min_components": 6,
+      "required_services": [
+        "rds",
+        "s3",
+        "ecs",
+        "cloudtrail",
+        "cognito",
+        "kms"
+      ],
+      "required_connections": 5,
+      "max_monthly_cost": 2500
+    }
+  },
+  {
+    "tool": "cloudwright",
+    "case_id": "13",
+    "case_name": "Cross-Cloud Cost Comparison \u2014 3-Tier Web App",
+    "design_success": true,
+    "spec": {
+      "name": "Multi-Cloud Cost Comparison - 3-Tier Web Application",
+      "version": 1,
+      "provider": "aws",
+      "region": "us-east-1",
+      "constraints": {
+        "budget_monthly": 3000.0,
+        "regions": [
+          "us-east-1"
+        ],
+        "latency_ms": 0,
+        "throughput_rps": 0
+      },
+      "components": [
+        {
+          "id": "cloudfront_cdn",
+          "service": "cloudfront",
+          "provider": "aws",
+          "label": "AWS CloudFront CDN",
+          "description": "Static asset delivery, 10TB monthly egress",
+          "tier": 0,
+          "config": {
+            "encryption": true,
+            "auto_scaling": true
+          }
+        },
+        {
+          "id": "application_load_balancer",
+          "service": "alb",
+          "provider": "aws",
+          "label": "AWS Application Load Balancer",
+          "description": "Traffic distribution across app servers",
+          "tier": 1,
+          "config": {
+            "multi_az": true,
+            "encryption": true
+          }
+        },
+        {
+          "id": "ecs_app_servers",
+          "service": "ecs",
+          "provider": "aws",
+          "label": "AWS ECS Application Servers",
+          "description": "4x containers (4 vCPU, 16GB RAM each)",
+          "tier": 2,
+          "config": {
+            "instance_type": "c5.xlarge",
+            "multi_az": true,
+            "auto_scaling": true
+          }
+        },
+        {
+          "id": "rds_postgresql",
+          "service": "rds",
+          "provider": "aws",
+          "label": "AWS RDS PostgreSQL",
+          "description": "db.r5.xlarge Multi-AZ, 500GB storage",
+          "tier": 3,
+          "config": {
+            "instance_type": "db.r5.xlarge",
+            "multi_az": true,
+            "encryption": true
+          }
+        },
+        {
+          "id": "elasticache_redis",
+          "service": "elasticache",
+          "provider": "aws",
+          "label": "AWS ElastiCache Redis",
+          "description": "2x cache.r6g.large nodes (6GB each)",
+          "tier": 3,
+          "config": {
+            "multi_az": true,
+            "encryption": true
+          }
+        },
+        {
+          "id": "gcp_cdn",
+          "service": "cloud_cdn",
+          "provider": "gcp",
+          "label": "GCP Cloud CDN",
+          "description": "Static asset delivery, 10TB monthly egress",
+          "tier": 0,
+          "config": {
+            "encryption": true,
+            "auto_scaling": true
+          }
+        },
+        {
+          "id": "gcp_load_balancer",
+          "service": "cloud_load_balancing",
+          "provider": "gcp",
+          "label": "GCP Cloud Load Balancer",
+          "description": "HTTP(S) load balancing",
+          "tier": 1,
+          "config": {
+            "multi_az": true,
+            "encryption": true
+          }
+        },
+        {
+          "id": "cloud_run_apps",
+          "service": "cloud_run",
+          "provider": "gcp",
+          "label": "GCP Cloud Run Services",
+          "description": "4x instances (4 vCPU, 16GB RAM)",
+          "tier": 2,
+          "config": {
+            "auto_scaling": true
+          }
+        },
+        {
+          "id": "cloud_sql_postgresql",
+          "service": "cloud_sql",
+          "provider": "gcp",
+          "label": "GCP Cloud SQL PostgreSQL",
+          "description": "db-highmem-4 HA, 500GB SSD storage",
+          "tier": 3,
+          "config": {
+            "instance_type": "db-highmem-4",
+            "multi_az": true,
+            "encryption": true
+          }
+        },
+        {
+          "id": "memorystore_redis",
+          "service": "memorystore",
+          "provider": "gcp",
+          "label": "GCP Memorystore Redis",
+          "description": "12GB HA Redis cluster",
+          "tier": 3,
+          "config": {
+            "multi_az": true,
+            "encryption": true
+          }
+        },
+        {
+          "id": "azure_cdn",
+          "service": "azure_cdn",
+          "provider": "azure",
+          "label": "Azure CDN",
+          "description": "Static asset delivery, 10TB monthly egress",
+          "tier": 0,
+          "config": {
+            "encryption": true,
+            "auto_scaling": true
+          }
+        },
+        {
+          "id": "azure_load_balancer",
+          "service": "azure_lb",
+          "provider": "azure",
+          "label": "Azure Load Balancer",
+          "description": "Standard load balancer",
+          "tier": 1,
+          "config": {
+            "multi_az": true
+          }
+        }
+      ],
+      "connections": [
+        {
+          "source": "cloudfront_cdn",
+          "target": "application_load_balancer",
+          "label": "HTTPS/443",
+          "protocol": "HTTPS",
+          "port": 443
+        },
+        {
+          "source": "application_load_balancer",
+          "target": "ecs_app_servers",
+          "label": "HTTP/8080",
+          "protocol": "HTTP",
+          "port": 8080
+        },
+        {
+          "source": "ecs_app_servers",
+          "target": "rds_postgresql",
+          "label": "PostgreSQL/5432",
+          "protocol": "TCP",
+          "port": 5432
+        },
+        {
+          "source": "ecs_app_servers",
+          "target": "elasticache_redis",
+          "label": "Redis/6379",
+          "protocol": "TCP",
+          "port": 6379
+        },
+        {
+          "source": "gcp_cdn",
+          "target": "gcp_load_balancer",
+          "label": "HTTPS/443",
+          "protocol": "HTTPS",
+          "port": 443
+        },
+        {
+          "source": "gcp_load_balancer",
+          "target": "cloud_run_apps",
+          "label": "HTTP/8080",
+          "protocol": "HTTP",
+          "port": 8080
+        },
+        {
+          "source": "cloud_run_apps",
+          "target": "cloud_sql_postgresql",
+          "label": "PostgreSQL/5432",
+          "protocol": "TCP",
+          "port": 5432
+        },
+        {
+          "source": "cloud_run_apps",
+          "target": "memorystore_redis",
+          "label": "Redis/6379",
+          "protocol": "TCP",
+          "port": 6379
+        }
+      ]
+    },
+    "cost_success": true,
+    "cost_output": {
+      "estimate": {
+        "monthly_total": 266.39,
+        "breakdown": [
+          {
+            "component_id": "cloudfront_cdn",
+            "service": "cloudfront",
+            "monthly": 8.5,
+            "hourly": 0.0116,
+            "notes": ""
+          },
+          {
+            "component_id": "application_load_balancer",
+            "service": "alb",
+            "monthly": 16.43,
+            "hourly": 0.0225,
+            "notes": "Multi-AZ"
+          },
+          {
+            "component_id": "ecs_app_servers",
+            "service": "ecs",
+            "monthly": 0.0,
+            "hourly": null,
+            "notes": "c5.xlarge, Multi-AZ"
+          },
+          {
+            "component_id": "rds_postgresql",
+            "service": "rds",
+            "monthly": 50.0,
+            "hourly": 0.0685,
+            "notes": "db.r5.xlarge, Multi-AZ"
+          },
+          {
+            "component_id": "elasticache_redis",
+            "service": "elasticache",
+            "monthly": 47.0,
+            "hourly": 0.0644,
+            "notes": "Multi-AZ"
+          },
+          {
+            "component_id": "gcp_cdn",
+            "service": "cloud_cdn",
+            "monthly": 8.5,
+            "hourly": 0.0116,
+            "notes": ""
+          },
+          {
+            "component_id": "gcp_load_balancer",
+            "service": "cloud_load_balancing",
+            "monthly": 18.26,
+            "hourly": 0.025,
+            "notes": "Multi-AZ"
+          },
+          {
+            "component_id": "cloud_run_apps",
+            "service": "cloud_run",
+            "monthly": 0.0,
+            "hourly": null,
+            "notes": ""
+          },
+          {
+            "component_id": "cloud_sql_postgresql",
+            "service": "cloud_sql",
+            "monthly": 45.0,
+            "hourly": 0.0616,
+            "notes": "db-highmem-4, Multi-AZ"
+          },
+          {
+            "component_id": "memorystore_redis",
+            "service": "memorystore",
+            "monthly": 44.0,
+            "hourly": 0.0603,
+            "notes": "Multi-AZ"
+          },
+          {
+            "component_id": "azure_cdn",
+            "service": "azure_cdn",
+            "monthly": 8.7,
+            "hourly": 0.0119,
+            "notes": ""
+          },
+          {
+            "component_id": "azure_load_balancer",
+            "service": "azure_lb",
+            "monthly": 20.0,
+            "hourly": 0.0274,
+            "notes": "Multi-AZ"
+          }
+        ],
+        "data_transfer_monthly": 0.0,
+        "currency": "USD",
+        "as_of": "2026-02-28"
+      }
+    },
+    "validate_success": true,
+    "validate_output": {
+      "results": [
+        {
+          "framework": "Well-Architected",
+          "passed": false,
+          "score": 0.5714285714285714,
+          "checks": [
+            {
+              "name": "multi_az",
+              "category": "reliability",
+              "passed": true,
+              "severity": "high",
+              "detail": "Multi-AZ enabled on one or more components",
+              "recommendation": "Enable multi_az=true on RDS, caches, and other stateful components."
+            },
+            {
+              "name": "auto_scaling",
+              "category": "reliability",
+              "passed": true,
+              "severity": "medium",
+              "detail": "Auto-scaling configured on compute",
+              "recommendation": "Set auto_scaling=true on EC2/ECS/GKE/AKS components."
+            },
+            {
+              "name": "backup",
+              "category": "reliability",
+              "passed": false,
+              "severity": "medium",
+              "detail": "No backup configuration on data stores",
+              "recommendation": "Enable automated backups on RDS, DynamoDB, Cloud SQL, and Cosmos DB."
+            },
+            {
+              "name": "monitoring",
+              "category": "operations",
+              "passed": false,
+              "severity": "high",
+              "detail": "No monitoring service detected",
+              "recommendation": "Add CloudWatch, Cloud Logging, or Azure Monitor."
+            },
+            {
+              "name": "no_single_point_of_failure",
+              "category": "reliability",
+              "passed": true,
+              "severity": "high",
+              "detail": "Load balancer and replicated DB present",
+              "recommendation": "Place a load balancer in front of compute and enable multi-AZ or read replicas on databases."
+            },
+            {
+              "name": "cost_optimization",
+              "category": "cost",
+              "passed": true,
+              "severity": "low",
+              "detail": "No obviously oversized instances detected",
+              "recommendation": "Right-size instances based on actual workload metrics. Use Savings Plans or Reserved Instances."
+            },
+            {
+              "name": "security",
+              "category": "security",
+              "passed": false,
+              "severity": "high",
+              "detail": "Missing: WAF, auth/IAM",
+              "recommendation": "Add WAF, IAM/auth service, and enable encryption on all data stores."
+            }
+          ]
+        }
+      ]
+    },
+    "export_success": true,
+    "export_file_count": 1,
+    "elapsed_seconds": 20.42154026031494,
+    "expected": {
+      "min_components": 5,
+      "required_services": [
+        "ecs",
+        "rds",
+        "elasticache",
+        "alb",
+        "cloudfront"
+      ],
+      "required_connections": 4,
+      "max_monthly_cost": 3000
+    }
+  },
+  {
+    "tool": "claude_raw",
+    "case_id": "13",
+    "case_name": "Cross-Cloud Cost Comparison \u2014 3-Tier Web App",
+    "raw_text": "I'll provide a comprehensive cost comparison for running the 3-tier web application across AWS, GCP, and Azure with equivalent managed services.\n\n```yaml\ncloud_cost_comparison:\n  application_requirements:\n    compute: \"4 application servers (4 vCPU, 16GB RAM)\"\n    database: \"Managed PostgreSQL (4 vCPU, 16GB RAM, 500GB storage, Multi-AZ)\"\n    cache: \"Redis cache (2 nodes, 6GB each)\"\n    load_balancer: \"Application load balancer\"\n    egress: \"10TB monthly bandwidth\"\n    cdn: \"CDN for static assets\"\n\n  aws_architecture:\n    components:\n      - name: \"ECS Fargate\"\n        type: \"Container Service\"\n        specs: \"4 tasks, 4 vCPU, 16GB RAM each\"\n        monthly_cost: 1180.80\n        \n      - name: \"RDS PostgreSQL Multi-AZ\"\n        type: \"Managed Database\"\n        specs: \"db.r6g.xlarge, 500GB GP2 storage\"\n        monthly_cost: 814.20\n        \n      - name: \"ElastiCache Redis\"\n        type: \"Managed Cache\"\n        specs: \"2x cache.r6g.large nodes\"\n        monthly_cost: 302.40\n        \n      - name: \"Application Load Balancer\"\n        type: \"Load Balancer\"\n        specs: \"ALB with 10TB processed data\"\n        monthly_cost: 27.50\n        \n      - name: \"Data Transfer Out\"\n        type: \"Egress Bandwidth\"\n        specs: \"10TB monthly\"\n        monthly_cost: 922.00\n        \n      - name: \"CloudFront CDN\"\n        type: \"Content Delivery Network\"\n        specs: \"1TB data transfer, 10M requests\"\n        monthly_cost: 85.00\n        \n    total_monthly_cost: 3331.90\n\n  gcp_architecture:\n    components:\n      - name: \"Cloud Run\"\n        type: \"Container Service\"\n        specs: \"4 services, 4 vCPU, 16GB RAM each\"\n        monthly_cost: 944.64\n        \n      - name: \"Cloud SQL PostgreSQL HA\"\n        type: \"Managed Database\"\n        specs: \"db-custom-4-16384, 500GB SSD\"\n        monthly_cost: 756.50\n        \n      - name: \"Memorystore Redis\"\n        type: \"Managed Cache\"\n        specs: \"2x 6GB standard tier instances\"\n        monthly_cost: 345.60\n        \n      - name: \"Cloud Load Balancing\"\n        type: \"Load Balancer\"\n        specs: \"Global LB with 10TB processed\"\n        monthly_cost: 25.00\n        \n      - name: \"Data Transfer Out\"\n        type: \"Egress Bandwidth\"\n        specs: \"10TB monthly\"\n        monthly_cost: 1200.00\n        \n      - name: \"Cloud CDN\"\n        type: \"Content Delivery Network\"\n        specs: \"1TB cache fill, 10M requests\"\n        monthly_cost: 80.00\n        \n    total_monthly_cost: 3351.74\n\n  azure_architecture:\n    components:\n      - name: \"Azure Kubernetes Service\"\n        type: \"Container Service\"\n        specs: \"4x Standard_D4s_v4 nodes\"\n        monthly_cost: 1108.80\n        \n      - name: \"Azure Database for PostgreSQL Flexible\"\n        type: \"Managed Database\"\n        specs: \"General Purpose, 4 vCPU, 16GB, 500GB, HA\"\n        monthly_cost: 692.40\n        \n      - name: \"Azure Cache for Redis\"\n        type: \"Managed Cache\"\n        specs: \"2x Standard C3 (6GB) instances\"\n        monthly_cost: 378.00\n        \n      - name: \"Azure Load Balancer\"\n        type: \"Load Balancer\"\n        specs: \"Standard LB with 10TB processed\"\n        monthly_cost: 22.50\n        \n      - name: \"Data Transfer Out\"\n        type: \"Egress Bandwidth\"\n        specs: \"10TB monthly\"\n        monthly_cost: 870.00\n        \n      - name: \"Azure CDN\"\n        type: \"Content Delivery Network\"\n        specs: \"Standard Verizon, 1TB transfer\"\n        monthly_cost: 83.00\n        \n    total_monthly_cost: 3154.70\n\n  cost_comparison_summary:\n    cheapest_overall: \"Azure - $3,154.70\"\n    \n    component_winners:\n      compute:\n        winner: \"GCP Cloud Run\"\n        cost: 944.64\n        reason: \"Pay-per-request pricing model\"\n        \n      database:\n        winner: \"Azure Database for PostgreSQL\"\n        cost: 692.40\n        reason: \"Competitive pricing for managed PostgreSQL\"\n        \n      cache:\n        winner: \"AWS ElastiCache\"\n        cost: 302.40\n        reason: \"Most cost-effective Redis pricing\"\n        \n      load_balancer:\n        winner: \"Azure Load Balancer\"\n        cost: 22.50\n        reason: \"Lowest base pricing\"\n        \n      egress_bandwidth:\n        winner: \"Azure Data Transfer\"\n        cost: 870.00\n        reason: \"Best bandwidth pricing tiers\"\n        \n      cdn:\n        winner: \"GCP Cloud CDN\"\n        cost: 80.00\n        reason: \"Competitive CDN pricing\"\n\n  cost_breakdown_percentage:\n    aws:\n      compute: 35.4%\n      database: 24.4%\n      cache: 9.1%\n      load_balancer: 0.8%\n      egress: 27.7%\n      cdn: 2.6%\n      \n    gcp:\n      compute: 28.2%\n      database: 22.6%\n      cache: 10.3%\n      load_balancer: 0.7%\n      egress: 35.8%\n      cdn: 2.4%\n      \n    azure:\n      compute: 35.1%\n      database: 21.9%\n      cache: 12.0%\n      load_balancer: 0.7%\n      egress: 27.6%\n      cdn: 2.6%\n\n  key_insights:\n    - \"Azure offers the lowest total cost at $3,154.70\"\n    - \"GCP has highest egress costs significantly impacting total\"\n    - \"AWS ElastiCache provides best Redis pricing\"\n    - \"GCP Cloud Run offers most cost-effective compute model\"\n    - \"Egress bandwidth represents 28-36% of total costs across all clouds\"\n    - \"Multi-cloud strategy could optimize costs by component\"\n\n  recommendations:\n    cost_optimization:\n      - \"Consider Azure for overall lowest cost\"\n      - \"Use reserved instances/committed use discounts for 20-30% savings\"\n      - \"Implement CDN caching to reduce egress costs\"\n      - \"Monitor and right-size instances based on actual usage\"\n      - \"Consider spot/preemptible instances for non-critical workloads\"\n```\n\n## Summary\n\n**Winner: Azure at $3,154.70/month** - 5.3% cheaper than AWS and 6.2% cheaper than GCP.\n\n**Key Cost Drivers:**\n1. **Egress bandwidth** (27-36% of total cost) - Azure has the best rates\n2. **Compute resources** (28-35% of total cost) - GCP Cloud Run is most efficient\n3. **Database** (22-24% of total cost) - Azure PostgreSQL offers best value\n\n**Best Practices:**\n- Use CDN aggressively to minimize egress costs\n- Consider reserved capacity for predictable workloads\n- Monitor actual resource utilization for right-sizing opportunities\n- Evaluate multi-cloud approach for component-specific optimization",
+    "design_success": true,
+    "token_usage": {
+      "input": 265,
+      "output": 1939
+    },
+    "elapsed_seconds": 28.882590293884277,
+    "expected": {
+      "min_components": 5,
+      "required_services": [
+        "ecs",
+        "rds",
+        "elasticache",
+        "alb",
+        "cloudfront"
+      ],
+      "required_connections": 4,
+      "max_monthly_cost": 3000
+    }
+  },
+  {
+    "tool": "cloudwright",
+    "case_id": "21",
+    "case_name": "EKS Microservices Platform on AWS",
+    "design_success": true,
+    "spec": {
+      "name": "Production EKS Microservices Platform",
+      "version": 1,
+      "provider": "aws",
+      "region": "us-east-1",
+      "constraints": {
+        "budget_monthly": 6000.0,
+        "regions": [
+          "us-east-1"
+        ],
+        "latency_ms": 0,
+        "throughput_rps": 0
+      },
+      "components": [
+        {
+          "id": "cloudfront_cdn",
+          "service": "cloudfront",
+          "provider": "aws",
+          "label": "Global CDN",
+          "description": "Content delivery and edge caching",
+          "tier": 0,
+          "config": {
+            "encryption": true
+          }
+        },
+        {
+          "id": "application_lb",
+          "service": "alb",
+          "provider": "aws",
+          "label": "Application Load Balancer",
+          "description": "Multi-AZ ingress with SSL termination",
+          "tier": 1,
+          "config": {
+            "multi_az": true,
+            "encryption": true
+          }
+        },
+        {
+          "id": "eks_cluster",
+          "service": "eks",
+          "provider": "aws",
+          "label": "EKS Cluster v1.29",
+          "description": "Managed node groups 3x m5.xlarge per AZ",
+          "tier": 2,
+          "config": {
+            "multi_az": true,
+            "encryption": true,
+            "auto_scaling": true
+          }
+        },
+        {
+          "id": "ecr_registry",
+          "service": "ecr",
+          "provider": "aws",
+          "label": "Container Registry",
+          "description": "Private registry for microservice images",
+          "tier": 2,
+          "config": {
+            "encryption": true
+          }
+        },
+        {
+          "id": "aurora_postgres",
+          "service": "aurora",
+          "provider": "aws",
+          "label": "Aurora PostgreSQL",
+          "description": "Multi-AZ cluster for stateful services",
+          "tier": 3,
+          "config": {
+            "multi_az": true,
+            "encryption": true
+          }
+        },
+        {
+          "id": "dynamodb_catalog",
+          "service": "dynamodb",
+          "provider": "aws",
+          "label": "DynamoDB Tables",
+          "description": "High-throughput catalog and cart services",
+          "tier": 3,
+          "config": {
+            "encryption": true,
+            "auto_scaling": true
+          }
+        },
+        {
+          "id": "elasticache_redis",
+          "service": "elasticache",
+          "provider": "aws",
+          "label": "ElastiCache Redis",
+          "description": "Sessions and rate limiting cache",
+          "tier": 3,
+          "config": {
+            "multi_az": true,
+            "encryption": true
+          }
+        },
+        {
+          "id": "cloudwatch_insights",
+          "service": "cloudwatch",
+          "provider": "aws",
+          "label": "Container Insights",
+          "description": "Observability and monitoring",
+          "tier": 4,
+          "config": {
+            "encryption": true
+          }
+        }
+      ],
+      "connections": [
+        {
+          "source": "cloudfront_cdn",
+          "target": "application_lb",
+          "label": "HTTPS/443",
+          "protocol": "HTTPS",
+          "port": 443
+        },
+        {
+          "source": "application_lb",
+          "target": "eks_cluster",
+          "label": "Service Mesh",
+          "protocol": "HTTP",
+          "port": 80
+        },
+        {
+          "source": "eks_cluster",
+          "target": "ecr_registry",
+          "label": "Image Pull",
+          "protocol": "HTTPS",
+          "port": 443
+        },
+        {
+          "source": "eks_cluster",
+          "target": "aurora_postgres",
+          "label": "SQL/5432",
+          "protocol": "TCP",
+          "port": 5432
+        },
+        {
+          "source": "eks_cluster",
+          "target": "dynamodb_catalog",
+          "label": "NoSQL API",
+          "protocol": "HTTPS",
+          "port": 443
+        },
+        {
+          "source": "eks_cluster",
+          "target": "elasticache_redis",
+          "label": "Redis/6379",
+          "protocol": "TCP",
+          "port": 6379
+        },
+        {
+          "source": "eks_cluster",
+          "target": "cloudwatch_insights",
+          "label": "Metrics/Logs",
+          "protocol": "HTTPS",
+          "port": 443
+        }
+      ]
+    },
+    "cost_success": true,
+    "cost_output": {
+      "estimate": {
+        "monthly_total": 264.93,
+        "breakdown": [
+          {
+            "component_id": "cloudfront_cdn",
+            "service": "cloudfront",
+            "monthly": 8.5,
+            "hourly": 0.0116,
+            "notes": ""
+          },
+          {
+            "component_id": "application_lb",
+            "service": "alb",
+            "monthly": 16.43,
+            "hourly": 0.0225,
+            "notes": "Multi-AZ"
+          },
+          {
+            "component_id": "eks_cluster",
+            "service": "eks",
+            "monthly": 73.0,
+            "hourly": 0.1,
+            "notes": "Multi-AZ"
+          },
+          {
+            "component_id": "ecr_registry",
+            "service": "ecr",
+            "monthly": 10.0,
+            "hourly": 0.0137,
+            "notes": ""
+          },
+          {
+            "component_id": "aurora_postgres",
+            "service": "aurora",
+            "monthly": 75.0,
+            "hourly": 0.1027,
+            "notes": "Multi-AZ"
+          },
+          {
+            "component_id": "dynamodb_catalog",
+            "service": "dynamodb",
+            "monthly": 25.0,
+            "hourly": 0.0342,
+            "notes": ""
+          },
+          {
+            "component_id": "elasticache_redis",
+            "service": "elasticache",
+            "monthly": 47.0,
+            "hourly": 0.0644,
+            "notes": "Multi-AZ"
+          },
+          {
+            "component_id": "cloudwatch_insights",
+            "service": "cloudwatch",
+            "monthly": 10.0,
+            "hourly": 0.0137,
+            "notes": ""
+          }
+        ],
+        "data_transfer_monthly": 0.0,
+        "currency": "USD",
+        "as_of": "2026-02-28"
+      }
+    },
+    "validate_success": true,
+    "validate_output": {
+      "results": [
+        {
+          "framework": "Well-Architected",
+          "passed": false,
+          "score": 0.7142857142857143,
+          "checks": [
+            {
+              "name": "multi_az",
+              "category": "reliability",
+              "passed": true,
+              "severity": "high",
+              "detail": "Multi-AZ enabled on one or more components",
+              "recommendation": "Enable multi_az=true on RDS, caches, and other stateful components."
+            },
+            {
+              "name": "auto_scaling",
+              "category": "reliability",
+              "passed": true,
+              "severity": "medium",
+              "detail": "Auto-scaling configured on compute",
+              "recommendation": "Set auto_scaling=true on EC2/ECS/GKE/AKS components."
+            },
+            {
+              "name": "backup",
+              "category": "reliability",
+              "passed": false,
+              "severity": "medium",
+              "detail": "No backup configuration on data stores",
+              "recommendation": "Enable automated backups on RDS, DynamoDB, Cloud SQL, and Cosmos DB."
+            },
+            {
+              "name": "monitoring",
+              "category": "operations",
+              "passed": true,
+              "severity": "high",
+              "detail": "Monitoring/logging component present",
+              "recommendation": "Add CloudWatch, Cloud Logging, or Azure Monitor."
+            },
+            {
+              "name": "no_single_point_of_failure",
+              "category": "reliability",
+              "passed": true,
+              "severity": "high",
+              "detail": "Load balancer and replicated DB present",
+              "recommendation": "Place a load balancer in front of compute and enable multi-AZ or read replicas on databases."
+            },
+            {
+              "name": "cost_optimization",
+              "category": "cost",
+              "passed": true,
+              "severity": "low",
+              "detail": "No obviously oversized instances detected",
+              "recommendation": "Right-size instances based on actual workload metrics. Use Savings Plans or Reserved Instances."
+            },
+            {
+              "name": "security",
+              "category": "security",
+              "passed": false,
+              "severity": "high",
+              "detail": "Missing: WAF, auth/IAM",
+              "recommendation": "Add WAF, IAM/auth service, and enable encryption on all data stores."
+            }
+          ]
+        }
+      ]
+    },
+    "export_success": true,
+    "export_file_count": 1,
+    "elapsed_seconds": 12.967319250106812,
+    "expected": {
+      "min_components": 7,
+      "required_services": [
+        "eks",
+        "rds",
+        "dynamodb",
+        "elasticache",
+        "ecr",
+        "alb"
+      ],
+      "required_connections": 6,
+      "max_monthly_cost": 6000
+    }
+  },
+  {
+    "tool": "claude_raw",
+    "case_id": "21",
+    "case_name": "EKS Microservices Platform on AWS",
+    "raw_text": "```yaml\ne-commerce_microservices_platform:\n  architecture_overview:\n    platform: AWS EKS\n    region: us-west-2\n    availability_zones: [us-west-2a, us-west-2b, us-west-2c]\n    services_count: 12\n    monthly_budget: $6000\n\n  components:\n    # EKS Cluster\n    eks_cluster:\n      service_type: AWS EKS\n      name: ecommerce-prod-cluster\n      version: \"1.29\"\n      endpoint_access: public_and_private\n      cluster_logging:\n        - api\n        - audit\n        - authenticator\n        - controllerManager\n        - scheduler\n      estimated_cost: $73\n\n    # Managed Node Groups\n    managed_node_groups:\n      primary_nodegroup:\n        service_type: EC2 Managed Node Group\n        instance_type: m5.xlarge\n        capacity:\n          desired: 9\n          min: 9\n          max: 27\n        distribution: 3_per_az\n        ami_type: AL2_x86_64\n        disk_size: 100GB\n        estimated_cost: $1944\n\n    # Networking\n    vpc:\n      service_type: Amazon VPC\n      cidr: 10.0.0.0/16\n      public_subnets: [10.0.1.0/24, 10.0.2.0/24, 10.0.3.0/24]\n      private_subnets: [10.0.10.0/24, 10.0.11.0/24, 10.0.12.0/24]\n      nat_gateways: 3\n      estimated_cost: $135\n\n    application_load_balancer:\n      service_type: AWS Application Load Balancer\n      type: internet-facing\n      listeners: [80, 443]\n      ssl_certificate: ACM\n      estimated_cost: $20\n\n    # Container Registry\n    ecr_repositories:\n      service_type: Amazon ECR\n      repositories:\n        - user-service\n        - product-catalog-service\n        - cart-service\n        - order-service\n        - payment-service\n        - inventory-service\n        - notification-service\n        - search-service\n        - recommendation-service\n        - review-service\n        - analytics-service\n        - admin-service\n      storage_gb: 500\n      estimated_cost: $50\n\n    # Databases\n    rds_aurora_postgresql:\n      service_type: Amazon RDS Aurora PostgreSQL\n      engine_version: \"15.4\"\n      cluster_configuration:\n        writer: db.r6g.large\n        readers: 2x db.r6g.large\n      storage: Aurora Serverless v2 scaling\n      multi_az: true\n      backup_retention: 7_days\n      services_using:\n        - user-service\n        - order-service\n        - payment-service\n        - inventory-service\n      estimated_cost: $850\n\n    dynamodb_tables:\n      service_type: Amazon DynamoDB\n      tables:\n        product_catalog:\n          billing_mode: on_demand\n          global_secondary_indexes: 3\n        shopping_cart:\n          billing_mode: on_demand\n          global_secondary_indexes: 2\n        user_sessions:\n          billing_mode: on_demand\n          ttl_enabled: true\n      estimated_read_capacity: 1000_RCU\n      estimated_write_capacity: 500_WCU\n      storage_gb: 100\n      estimated_cost: $420\n\n    # Caching\n    elasticache_redis:\n      service_type: Amazon ElastiCache Redis\n      engine_version: \"7.0\"\n      node_type: cache.r7g.large\n      cluster_mode: enabled\n      num_shards: 3\n      replicas_per_shard: 1\n      multi_az: true\n      use_cases:\n        - distributed_sessions\n        - rate_limiting\n        - application_cache\n      estimated_cost: $430\n\n    # Service Mesh\n    istio_service_mesh:\n      service_type: Istio (Self-managed)\n      version: \"1.20\"\n      components:\n        - istiod (control plane)\n        - istio-proxy (data plane sidecars)\n        - istio-gateway\n      features:\n        - traffic_management\n        - security_policies\n        - observability\n        - circuit_breaking\n      estimated_cost: $180\n\n    # Autoscaling\n    cluster_autoscaler:\n      service_type: Kubernetes Cluster Autoscaler\n      version: \"1.29.0\"\n      scaling_policy:\n        scale_down_delay: 10m\n        scale_down_unneeded_time: 10m\n      estimated_cost: $0\n\n    keda:\n      service_type: KEDA (Event-driven autoscaler)\n      version: \"2.12\"\n      scalers:\n        - prometheus\n        - redis\n        - sqs\n        - http\n      estimated_cost: $0\n\n    # Load Balancer Controller\n    aws_load_balancer_controller:\n      service_type: AWS Load Balancer Controller\n      version: \"2.7\"\n      features:\n        - alb_ingress\n        - nlb_service\n        - targetgroupbinding\n      estimated_cost: $0\n\n    # Observability\n    cloudwatch_container_insights:\n      service_type: Amazon CloudWatch Container Insights\n      features:\n        - cluster_metrics\n        - pod_metrics\n        - node_metrics\n        - application_logs\n      log_retention: 30_days\n      estimated_logs_gb: 200\n      estimated_cost: $185\n\n    prometheus_grafana:\n      service_type: Self-managed on EKS\n      components:\n        - prometheus_server\n        - grafana_dashboard\n        - alertmanager\n      storage: 100GB EBS\n      estimated_cost: $35\n\n    # Security\n    iam_roles_policies:\n      service_type: AWS IAM\n      roles:\n        - eks_cluster_role\n        - eks_node_group_role\n        - alb_controller_role\n        - cluster_autoscaler_role\n        - ebs_csi_driver_role\n      estimated_cost: $0\n\n    secrets_manager:\n      service_type: AWS Secrets Manager\n      secrets_count: 15\n      estimated_cost: $7\n\n  microservices_architecture:\n    frontend_services:\n      - api_gateway_service:\n          port: 80/443\n          replicas: 3\n          resources:\n            cpu: 500m\n            memory: 1Gi\n\n    core_services:\n      - user_service:\n          database: rds_aurora_postgresql\n          cache: elasticache_redis\n          replicas: 3\n      - product_catalog_service:\n          database: dynamodb\n          cache: elasticache_redis\n          replicas: 4\n      - cart_service:\n          database: dynamodb\n          cache: elasticache_redis\n          replicas: 3\n      - order_service:\n          database: rds_aurora_postgresql\n          queue: sqs\n          replicas: 3\n      - payment_service:\n          database: rds_aurora_postgresql\n          external_apis: stripe_paypal\n          replicas: 2\n      - inventory_service:\n          database: rds_aurora_postgresql\n          replicas: 2\n      - notification_service:\n          queue: sqs\n          external_apis: ses_sns\n          replicas: 2\n      - search_service:\n          database: dynamodb\n          search_engine: opensearch\n          replicas: 2\n      - recommendation_service:\n          database: dynamodb\n          ml_endpoint: sagemaker\n          replicas: 2\n      - review_service:\n          database: rds_aurora_postgresql\n          replicas: 2\n      - analytics_service:\n          database: rds_aurora_postgresql\n          data_warehouse: redshift\n          replicas: 2\n      - admin_service:\n          database: rds_aurora_postgresql\n          replicas: 2\n\n  connectivity:\n    external_traffic_flow:\n      - internet -> application_load_balancer -> istio_gateway -> microservices\n    \n    internal_communication:\n      - service_mesh: istio with mTLS\n      - service_discovery: kubernetes_dns\n      - load_balancing: istio_envoy_proxy\n    \n    data_flow:\n      - stateful_services -> rds_aurora_postgresql\n      - high_throughput_services -> dynamodb\n      - session_data -> elasticache_redis\n      - application_cache -> elasticache_redis\n\n  scaling_configuration:\n    horizontal_pod_autoscaler:\n      metrics: [cpu, memory, custom_metrics]\n      target_cpu: 70%\n      target_memory: 80%\n    \n    keda_scaling_triggers:\n      - prometheus_metrics\n      - redis_list_length\n      - sqs_queue_depth\n      - http_requests_rate\n    \n    cluster_autoscaler:\n      node_scaling: automatic based on pod scheduling\n      scale_up_threshold: resource_shortage\n      scale_down_threshold: node_underutilization\n\n  security_features:\n    - kubernetes_rbac\n    - istio_mutual_tls\n    - aws_iam_integration\n    - secrets_encryption_at_rest\n    - network_policies\n    - pod_security_standards\n\n  disaster_recovery:\n    - multi_az_deployment\n    - automated_backups\n    - cross_region_replication_optional\n    - infrastructure_as_code\n\n  estimated_monthly_costs:\n    eks_cluster: $73\n    managed_node_groups: $1944\n    vpc_nat_gateways: $135\n    application_load_balancer: $20\n    rds_aurora_postgresql: $850\n    dynamodb: $420\n    elasticache_redis: $430\n    ecr_storage: $50\n    cloudwatch_container_insights: $185\n    prometheus_grafana_storage: $35\n    secrets_manager: $7\n    istio_overhead: $180\n    data_transfer: $100\n    misc_services: $50\n    \n    total_estimated_cost: $4479\n    budget_remaining: $1521\n    budget_utilization: 74.7%\n\n  deployment_tools:\n    infrastructure: terraform_or_cdk\n    kubernetes_manifests: helm_charts\n    gitops: argocd_or_flux\n    ci_cd: github_actions_or_gitlab_ci\n\n  monitoring_alerts:\n    - cluster_health\n    - node_resource_utilization\n    - pod_restart_rates\n    - service_response_times\n    - database_performance\n    - cache_hit_rates\n    - error_rates_per_service\n```\n\nThis architecture provides a production-grade microservices platform that:\n\n1. **Meets all requirements** within the $6,000 budget (estimated $4,479/month)\n2. **Provides high availability** across 3 AZs\n3. **Scales automatically** at both cluster and pod levels\n4. **Includes comprehensive observability** with CloudWatch Container Insights\n5. **Implements service mesh** with Istio for secure inter-service communication\n6. **Uses appropriate data stores** (Aurora PostgreSQL for ACID compliance, DynamoDB for high throughput)\n7. **Includes caching** with Redis for sessions and rate limiting\n8. **Provides container registry** with ECR\n9. **Implements security best practices** with RBAC, mTLS, and IAM integration\n\nThe remaining budget ($1,521) provides buffer for:\n- Traffic growth\n- Additional monitoring tools\n- Backup storage\n- Development/staging environments\n- Support costs",
+    "design_success": true,
+    "token_usage": {
+      "input": 240,
+      "output": 2852
+    },
+    "elapsed_seconds": 45.8038969039917,
+    "expected": {
+      "min_components": 7,
+      "required_services": [
+        "eks",
+        "rds",
+        "dynamodb",
+        "elasticache",
+        "ecr",
+        "alb"
+      ],
+      "required_connections": 6,
+      "max_monthly_cost": 6000
+    }
+  },
+  {
+    "tool": "cloudwright",
+    "case_id": "41",
+    "case_name": "Contradictory Requirements \u2014 CAP Theorem Stress Test",
+    "design_success": true,
+    "spec": {
+      "name": "Global Configuration Service with Eventual Consistency",
+      "version": 1,
+      "provider": "aws",
+      "region": "us-east-1",
+      "constraints": {
+        "budget_monthly": 500.0,
+        "regions": [
+          "us-east-1"
+        ],
+        "latency_ms": 0,
+        "throughput_rps": 0
+      },
+      "components": [
+        {
+          "id": "route53_dns",
+          "service": "route53",
+          "provider": "aws",
+          "label": "Global DNS with Health Checks",
+          "description": "DNS routing with latency-based routing to nearest region",
+          "tier": 0,
+          "config": {
+            "multi_az": true,
+            "encryption": false,
+            "auto_scaling": false
+          }
+        },
+        {
+          "id": "api_gateway_primary",
+          "service": "api_gateway",
+          "provider": "aws",
+          "label": "Primary API Gateway",
+          "description": "REST API endpoint for configuration reads/writes",
+          "tier": 0,
+          "config": {
+            "multi_az": true,
+            "encryption": true,
+            "auto_scaling": true
+          }
+        },
+        {
+          "id": "lambda_config_handler",
+          "service": "lambda",
+          "provider": "aws",
+          "label": "Configuration Handler",
+          "description": "Processes config CRUD operations with conflict resolution",
+          "tier": 2,
+          "config": {
+            "multi_az": true,
+            "encryption": true,
+            "auto_scaling": true
+          }
+        },
+        {
+          "id": "dynamodb_global_table",
+          "service": "dynamodb",
+          "provider": "aws",
+          "label": "Global Configuration Store",
+          "description": "Multi-region DynamoDB with eventual consistency and local reads",
+          "tier": 3,
+          "config": {
+            "multi_az": true,
+            "encryption": true,
+            "auto_scaling": true
+          }
+        },
+        {
+          "id": "sns_change_notifications",
+          "service": "sns",
+          "provider": "aws",
+          "label": "Configuration Change Events",
+          "description": "Publishes config change events to subscribers",
+          "tier": 3,
+          "config": {
+            "multi_az": true,
+            "encryption": true,
+            "auto_scaling": true
+          }
+        },
+        {
+          "id": "cloudwatch_monitoring",
+          "service": "cloudwatch",
+          "provider": "aws",
+          "label": "System Monitoring",
+          "description": "Monitors latency, consistency lag, and system health",
+          "tier": 4,
+          "config": {
+            "multi_az": true,
+            "encryption": true,
+            "auto_scaling": false
+          }
+        }
+      ],
+      "connections": [
+        {
+          "source": "route53_dns",
+          "target": "api_gateway_primary",
+          "label": "DNS Resolution",
+          "protocol": "DNS",
+          "port": 53
+        },
+        {
+          "source": "api_gateway_primary",
+          "target": "lambda_config_handler",
+          "label": "API Requests",
+          "protocol": "HTTPS",
+          "port": 443
+        },
+        {
+          "source": "lambda_config_handler",
+          "target": "dynamodb_global_table",
+          "label": "Config Data Operations",
+          "protocol": "HTTPS",
+          "port": 443
+        },
+        {
+          "source": "lambda_config_handler",
+          "target": "sns_change_notifications",
+          "label": "Change Events",
+          "protocol": "HTTPS",
+          "port": 443
+        },
+        {
+          "source": "dynamodb_global_table",
+          "target": "cloudwatch_monitoring",
+          "label": "Metrics & Logs",
+          "protocol": "HTTPS",
+          "port": 443
+        },
+        {
+          "source": "lambda_config_handler",
+          "target": "cloudwatch_monitoring",
+          "label": "Function Metrics",
+          "protocol": "HTTPS",
+          "port": 443
+        }
+      ]
+    },
+    "cost_success": true,
+    "cost_output": {
+      "estimate": {
+        "monthly_total": 43.87,
+        "breakdown": [
+          {
+            "component_id": "route53_dns",
+            "service": "route53",
+            "monthly": 1.0,
+            "hourly": 0.0014,
+            "notes": "Multi-AZ"
+          },
+          {
+            "component_id": "api_gateway_primary",
+            "service": "api_gateway",
+            "monthly": 3.5,
+            "hourly": 0.0048,
+            "notes": "Multi-AZ"
+          },
+          {
+            "component_id": "lambda_config_handler",
+            "service": "lambda",
+            "monthly": 1.87,
+            "hourly": 0.0026,
+            "notes": "Multi-AZ"
+          },
+          {
+            "component_id": "dynamodb_global_table",
+            "service": "dynamodb",
+            "monthly": 25.0,
+            "hourly": 0.0342,
+            "notes": "Multi-AZ"
+          },
+          {
+            "component_id": "sns_change_notifications",
+            "service": "sns",
+            "monthly": 2.5,
+            "hourly": 0.0034,
+            "notes": "Multi-AZ"
+          },
+          {
+            "component_id": "cloudwatch_monitoring",
+            "service": "cloudwatch",
+            "monthly": 10.0,
+            "hourly": 0.0137,
+            "notes": "Multi-AZ"
+          }
+        ],
+        "data_transfer_monthly": 0.0,
+        "currency": "USD",
+        "as_of": "2026-02-28"
+      }
+    },
+    "validate_success": true,
+    "validate_output": {
+      "results": [
+        {
+          "framework": "Well-Architected",
+          "passed": false,
+          "score": 0.5714285714285714,
+          "checks": [
+            {
+              "name": "multi_az",
+              "category": "reliability",
+              "passed": true,
+              "severity": "high",
+              "detail": "Multi-AZ enabled on one or more components",
+              "recommendation": "Enable multi_az=true on RDS, caches, and other stateful components."
+            },
+            {
+              "name": "auto_scaling",
+              "category": "reliability",
+              "passed": true,
+              "severity": "medium",
+              "detail": "Auto-scaling configured on compute",
+              "recommendation": "Set auto_scaling=true on EC2/ECS/GKE/AKS components."
+            },
+            {
+              "name": "backup",
+              "category": "reliability",
+              "passed": false,
+              "severity": "medium",
+              "detail": "No backup configuration on data stores",
+              "recommendation": "Enable automated backups on RDS, DynamoDB, Cloud SQL, and Cosmos DB."
+            },
+            {
+              "name": "monitoring",
+              "category": "operations",
+              "passed": true,
+              "severity": "high",
+              "detail": "Monitoring/logging component present",
+              "recommendation": "Add CloudWatch, Cloud Logging, or Azure Monitor."
+            },
+            {
+              "name": "no_single_point_of_failure",
+              "category": "reliability",
+              "passed": false,
+              "severity": "high",
+              "detail": "Single point of failure detected (no LB or unreplicated DB)",
+              "recommendation": "Place a load balancer in front of compute and enable multi-AZ or read replicas on databases."
+            },
+            {
+              "name": "cost_optimization",
+              "category": "cost",
+              "passed": true,
+              "severity": "low",
+              "detail": "No obviously oversized instances detected",
+              "recommendation": "Right-size instances based on actual workload metrics. Use Savings Plans or Reserved Instances."
+            },
+            {
+              "name": "security",
+              "category": "security",
+              "passed": false,
+              "severity": "high",
+              "detail": "Missing: WAF, auth/IAM",
+              "recommendation": "Add WAF, IAM/auth service, and enable encryption on all data stores."
+            }
+          ]
+        }
+      ]
+    },
+    "export_success": true,
+    "export_file_count": 1,
+    "elapsed_seconds": 12.87641716003418,
+    "expected": {
+      "min_components": 3,
+      "required_services": [
+        "dynamodb",
+        "cloudfront",
+        "lambda"
+      ],
+      "required_connections": 2,
+      "max_monthly_cost": 500
+    }
+  },
+  {
+    "tool": "claude_raw",
+    "case_id": "41",
+    "case_name": "Contradictory Requirements \u2014 CAP Theorem Stress Test",
+    "raw_text": "I need to address the fundamental impossibility in your requirements due to the CAP theorem, then provide a practical architecture.\n\n## CAP Theorem Analysis\n\n**Impossible Requirements:**\n- Strong Consistency + 100% Availability + Partition Tolerance cannot coexist\n- Sub-5ms global reads across 5 regions (physics limitation - speed of light)\n- $500/month budget for global distributed system\n\n**Recommended Relaxations:**\nFor a global configuration service, I recommend **eventual consistency** with strong consistency available when needed, prioritizing **Availability** and **Partition Tolerance**.\n\n## Optimized Architecture Design\n\n```yaml\narchitecture:\n  name: \"Global Configuration Service - CAP Optimized\"\n  \n  constraints_addressed:\n    cap_theorem_choice: \"AP (Availability + Partition Tolerance)\"\n    consistency_model: \"Eventual Consistency with Strong Consistency option\"\n    regions_optimized: 3  # Reduced from 5 for budget\n    expected_latency: \"20-50ms global, <5ms regional cache\"\n\ncomponents:\n  primary_storage:\n    service: \"AWS DynamoDB Global Tables\"\n    type: \"Managed NoSQL Database\"\n    configuration:\n      - multi_region_replication: true\n      - regions: [\"us-east-1\", \"eu-west-1\", \"ap-southeast-1\"]\n      - consistency: \"eventually_consistent_reads\"\n      - strong_consistency_available: \"on_demand\"\n      - capacity_mode: \"on_demand\"\n    monthly_cost: \"$150\"\n\n  caching_layer:\n    service: \"AWS ElastiCache Redis Global Datastore\"\n    type: \"Managed In-Memory Cache\"\n    configuration:\n      - global_replication: true\n      - regions: [\"us-east-1\", \"eu-west-1\", \"ap-southeast-1\"]\n      - node_type: \"cache.t3.micro\"\n      - read_replicas_per_region: 2\n    monthly_cost: \"$180\"\n\n  api_gateway:\n    service: \"AWS API Gateway\"\n    type: \"Managed API Service\"\n    configuration:\n      - regional_endpoints: 3\n      - caching_enabled: true\n      - throttling: \"1000_requests_per_second\"\n    monthly_cost: \"$50\"\n\n  edge_caching:\n    service: \"AWS CloudFront\"\n    type: \"Global CDN\"\n    configuration:\n      - global_distribution: true\n      - cache_ttl: \"300_seconds\"\n      - origin: \"api_gateway_endpoints\"\n    monthly_cost: \"$30\"\n\n  configuration_management:\n    service: \"AWS Systems Manager Parameter Store\"\n    type: \"Configuration Store\"\n    configuration:\n      - advanced_parameters: true\n      - encryption: \"kms_encrypted\"\n      - cross_region_replication: true\n    monthly_cost: \"$20\"\n\n  monitoring:\n    service: \"AWS CloudWatch\"\n    type: \"Monitoring and Alerting\"\n    configuration:\n      - custom_metrics: true\n      - cross_region_dashboards: true\n      - alarms_for_consistency_lag: true\n    monthly_cost: \"$40\"\n\nconnections:\n  - from: \"cloudfront\"\n    to: \"api_gateway\"\n    type: \"origin_request\"\n    \n  - from: \"api_gateway\"\n    to: \"elasticache_redis\"\n    type: \"cache_lookup\"\n    \n  - from: \"api_gateway\"\n    to: \"dynamodb\"\n    type: \"database_query\"\n    fallback: \"on_cache_miss\"\n    \n  - from: \"dynamodb\"\n    to: \"elasticache_redis\"\n    type: \"cache_invalidation\"\n    trigger: \"on_write\"\n\n  - from: \"parameter_store\"\n    to: \"dynamodb\"\n    type: \"configuration_sync\"\n    schedule: \"real_time\"\n\nconsistency_strategy:\n  reads:\n    local_cache: \"sub_5ms (eventual)\"\n    regional_cache: \"5_20ms (eventual)\"\n    strong_reads: \"50_200ms (when_required)\"\n    \n  writes:\n    acknowledgment: \"local_region_committed\"\n    propagation: \"async_to_other_regions\"\n    typical_propagation_time: \"100_500ms\"\n    \n  conflict_resolution:\n    strategy: \"last_writer_wins\"\n    timestamp_source: \"aws_global_clock\"\n\navailability_design:\n  target_sla: \"99.9% (8.76 hours downtime/year)\"\n  single_points_of_failure: \"none\"\n  failover_mechanisms:\n    - \"multi_az_deployment\"\n    - \"cross_region_failover\"\n    - \"health_check_routing\"\n  \npartition_tolerance:\n  network_partitions: \"graceful_degradation\"\n  regional_isolation: \"continue_serving_stale_data\"\n  healing_mechanism: \"automatic_sync_on_reconnect\"\n\nperformance_optimization:\n  read_path:\n    - \"CloudFront edge cache (fastest)\"\n    - \"Regional Redis cache (fast)\"\n    - \"Local DynamoDB read (medium)\"\n    - \"Cross-region DynamoDB read (slowest)\"\n    \n  write_path:\n    - \"Write to local DynamoDB\"\n    - \"Async propagation to other regions\"\n    - \"Cache invalidation signal\"\n\ntotal_monthly_cost: \"$470\"\n\ntrade_offs_made:\n  - consistency: \"Strong \u2192 Eventual (with strong option)\"\n  - regions: \"5 \u2192 3 (budget constraint)\"\n  - availability: \"100% \u2192 99.9% (realistic SLA)\"\n  - latency: \"Sub-5ms global \u2192 Sub-5ms regional\"\n\nuse_case_suitability:\n  ideal_for:\n    - \"Configuration management\"\n    - \"Feature flags\"\n    - \"Application settings\"\n    - \"User preferences\"\n  \n  not_suitable_for:\n    - \"Financial transactions\"\n    - \"Real-time gaming\"\n    - \"Critical safety systems\"\n\noperational_characteristics:\n  deployment_complexity: \"low\"\n  maintenance_overhead: \"minimal\"\n  scaling: \"automatic\"\n  backup_recovery: \"automated_by_aws\"\n```\n\n## Key Design Decisions\n\n1. **CAP Choice**: Chose AP (Availability + Partition Tolerance) over strict consistency\n2. **Consistency Model**: Eventual consistency with strong consistency available on-demand\n3. **Cost Optimization**: Reduced to 3 regions instead of 5\n4. **Latency Strategy**: Multi-tier caching for optimal read performance\n5. **Realistic SLA**: 99.9% instead of impossible 100% uptime\n\nThis architecture provides the best practical solution for a global configuration service within real-world constraints.",
+    "design_success": true,
+    "token_usage": {
+      "input": 213,
+      "output": 1635
+    },
+    "elapsed_seconds": 29.644423007965088,
+    "expected": {
+      "min_components": 3,
+      "required_services": [
+        "dynamodb",
+        "cloudfront",
+        "lambda"
+      ],
+      "required_connections": 2,
+      "max_monthly_cost": 500
+    }
+  }
+]

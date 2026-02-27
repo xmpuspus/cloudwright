@@ -1,0 +1,25 @@
+id: "49"
+name: "CDN Comparison — CloudFront vs Cloudflare vs Fastly"
+tier: 3
+category: "comparison"
+prompt: >
+  Compare CDN solutions for a high-traffic media website delivering 500TB/month globally with
+  content distributed to North America (60%), Europe (30%), and Asia-Pacific (10%). Evaluate
+  AWS CloudFront, Cloudflare Enterprise, and Fastly for: egress bandwidth cost (the dominant
+  cost at this scale), cache hit ratio and configurability, edge compute capabilities (Lambda@Edge
+  vs Cloudflare Workers vs Fastly Compute@Edge), real-time log streaming and analytics, DDoS
+  mitigation built-in vs addon, and WAF capabilities. Calculate the monthly bandwidth cost for
+  each provider at the stated volumes. Note that CloudFront has AWS data transfer pricing quirks
+  — the first 10TB from us-east-1 is different from ap-southeast-1. Recommend the most
+  cost-effective option for a media company already on AWS infrastructure.
+constraints:
+  provider: aws
+  budget_monthly: 15000
+  compliance: []
+  regions: ["us-east-1", "eu-west-1", "ap-southeast-1"]
+expected:
+  min_components: 2
+  required_services: ["cloudfront", "s3"]
+  required_connections: 1
+  max_monthly_cost: 15000
+tags: ["aws", "cdn", "cloudfront", "cloudflare", "fastly", "comparison", "media"]

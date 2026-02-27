@@ -1,0 +1,74 @@
+category: serverless
+services:
+  aws:
+    lambda:
+      name: "AWS Lambda"
+      terraform_types: ["aws_lambda_function", "aws_lambda_event_source_mapping"]
+      pricing_formula: per_request
+      default_config:
+        memory_mb: 512
+        avg_duration_ms: 200
+        monthly_requests: 1000000
+  gcp:
+    cloud_functions:
+      name: "Google Cloud Functions"
+      terraform_types: ["google_cloudfunctions_function", "google_cloudfunctions2_function"]
+      pricing_formula: per_request
+      default_config:
+        memory_mb: 512
+        avg_duration_ms: 200
+        monthly_requests: 1000000
+  azure:
+    azure_functions:
+      name: "Azure Functions"
+      terraform_types: ["azurerm_function_app", "azurerm_linux_function_app", "azurerm_windows_function_app"]
+      pricing_formula: per_request
+      default_config:
+        memory_mb: 512
+        avg_duration_ms: 200
+        monthly_requests: 1000000
+
+equivalences:
+  - aws: lambda
+    gcp: cloud_functions
+    azure: azure_functions
+
+feature_parity:
+  - equivalence: [lambda, cloud_functions, azure_functions]
+    features:
+      max_memory_gb:
+        aws: 10       # Up to 10 GB
+        gcp: 32       # Up to 32 GB (2nd gen)
+        azure: 14     # Up to 14 GB (Premium plan)
+      max_timeout_seconds:
+        aws: 900      # 15 minutes
+        gcp: 3600     # 60 minutes (2nd gen)
+        azure: 600    # 10 minutes (Consumption), unlimited (Premium)
+      container_image_support:
+        aws: true     # Lambda container images up to 10 GB
+        gcp: true     # Cloud Functions 2nd gen (Cloud Run)
+        azure: true   # Custom container support
+      vpc_access:
+        aws: true     # VPC-attached Lambda
+        gcp: true     # VPC connector
+        azure: true   # VNet integration (Premium plan)
+      provisioned_concurrency:
+        aws: true     # Provisioned Concurrency
+        gcp: true     # Min instances (2nd gen)
+        azure: true   # Pre-warmed instances (Premium plan)
+      event_source_mapping:
+        aws: true     # Native SQS, Kinesis, DynamoDB streams
+        gcp: true     # Eventarc, Pub/Sub triggers
+        azure: true   # Bindings for 20+ services
+      arm_runtime:
+        aws: true     # Graviton2 Lambda
+        gcp: false    # x86 only
+        azure: false  # x86 only
+      layers_extensions:
+        aws: true     # Lambda Layers and Extensions
+        gcp: false    # No equivalent
+        azure: false  # No equivalent (use NuGet/npm packages)
+      step_functions:
+        aws: true     # AWS Step Functions
+        gcp: true     # Cloud Workflows
+        azure: true   # Durable Functions

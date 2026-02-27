@@ -1,0 +1,22 @@
+id: "16"
+name: "Import Small Terraform State"
+tier: 1
+category: "import"
+prompt: >
+  Import and document an existing small AWS deployment from Terraform state. The infrastructure
+  was deployed by a developer who has left the company — there is a terraform.tfstate file
+  in S3 but no readable Terraform code. The state contains: 2 EC2 t3.medium instances, 1 RDS
+  MySQL db.t3.small, 1 ALB with 2 target groups, 1 S3 bucket, 1 VPC with 2 public and 2 private
+  subnets, and associated security groups. Import this state, generate a clean ArchSpec, calculate
+  the current monthly cost, and identify any compliance issues (the company needs SOC 2).
+constraints:
+  provider: aws
+  budget_monthly: 500
+  compliance: ["soc2"]
+  regions: ["us-east-1"]
+expected:
+  min_components: 5
+  required_services: ["ec2", "rds", "alb", "s3"]
+  required_connections: 4
+  max_monthly_cost: 500
+tags: ["aws", "import", "terraform", "reverse-engineer", "soc2"]

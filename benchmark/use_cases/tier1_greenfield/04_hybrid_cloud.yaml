@@ -1,0 +1,23 @@
+id: "04"
+name: "Hybrid Cloud with On-Premises Connection"
+tier: 1
+category: "greenfield"
+prompt: >
+  Design a hybrid cloud architecture connecting an on-premises data center to AWS. The on-premises
+  environment hosts legacy ERP systems that must remain on-prem due to data sovereignty requirements.
+  Connect via AWS Direct Connect with a 1 Gbps dedicated connection. In AWS, deploy EC2 instances
+  in a private VPC for workloads that need access to the on-prem ERP, RDS PostgreSQL for cloud-native
+  data, S3 for archival and backup of on-prem data, and a Transit Gateway to manage routing between
+  the VPC and on-premises network. Include VPN as a Direct Connect failover. Budget is $2,000/month
+  for the AWS side.
+constraints:
+  provider: aws
+  budget_monthly: 2000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 5
+  required_services: ["direct_connect", "ec2", "rds", "s3", "transit_gateway"]
+  required_connections: 4
+  max_monthly_cost: 2000
+tags: ["aws", "hybrid", "on-premises", "direct-connect", "vpn"]

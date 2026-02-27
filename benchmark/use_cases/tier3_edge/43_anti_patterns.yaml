@@ -1,0 +1,26 @@
+id: "43"
+name: "Anti-Pattern Detection and Remediation"
+tier: 3
+category: "edge"
+prompt: >
+  Analyze and remediate an architecture riddled with known AWS anti-patterns. The current
+  architecture: a single EC2 t2.micro instance running MySQL, Nginx, Node.js API, and a
+  cron job all on one server; direct EC2 public IP exposed to the internet with no load
+  balancer; S3 bucket with public read access for user-uploaded files including PII; RDS
+  with master credentials hardcoded in application environment variables; Lambda functions
+  with 3008MB memory allocated for functions that use 128MB; CloudWatch logs retained for
+  1 day; no backups configured anywhere; all resources in a single AWS account with a single
+  IAM user with administrator access used for both humans and CI/CD. Identify every anti-pattern,
+  explain the risk, and propose the corrected architecture with proper separation of concerns,
+  least-privilege IAM, and production-ready configuration.
+constraints:
+  provider: aws
+  budget_monthly: 500
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 5
+  required_services: ["ec2", "rds", "s3", "alb", "iam"]
+  required_connections: 4
+  max_monthly_cost: 500
+tags: ["aws", "edge-case", "anti-patterns", "security", "remediation", "best-practices"]

@@ -1,0 +1,22 @@
+id: "02"
+name: "Enterprise Web Application on AWS"
+tier: 1
+category: "greenfield"
+prompt: >
+  Design a production-grade enterprise web application on AWS for a financial services company.
+  The architecture must include CloudFront with WAF for DDoS protection, an Application Load
+  Balancer across three availability zones, ECS Fargate tasks with auto-scaling, RDS PostgreSQL
+  Multi-AZ with read replicas, ElastiCache Redis cluster for session management, S3 for asset
+  storage, and CloudWatch for centralized logging and alerting. The app must handle 50,000 daily
+  active users with 99.9% uptime SLA. Budget is $3,000/month.
+constraints:
+  provider: aws
+  budget_monthly: 3000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 7
+  required_services: ["cloudfront", "waf", "alb", "ecs", "rds", "elasticache", "s3"]
+  required_connections: 6
+  max_monthly_cost: 3000
+tags: ["aws", "enterprise", "web", "multi-az", "high-availability"]

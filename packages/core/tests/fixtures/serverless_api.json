@@ -1,0 +1,38 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Serverless API",
+  "Resources": {
+    "ApiGateway": {
+      "Type": "AWS::ApiGatewayV2::Api",
+      "Properties": {
+        "Name": "my-api",
+        "ProtocolType": "HTTP"
+      }
+    },
+    "Handler": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": "my-handler",
+        "Runtime": "python3.12",
+        "MemorySize": 512
+      }
+    },
+    "DataTable": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "TableName": "data",
+        "BillingMode": "PAY_PER_REQUEST"
+      }
+    },
+    "UploadsBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {}
+    },
+    "NotificationTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": "notifications"
+      }
+    }
+  }
+}

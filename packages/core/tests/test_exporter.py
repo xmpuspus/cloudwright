@@ -1,8 +1,8 @@
-"""Tests for all exporters — terraform, cloudformation, mermaid, sbom, aibom."""
+"""Tests for all exporters — terraform, cloudformation, mermaid, sbom, aibom, compliance."""
 
 import json
 
-from silmaril.spec import ArchSpec, Component, Connection
+from cloudwright.spec import ArchSpec, Component, Connection, ValidationCheck, ValidationResult
 
 
 def _sample_spec() -> ArchSpec:
@@ -46,14 +46,14 @@ def _sample_spec() -> ArchSpec:
 
 class TestTerraformExporter:
     def test_renders_hcl(self):
-        from silmaril.exporter.terraform import render
+        from cloudwright.exporter.terraform import render
 
         hcl = render(_sample_spec())
         assert "terraform" in hcl.lower() or "provider" in hcl.lower()
         assert "aws" in hcl
 
     def test_includes_all_components(self):
-        from silmaril.exporter.terraform import render
+        from cloudwright.exporter.terraform import render
 
         hcl = render(_sample_spec())
         # Should reference all components
@@ -61,7 +61,7 @@ class TestTerraformExporter:
         assert "db" in hcl.lower() or "rds" in hcl.lower() or "postgresql" in hcl.lower()
 
     def test_writes_to_dir(self, tmp_path):
-        from silmaril.exporter.terraform import render
+        from cloudwright.exporter.terraform import render
 
         spec = _sample_spec()
         content = render(spec)
@@ -71,17 +71,52 @@ class TestTerraformExporter:
         assert (out_dir / "main.tf").exists()
         assert len((out_dir / "main.tf").read_text()) > 100
 
+    def test_terraform_validate(self, tmp_path):
+        """Generated Terraform passes `terraform validate`."""
+        import shutil
+        import subprocess
+
+        if not shutil.which("terraform"):
+            import pytest
+
+            pytest.skip("terraform not installed")
+
+        from cloudwright.exporter.terraform import render
+
+        hcl = render(_sample_spec())
+        tf_dir = tmp_path / "tf"
+        tf_dir.mkdir()
+        (tf_dir / "main.tf").write_text(hcl)
+
+        init = subprocess.run(
+            ["terraform", "init", "-backend=false"],
+            cwd=str(tf_dir),
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        assert init.returncode == 0, f"terraform init failed: {init.stderr}"
+
+        validate = subprocess.run(
+            ["terraform", "validate"],
+            cwd=str(tf_dir),
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        assert validate.returncode == 0, f"terraform validate failed: {validate.stderr}"
+
 
 class TestCloudFormationExporter:
     def test_renders_yaml(self):
-        from silmaril.exporter.cloudformation import render
+        from cloudwright.exporter.cloudformation import render
 
         cfn = render(_sample_spec())
         assert "AWSTemplateFormatVersion" in cfn
         assert "Resources" in cfn
 
     def test_skips_non_aws(self):
-        from silmaril.exporter.cloudformation import render
+        from cloudwright.exporter.cloudformation import render
 
         spec = ArchSpec(
             name="GCP App",
@@ -99,20 +134,20 @@ class TestCloudFormationExporter:
 
 class TestMermaidExporter:
     def test_renders_flowchart(self):
-        from silmaril.exporter.mermaid import render
+        from cloudwright.exporter.mermaid import render
 
         mmd = render(_sample_spec())
         assert "flowchart" in mmd.lower() or "graph" in mmd.lower()
 
     def test_includes_nodes(self):
-        from silmaril.exporter.mermaid import render
+        from cloudwright.exporter.mermaid import render
 
         mmd = render(_sample_spec())
         assert "cdn" in mmd.lower() or "CDN" in mmd
         assert "web" in mmd.lower() or "Web" in mmd
 
     def test_includes_edges(self):
-        from silmaril.exporter.mermaid import render
+        from cloudwright.exporter.mermaid import render
 
         mmd = render(_sample_spec())
         assert "-->" in mmd
@@ -120,7 +155,7 @@ class TestMermaidExporter:
 
 class TestSBOMExporter:
     def test_renders_cyclonedx(self):
-        from silmaril.exporter.sbom import render
+        from cloudwright.exporter.sbom import render
 
         sbom = render(_sample_spec())
         data = json.loads(sbom)
@@ -128,14 +163,14 @@ class TestSBOMExporter:
         assert data["specVersion"] == "1.5"
 
     def test_includes_components(self):
-        from silmaril.exporter.sbom import render
+        from cloudwright.exporter.sbom import render
 
         sbom = render(_sample_spec())
         data = json.loads(sbom)
         assert len(data["components"]) >= 4
 
     def test_includes_dependencies(self):
-        from silmaril.exporter.sbom import render
+        from cloudwright.exporter.sbom import render
 
         sbom = render(_sample_spec())
         data = json.loads(sbom)
@@ -144,23 +179,23 @@ class TestSBOMExporter:
 
 class TestAIBOMExporter:
     def test_renders_aibom(self):
-        from silmaril.exporter.aibom import render
+        from cloudwright.exporter.aibom import render
 
         aibom = render(_sample_spec())
         data = json.loads(aibom)
         assert "aibomVersion" in data
         assert "metadata" in data
 
-    def test_includes_silmaril_ai(self):
-        from silmaril.exporter.aibom import render
+    def test_includes_cloudwright_ai(self):
+        from cloudwright.exporter.aibom import render
 
         aibom = render(_sample_spec())
         data = json.loads(aibom)
         assert len(data["aiComponents"]) >= 1
-        assert data["aiComponents"][0]["name"] == "Silmaril Architecture AI"
+        assert data["aiComponents"][0]["name"] == "Cloudwright Architecture AI"
 
     def test_detects_ai_services(self):
-        from silmaril.exporter.aibom import render
+        from cloudwright.exporter.aibom import render
 
         spec = ArchSpec(
             name="ML App",
@@ -174,3 +209,121 @@ class TestAIBOMExporter:
         aibom = render(spec)
         data = json.loads(aibom)
         assert len(data["architectureAIServices"]) >= 1
+
+
+def _sample_validation() -> ValidationResult:
+    return ValidationResult(
+        framework="HIPAA",
+        passed=False,
+        score=0.6,
+        checks=[
+            ValidationCheck(
+                name="encryption_at_rest",
+                category="data_protection",
+                passed=False,
+                severity="critical",
+                detail="Missing encryption on: db",
+                recommendation="Set encryption=true in config for all data stores.",
+            ),
+            ValidationCheck(
+                name="audit_logging",
+                category="monitoring",
+                passed=True,
+                severity="high",
+                detail="Audit logging component present",
+            ),
+            ValidationCheck(
+                name="access_control",
+                category="identity",
+                passed=True,
+                severity="high",
+                detail="IAM/auth component present",
+            ),
+        ],
+    )
+
+
+class TestComplianceReportExporter:
+    def test_renders_markdown(self):
+        from cloudwright.exporter.compliance_report import render
+
+        md = render(_sample_spec(), _sample_validation())
+        assert "# Compliance Report" in md
+        assert "HIPAA" in md
+
+    def test_includes_summary(self):
+        from cloudwright.exporter.compliance_report import render
+
+        md = render(_sample_spec(), _sample_validation())
+        assert "Summary" in md
+        assert "60%" in md
+
+    def test_includes_pass_fail_markers(self):
+        from cloudwright.exporter.compliance_report import render
+
+        md = render(_sample_spec(), _sample_validation())
+        assert "[PASS]" in md
+        assert "[FAIL]" in md
+
+    def test_includes_recommendation_for_failures(self):
+        from cloudwright.exporter.compliance_report import render
+
+        md = render(_sample_spec(), _sample_validation())
+        assert "Recommendation" in md
+        assert "encryption=true" in md
+
+    def test_includes_component_inventory(self):
+        from cloudwright.exporter.compliance_report import render
+
+        md = render(_sample_spec(), _sample_validation())
+        assert "Component Inventory" in md
+        assert "cdn" in md
+        assert "db" in md
+
+    def test_includes_evidence_checklist(self):
+        from cloudwright.exporter.compliance_report import render
+
+        md = render(_sample_spec(), _sample_validation())
+        assert "Evidence Checklist" in md
+        assert "- [ ]" in md
+
+    def test_component_encryption_status(self):
+        from cloudwright.exporter.compliance_report import render
+
+        spec = ArchSpec(
+            name="Encrypted App",
+            provider="aws",
+            region="us-east-1",
+            components=[
+                Component(
+                    id="db",
+                    service="rds",
+                    provider="aws",
+                    label="DB",
+                    tier=3,
+                    config={"encryption": True},
+                ),
+            ],
+            connections=[],
+        )
+        validation = ValidationResult(
+            framework="HIPAA",
+            passed=True,
+            score=1.0,
+            checks=[
+                ValidationCheck(
+                    name="encryption_at_rest",
+                    category="data_protection",
+                    passed=True,
+                    severity="critical",
+                    detail="All data stores have encryption enabled",
+                )
+            ],
+        )
+        md = render(spec, validation)
+        assert "Yes" in md  # encrypted component shows Yes
+
+    def test_formats_listed_in_formats_tuple(self):
+        from cloudwright.exporter import FORMATS
+
+        assert "compliance" in FORMATS

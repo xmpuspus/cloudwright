@@ -1,0 +1,25 @@
+id: "30"
+name: "ML Feature Store on AWS"
+tier: 2
+category: "data"
+prompt: >
+  Design an ML feature store on AWS for a recommendation engine serving 5M users with real-time
+  personalized recommendations. The feature store needs both an online store (low-latency feature
+  serving, p99 < 20ms) and an offline store (feature materialization for training). Use SageMaker
+  Feature Store as the managed backbone with DynamoDB as the online store backend and S3 Parquet
+  as the offline store. Glue jobs for daily feature materialization pipelines, SageMaker Pipelines
+  for model training that reads from the offline store, SageMaker real-time inference endpoints
+  with auto-scaling for predictions, and a Lambda-based feature ingestion API that writes to both
+  online and offline stores atomically. ElastiCache Redis for sub-millisecond feature serving for
+  the hottest user segments. Budget is $12,000/month.
+constraints:
+  provider: aws
+  budget_monthly: 12000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 7
+  required_services: ["sagemaker", "dynamodb", "s3", "glue", "lambda", "elasticache"]
+  required_connections: 6
+  max_monthly_cost: 12000
+tags: ["aws", "ml", "feature-store", "sagemaker", "recommendation-engine", "real-time"]

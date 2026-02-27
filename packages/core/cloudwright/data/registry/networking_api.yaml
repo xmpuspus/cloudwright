@@ -1,0 +1,31 @@
+category: networking_api
+services:
+  aws:
+    api_gateway:
+      name: "Amazon API Gateway"
+      terraform_types: ["aws_apigatewayv2_api", "aws_api_gateway_rest_api"]
+      pricing_formula: per_request
+      default_config:
+        monthly_requests: 1000000
+        type: rest
+  gcp:
+    # Renamed to avoid service_index collision with aws/api_gateway
+    cloud_api_gateway:
+      name: "Google Cloud API Gateway"
+      terraform_types: ["google_api_gateway_api", "google_api_gateway_gateway"]
+      pricing_formula: per_request
+      default_config:
+        monthly_requests: 1000000
+  azure:
+    api_management:
+      name: "Azure API Management"
+      terraform_types: ["azurerm_api_management"]
+      pricing_formula: per_request
+      default_config:
+        tier: developer
+        monthly_calls: 1000000
+
+equivalences:
+  - aws: api_gateway
+    gcp: cloud_api_gateway
+    azure: api_management

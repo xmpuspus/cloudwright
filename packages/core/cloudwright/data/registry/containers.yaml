@@ -1,0 +1,116 @@
+category: containers
+description: "Container orchestration and serverless container platforms"
+
+services:
+  aws:
+    ecs:
+      name: "Amazon ECS"
+      description: "Highly secure, reliable, and scalable container orchestration"
+      terraform_types: ["aws_ecs_cluster", "aws_ecs_service", "aws_ecs_task_definition"]
+      pricing_formula: per_hour
+      default_config: {instance_type: t3.medium, task_count: 2}
+    eks:
+      name: "Amazon EKS"
+      description: "Managed Kubernetes service"
+      terraform_types: ["aws_eks_cluster", "aws_eks_node_group"]
+      pricing_formula: per_hour
+      default_config: {node_instance_type: t3.medium, node_count: 3}
+    fargate:
+      name: "AWS Fargate"
+      description: "Serverless compute for containers"
+      terraform_types: ["aws_ecs_service"]
+      pricing_formula: per_hour
+      default_config: {vcpus: 0.5, memory_gb: 1.0, task_count: 2}
+
+  gcp:
+    cloud_run:
+      name: "Google Cloud Run"
+      description: "Fully managed containerized application platform"
+      terraform_types: ["google_cloud_run_service", "google_cloud_run_v2_service"]
+      pricing_formula: per_request
+      default_config: {vcpus: 1.0, memory_gb: 2.0, monthly_requests: 1000000}
+    gke:
+      name: "Google Kubernetes Engine"
+      description: "Managed Kubernetes service"
+      terraform_types: ["google_container_cluster", "google_container_node_pool"]
+      pricing_formula: per_hour
+      default_config: {node_instance_type: e2-standard-2, node_count: 3}
+
+  azure:
+    container_apps:
+      name: "Azure Container Apps"
+      description: "Fully managed serverless container service"
+      terraform_types: ["azurerm_container_app", "azurerm_container_app_environment"]
+      pricing_formula: per_request
+      default_config: {vcpus: 0.5, memory_gb: 1.0, monthly_requests: 1000000}
+    aks:
+      name: "Azure Kubernetes Service"
+      description: "Managed Kubernetes container orchestration"
+      terraform_types: ["azurerm_kubernetes_cluster"]
+      pricing_formula: per_hour
+      default_config: {node_instance_type: Standard_D2s_v5, node_count: 3}
+
+equivalences:
+  - aws: ecs
+    gcp: cloud_run
+    azure: container_apps
+  - aws: fargate
+    gcp: cloud_run
+    azure: container_apps
+  - aws: eks
+    gcp: gke
+    azure: aks
+
+feature_parity:
+  - equivalence: [eks, gke, aks]
+    features:
+      managed_control_plane:
+        aws: true     # $0.10/hr control plane fee
+        gcp: true     # Free standard mode, $0.10/hr Autopilot
+        azure: true   # Free control plane
+      serverless_nodes:
+        aws: true     # Fargate profiles on EKS
+        gcp: true     # GKE Autopilot
+        azure: true   # Virtual Nodes (ACI)
+      gpu_node_pools:
+        aws: true     # P4, G5, Inf2 instances
+        gcp: true     # GPU node pools with T4, A100
+        azure: true   # NC, ND series node pools
+      windows_containers:
+        aws: true     # Windows node groups
+        gcp: true     # Windows Server node pools
+        azure: true   # Windows node pools
+      istio_service_mesh:
+        aws: false    # Requires manual install or App Mesh
+        gcp: true     # Anthos Service Mesh built-in
+        azure: true   # Open Service Mesh add-on
+      multi_cluster:
+        aws: false    # No native multi-cluster (use Rancher/Linkerd)
+        gcp: true     # Multi-cluster services, fleet management
+        azure: true   # Azure Arc-enabled Kubernetes
+      node_auto_provisioning:
+        aws: true     # Karpenter
+        gcp: true     # GKE NAP
+        azure: true   # AKS node auto-provisioning
+      arm_nodes:
+        aws: true     # Graviton-based nodes
+        gcp: true     # Tau T2A
+        azure: true   # Dpsv5 nodes
+  - equivalence: [ecs, cloud_run, container_apps]
+    features:
+      scale_to_zero:
+        aws: false    # Fargate always has minimum task running
+        gcp: true     # Cloud Run scales to zero
+        azure: true   # Container Apps scales to zero
+      gpu_support:
+        aws: true     # ECS supports GPU task definitions
+        gcp: true     # Cloud Run GPU (preview)
+        azure: false  # Container Apps no GPU support
+      custom_domains:
+        aws: true     # Via ALB + Route53
+        gcp: true     # Cloud Run domain mapping
+        azure: true   # Container Apps custom domains
+      vpc_integration:
+        aws: true     # Runs inside VPC
+        gcp: true     # VPC connector / Direct VPC egress
+        azure: true   # VNet integration

@@ -1,0 +1,24 @@
+id: "20"
+name: "Import Serverless Framework Deployment"
+tier: 1
+category: "import"
+prompt: >
+  Import an existing Serverless Framework deployment from AWS that was built by a contractor.
+  The deployment spans 3 services: an auth service (5 Lambda functions, Cognito, API Gateway),
+  a data service (8 Lambda functions, DynamoDB tables, SQS queues, S3 buckets), and a
+  notification service (3 Lambda functions, SNS topics, SES). Each service has its own
+  serverless.yml and deploys to separate CloudFormation stacks. Parse the CloudFormation stacks,
+  generate a unified ArchSpec showing how the three services interconnect, calculate the monthly
+  cost at current invocation rates (2M Lambda invocations/day total), and identify cold start
+  risks and any over-provisioned memory configurations.
+constraints:
+  provider: aws
+  budget_monthly: 300
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 8
+  required_services: ["lambda", "api_gateway", "dynamodb", "sqs", "sns", "s3", "cognito"]
+  required_connections: 7
+  max_monthly_cost: 300
+tags: ["aws", "serverless", "import", "lambda", "multi-service", "serverless-framework"]

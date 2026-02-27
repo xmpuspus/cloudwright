@@ -3,8 +3,8 @@
 Shows how to design, validate, and export to IaC.
 """
 
-from silmaril import ArchSpec, Validator
-from silmaril.differ import Differ
+from cloudwright import ArchSpec, Validator
+from cloudwright.differ import Differ
 
 # Load a spec from YAML
 spec_yaml = """
@@ -92,7 +92,7 @@ print(spec.export("mermaid"))
 spec_v2 = ArchSpec.from_yaml(spec_yaml)
 spec_v2.version = 2
 # Add a cache layer
-from silmaril.spec import Component, Connection
+from cloudwright.spec import Component, Connection
 
 spec_v2.components.append(
     Component(

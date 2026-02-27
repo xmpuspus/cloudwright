@@ -1,0 +1,32 @@
+category: analytics
+description: "Cloud data warehouses and analytical query services"
+
+services:
+  aws:
+    redshift:
+      name: "Amazon Redshift"
+      description: "Cloud data warehouse"
+      terraform_types: ["aws_redshift_cluster", "aws_redshift_serverless_namespace"]
+      pricing_formula: per_hour
+      default_config: {node_type: dc2.large, num_nodes: 2}
+
+  gcp:
+    bigquery:
+      name: "Google BigQuery"
+      description: "Serverless, highly scalable data warehouse"
+      terraform_types: ["google_bigquery_dataset", "google_bigquery_table", "google_bigquery_job"]
+      pricing_formula: per_tb_query
+      default_config: {storage_gb: 100, monthly_query_tb: 1.0}
+
+  azure:
+    synapse:
+      name: "Azure Synapse Analytics"
+      description: "Limitless analytics service unifying data integration and warehousing"
+      terraform_types: ["azurerm_synapse_workspace", "azurerm_synapse_sql_pool", "azurerm_synapse_spark_pool"]
+      pricing_formula: per_hour
+      default_config: {dwu: 100, storage_gb: 100}
+
+equivalences:
+  - aws: redshift
+    gcp: bigquery
+    azure: synapse

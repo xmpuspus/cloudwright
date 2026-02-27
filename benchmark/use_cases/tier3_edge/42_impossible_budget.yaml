@@ -1,0 +1,25 @@
+id: "42"
+name: "Impossible Budget — $10/Month Full Stack"
+tier: 3
+category: "edge"
+prompt: >
+  Design a production-ready web application on AWS that costs no more than $10/month total,
+  including all compute, storage, database, CDN, and monitoring costs. Requirements: a public
+  website with server-side rendering, a relational database for user data, user authentication,
+  file upload capability, and email notifications. This must be a real AWS architecture using
+  real services with real pricing — not a "use the free tier forever" answer (assume past
+  12 months and Free Tier expired). Explicitly state which requirements cannot be met at this
+  budget, what the real minimum viable cost is for the stated requirements, and design the
+  closest achievable architecture (likely Lambda + DynamoDB + S3 + SES) with exact cost
+  calculations at 1,000 monthly active users.
+constraints:
+  provider: aws
+  budget_monthly: 10
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 3
+  required_services: ["lambda", "s3", "dynamodb"]
+  required_connections: 2
+  max_monthly_cost: 50
+tags: ["aws", "edge-case", "impossible-budget", "cost", "trade-offs"]

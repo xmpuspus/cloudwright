@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff
+      - run: ruff check packages/
+      - run: ruff format --check packages/
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install packages
+        run: |
+          pip install -e packages/core
+          pip install -e packages/cli
+          pip install -e packages/web
+          pip install pytest pytest-timeout pytest-cov
+      - name: Run core tests
+        run: pytest packages/core/tests/ -x -q --timeout=30
+      - name: Run web tests
+        run: pytest packages/web/tests/ -x -q --timeout=60
+      - name: Run CLI tests
+        run: pytest packages/cli/tests/ -x -q --timeout=30
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install hatchling build
+      - name: Build core wheel
+        run: python -m build packages/core
+      - name: Verify catalog.db in wheel
+        run: |
+          python -c "
+          import zipfile, glob
+          whl = glob.glob('packages/core/dist/*.whl')[0]
+          with zipfile.ZipFile(whl) as z:
+              names = z.namelist()
+              assert any('catalog.db' in n for n in names), f'catalog.db not found in wheel: {names}'
+              print('catalog.db found in wheel')
+          "
+      - name: Build CLI wheel
+        run: python -m build packages/cli
+      - name: Build web wheel
+        run: python -m build packages/web

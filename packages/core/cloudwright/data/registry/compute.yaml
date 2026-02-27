@@ -1,0 +1,78 @@
+category: compute
+services:
+  aws:
+    ec2:
+      name: "Amazon EC2"
+      terraform_types: ["aws_instance", "aws_launch_template", "aws_autoscaling_group"]
+      pricing_formula: per_hour
+      default_config:
+        instance_type: t3.medium
+        storage_gb: 30
+  gcp:
+    compute_engine:
+      name: "Google Compute Engine"
+      terraform_types: ["google_compute_instance", "google_compute_instance_template"]
+      pricing_formula: per_hour
+      default_config:
+        instance_type: e2-medium
+        storage_gb: 30
+    app_engine:
+      name: "Google App Engine"
+      terraform_types: ["google_app_engine_standard_app_version", "google_app_engine_flexible_app_version"]
+      pricing_formula: per_hour
+      default_config:
+        instance_class: F2
+        idle_instances: 1
+  azure:
+    virtual_machines:
+      name: "Azure Virtual Machines"
+      terraform_types: ["azurerm_linux_virtual_machine", "azurerm_windows_virtual_machine", "azurerm_virtual_machine"]
+      pricing_formula: per_hour
+      default_config:
+        instance_type: Standard_D2s_v5
+        storage_gb: 30
+
+equivalences:
+  - aws: ec2
+    gcp: compute_engine
+    azure: virtual_machines
+
+feature_parity:
+  - equivalence: [ec2, compute_engine, virtual_machines]
+    features:
+      spot_instances:
+        aws: true     # Spot Instances, up to 90% savings
+        gcp: true     # Preemptible VMs / Spot VMs
+        azure: true   # Spot VMs
+      reserved_pricing:
+        aws: true     # Reserved Instances 1yr/3yr, Savings Plans
+        gcp: true     # Committed Use Discounts 1yr/3yr
+        azure: true   # Reserved VM Instances 1yr/3yr
+      auto_scaling:
+        aws: true     # Auto Scaling Groups
+        gcp: true     # Managed Instance Groups
+        azure: true   # Virtual Machine Scale Sets
+      gpu_instances:
+        aws: true     # P4, G5, Inf2 families
+        gcp: true     # A2, G2, N1 with GPU
+        azure: true   # NC, ND, NV series
+      arm_instances:
+        aws: true     # Graviton (t4g, m7g, c7g)
+        gcp: true     # Tau T2A (Ampere Altra)
+        azure: true   # Dpsv5, Epsv5 (Ampere Altra)
+      nested_virtualization:
+        aws: true     # Metal instances
+        gcp: true     # Supported on N1, N2, C2
+        azure: true   # Dv3, Ev3 and newer
+      live_migration:
+        aws: false    # Not supported (instance stop/start)
+        gcp: true     # Transparent live migration
+        azure: true   # Memory preserving updates
+      sustained_use_discounts:
+        aws: false    # No automatic discounts
+        gcp: true     # Automatic sustained use discounts on N1/N2
+        azure: false  # No automatic discounts
+      imdsv2_enforcement:
+        aws: true     # IMDSv2 metadata service hardening
+        gcp: true     # Metadata concealment
+        azure: true   # Instance Metadata Service with attestation

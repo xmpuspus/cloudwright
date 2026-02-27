@@ -1,0 +1,26 @@
+id: "45"
+name: "Air-Gapped AWS Outposts Deployment"
+tier: 3
+category: "edge"
+prompt: >
+  Design an air-gapped cloud architecture for a defense contractor using AWS Outposts in a
+  classified facility with zero internet connectivity. The Outposts rack must operate fully
+  disconnected from AWS commercial regions after initial provisioning. Services available on
+  Outposts: EC2 (limited instance families), ECS, RDS, ElastiCache, S3 on Outposts, and
+  EKS (limited). Design a full application stack that works within these Outposts constraints:
+  a containerized application on ECS, RDS PostgreSQL for persistent data, S3 on Outposts for
+  file storage, and a local container registry (since ECR requires internet). Handle software
+  updates via sneakernet (USB transfer) — design the update workflow. Identify which AWS services
+  are NOT available on Outposts and propose alternatives. Assume the facility has 2 redundant
+  power feeds and a local network, but absolutely no external connectivity.
+constraints:
+  provider: aws
+  budget_monthly: 50000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 5
+  required_services: ["ec2", "ecs", "rds", "s3"]
+  required_connections: 4
+  max_monthly_cost: 50000
+tags: ["aws", "outposts", "air-gapped", "defense", "disconnected", "on-premises"]

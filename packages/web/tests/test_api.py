@@ -1,4 +1,4 @@
-"""Comprehensive backend API tests for Silmaril FastAPI app."""
+"""Comprehensive backend API tests for Cloudwright FastAPI app."""
 
 import json
 import os

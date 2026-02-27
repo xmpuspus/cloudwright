@@ -1,0 +1,71 @@
+category: storage_object
+services:
+  aws:
+    s3:
+      name: "Amazon S3"
+      terraform_types: ["aws_s3_bucket", "aws_s3_object"]
+      pricing_formula: per_gb
+      default_config:
+        storage_gb: 100
+        requests_per_month: 100000
+  gcp:
+    cloud_storage:
+      name: "Google Cloud Storage"
+      terraform_types: ["google_storage_bucket", "google_storage_bucket_object"]
+      pricing_formula: per_gb
+      default_config:
+        storage_gb: 100
+        storage_class: standard
+  azure:
+    blob_storage:
+      name: "Azure Blob Storage"
+      terraform_types: ["azurerm_storage_account", "azurerm_storage_blob"]
+      pricing_formula: per_gb
+      default_config:
+        storage_gb: 100
+        access_tier: hot
+
+equivalences:
+  - aws: s3
+    gcp: cloud_storage
+    azure: blob_storage
+
+feature_parity:
+  - equivalence: [s3, cloud_storage, blob_storage]
+    features:
+      object_versioning:
+        aws: true
+        gcp: true
+        azure: true   # Blob versioning
+      lifecycle_policies:
+        aws: true     # S3 Lifecycle rules
+        gcp: true     # Object Lifecycle Management
+        azure: true   # Lifecycle management policies
+      cross_region_replication:
+        aws: true     # S3 Cross-Region Replication
+        gcp: true     # Dual-region / multi-region buckets
+        azure: true   # GRS, RA-GRS, GZRS
+      event_notifications:
+        aws: true     # S3 Event Notifications -> SNS/SQS/Lambda
+        gcp: true     # Pub/Sub notifications
+        azure: true   # Event Grid for Blob Storage
+      static_website_hosting:
+        aws: true     # S3 static website hosting
+        gcp: true     # Cloud Storage static websites
+        azure: true   # Blob Storage static websites
+      object_lock_worm:
+        aws: true     # S3 Object Lock (WORM)
+        gcp: true     # Retention policies, bucket lock
+        azure: true   # Immutable blob storage
+      intelligent_tiering:
+        aws: true     # S3 Intelligent-Tiering
+        gcp: true     # Autoclass
+        azure: false  # No automatic tiering (manual access tiers)
+      presigned_urls:
+        aws: true     # Pre-signed URLs
+        gcp: true     # Signed URLs
+        azure: true   # Shared Access Signatures (SAS)
+      server_side_encryption:
+        aws: true     # SSE-S3, SSE-KMS, SSE-C
+        gcp: true     # Google-managed, CMEK, CSEK
+        azure: true   # Microsoft-managed, customer-managed keys

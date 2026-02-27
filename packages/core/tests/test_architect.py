@@ -8,6 +8,13 @@ import os
 import pytest
 from silmaril.spec import ArchSpec, Constraints
 
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
+
 HAS_LLM = bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("OPENAI_API_KEY"))
 skip_no_llm = pytest.mark.skipif(not HAS_LLM, reason="No LLM API key available")
 

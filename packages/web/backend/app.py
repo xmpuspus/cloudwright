@@ -121,10 +121,11 @@ class ChatRequest(BaseModel):
 def health():
     try:
         catalog = get_catalog()
-        stats = catalog.get_stats()
-        return {"status": "ok", **stats}
+        # Quick check: can we search?
+        results = catalog.search(query="m5", limit=1)
+        return {"status": "ok", "catalog_loaded": True, "sample_count": len(results)}
     except Exception:
-        return {"status": "ok", "note": "catalog not initialized"}
+        return {"status": "ok", "catalog_loaded": False}
 
 
 @app.post("/api/design")

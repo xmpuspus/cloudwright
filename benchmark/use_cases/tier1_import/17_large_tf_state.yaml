@@ -1,0 +1,24 @@
+id: "17"
+name: "Import Large Multi-Module Terraform State"
+tier: 1
+category: "import"
+prompt: >
+  Import a complex production AWS architecture from a Terraform state file with 180 resources
+  spanning multiple modules. The infrastructure includes: an EKS cluster with 3 managed node
+  groups across 3 AZs, RDS Aurora PostgreSQL cluster with 2 reader replicas, ElastiCache Redis
+  cluster mode with 3 shards, an ALB with path-based routing to 5 target groups, CloudFront
+  distribution with multiple origins, Route 53 hosted zone with 12 records, 4 S3 buckets with
+  different lifecycle policies, and a VPC with complex routing tables. Parse the state, create
+  a structured ArchSpec grouping resources by logical tier (frontend, api, data, networking),
+  and estimate the monthly cost with savings recommendations.
+constraints:
+  provider: aws
+  budget_monthly: 8000
+  compliance: []
+  regions: ["us-east-1", "us-west-2"]
+expected:
+  min_components: 8
+  required_services: ["eks", "rds", "elasticache", "alb", "cloudfront", "route53", "s3"]
+  required_connections: 7
+  max_monthly_cost: 8000
+tags: ["aws", "import", "terraform", "eks", "complex", "multi-module"]

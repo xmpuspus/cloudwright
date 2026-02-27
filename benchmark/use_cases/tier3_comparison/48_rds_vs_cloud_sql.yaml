@@ -1,0 +1,25 @@
+id: "48"
+name: "Managed PostgreSQL Comparison — RDS vs Cloud SQL vs Azure Database"
+tier: 3
+category: "comparison"
+prompt: >
+  Compare managed PostgreSQL offerings across the three major clouds for a production OLTP
+  workload: AWS RDS PostgreSQL, GCP Cloud SQL, and Azure Database for PostgreSQL Flexible Server.
+  Workload: 4 vCPU, 16GB RAM, 1TB storage, Multi-AZ/HA replica, automated daily backups
+  retained 14 days, 5,000 IOPS, 1TB/month read replica traffic. Calculate the exact monthly
+  cost on each platform. Evaluate beyond cost: maximum PostgreSQL version support and upgrade
+  path, read replica latency and maximum replica count, point-in-time recovery granularity,
+  connection pooling built-in vs external (PgBouncer), extensions available (PostGIS, pg_vector,
+  TimescaleDB), and maintenance window flexibility. Which cloud has the best managed PostgreSQL
+  for a team that needs pg_vector for AI applications?
+constraints:
+  provider: aws
+  budget_monthly: 1000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 2
+  required_services: ["rds"]
+  required_connections: 1
+  max_monthly_cost: 1000
+tags: ["aws", "gcp", "azure", "postgresql", "rds", "cloud-sql", "comparison", "database"]

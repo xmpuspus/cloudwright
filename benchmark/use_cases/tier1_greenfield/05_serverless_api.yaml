@@ -1,0 +1,22 @@
+id: "05"
+name: "Serverless API Backend on AWS"
+tier: 1
+category: "greenfield"
+prompt: >
+  Design a fully serverless API backend on AWS for a mobile application with 10,000 monthly active
+  users. Use API Gateway (HTTP API) as the entry point, Lambda functions in Python for business
+  logic, DynamoDB for the primary database with on-demand billing, S3 for user-uploaded media with
+  CloudFront distribution, and Cognito for user authentication and JWT token management. Include
+  SQS for async task processing and SNS for push notifications. The entire stack must scale to zero
+  when idle. Budget must stay under $200/month at current traffic levels.
+constraints:
+  provider: aws
+  budget_monthly: 200
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 7
+  required_services: ["api_gateway", "lambda", "dynamodb", "s3", "cognito", "sqs", "sns"]
+  required_connections: 6
+  max_monthly_cost: 200
+tags: ["aws", "serverless", "lambda", "api", "mobile"]

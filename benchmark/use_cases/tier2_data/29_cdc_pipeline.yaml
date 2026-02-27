@@ -1,0 +1,25 @@
+id: "29"
+name: "Change Data Capture Pipeline with DMS"
+tier: 2
+category: "data"
+prompt: >
+  Design a change data capture (CDC) pipeline on AWS to migrate and continuously sync a
+  production Oracle database (on-premises, 2TB, 200 tables) to a modern cloud-native data
+  stack with zero downtime. Use AWS DMS for initial full load and ongoing CDC replication,
+  with Oracle as source and a combination of targets: Aurora PostgreSQL for the operational
+  replica (for application cutover), Kinesis Data Streams for real-time change events, and
+  S3 via Kinesis Firehose for the data lake. A Lambda function consumes the Kinesis stream
+  to maintain a DynamoDB change log for audit purposes. Include DMS Task Assessment and
+  SCT (Schema Conversion Tool) for the Oracle-to-PostgreSQL migration. Estimate costs
+  during the migration window and steady-state post-cutover.
+constraints:
+  provider: aws
+  budget_monthly: 3000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 6
+  required_services: ["dms", "rds", "kinesis", "s3", "lambda", "dynamodb"]
+  required_connections: 5
+  max_monthly_cost: 3000
+tags: ["aws", "cdc", "dms", "migration", "oracle", "postgresql", "data-pipeline"]

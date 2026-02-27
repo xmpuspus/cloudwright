@@ -1,0 +1,81 @@
+name: AKS Microservices (Azure)
+version: 1
+provider: azure
+region: eastus
+constraints:
+  availability: 99.95
+components:
+  - id: gateway
+    service: application_gateway
+    provider: azure
+    label: Application Gateway
+    tier: 1
+    config:
+      sku: Standard_v2
+      waf: true
+  - id: aks
+    service: aks
+    provider: azure
+    label: AKS Cluster
+    tier: 2
+    config:
+      vm_size: Standard_D4s_v3
+      node_count: 3
+      auto_scaling: true
+      min_count: 2
+      max_count: 6
+  - id: cache
+    service: azure_cache_redis
+    provider: azure
+    label: Azure Cache for Redis
+    tier: 2
+    config:
+      sku: Standard
+      capacity: 2
+  - id: db
+    service: azure_sql
+    provider: azure
+    label: Azure SQL Database
+    tier: 3
+    config:
+      sku: GP_Gen5_4
+      max_size_gb: 100
+      zone_redundant: true
+      encryption: true
+  - id: servicebus
+    service: service_bus
+    provider: azure
+    label: Service Bus
+    tier: 2
+    config:
+      sku: Standard
+  - id: monitor
+    service: azure_monitor
+    provider: azure
+    label: Azure Monitor
+    tier: 3
+    config:
+      log_analytics: true
+      alerting: true
+connections:
+  - source: gateway
+    target: aks
+    label: Ingress
+    protocol: HTTPS
+    port: 443
+  - source: aks
+    target: cache
+    label: Cache access
+    protocol: TCP
+    port: 6380
+  - source: aks
+    target: db
+    label: Database
+    protocol: TCP
+    port: 1433
+  - source: aks
+    target: servicebus
+    label: Event messaging
+  - source: aks
+    target: monitor
+    label: Metrics and logs

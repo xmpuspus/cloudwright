@@ -1,0 +1,24 @@
+id: "13"
+name: "Cross-Cloud Cost Comparison — 3-Tier Web App"
+tier: 1
+category: "cost"
+prompt: >
+  Compare the monthly cost of running an identical 3-tier web application on AWS, GCP, and Azure.
+  The application requirements: 4 application servers (4 vCPU, 16GB RAM), a managed PostgreSQL
+  database (4 vCPU, 16GB RAM, 500GB storage, Multi-AZ), a Redis cache (2 nodes, 6GB each), a
+  load balancer, 10TB monthly egress bandwidth, and a CDN for static assets. Map to equivalent
+  managed services on each cloud: AWS (ECS/RDS/ElastiCache/ALB/CloudFront), GCP
+  (Cloud Run/Cloud SQL/Memorystore/Cloud Load Balancing/Cloud CDN), Azure (AKS/Azure Database for
+  PostgreSQL/Azure Cache for Redis/Azure Load Balancer/Azure CDN). Provide total monthly cost for
+  each cloud and highlight the cheapest option per component.
+constraints:
+  provider: aws
+  budget_monthly: 3000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 5
+  required_services: ["ecs", "rds", "elasticache", "alb", "cloudfront"]
+  required_connections: 4
+  max_monthly_cost: 3000
+tags: ["aws", "gcp", "azure", "multi-cloud", "cost-comparison", "3-tier"]

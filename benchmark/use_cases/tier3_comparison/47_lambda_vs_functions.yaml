@@ -1,0 +1,25 @@
+id: "47"
+name: "Serverless Comparison — Lambda vs Cloud Functions vs Azure Functions"
+tier: 3
+category: "comparison"
+prompt: >
+  Compare AWS Lambda, Google Cloud Functions, and Azure Functions for a serverless API workload
+  processing 50 million invocations per month with an average duration of 200ms and 256MB
+  memory. Calculate the exact monthly cost on each platform using 2025 pricing (after free
+  tier). Evaluate beyond raw cost: cold start latency by runtime (Node.js, Python, Java on
+  each platform), maximum execution duration limits, VPC integration complexity and latency
+  impact, concurrency limits and throttling behavior, observability (built-in vs third-party
+  required), and deployment package size limits. Also compare the event source integrations
+  — specifically, which platform has the best native integration for Kafka, HTTP, and scheduled
+  jobs. Recommend the best platform for the described workload with justification.
+constraints:
+  provider: aws
+  budget_monthly: 200
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 3
+  required_services: ["lambda", "api_gateway"]
+  required_connections: 2
+  max_monthly_cost: 200
+tags: ["aws", "gcp", "azure", "lambda", "serverless", "comparison", "functions"]

@@ -1,0 +1,25 @@
+id: "39"
+name: "Cloud-to-Cloud Migration AWS to GCP"
+tier: 2
+category: "migration"
+prompt: >
+  Design a migration strategy for moving a mid-size SaaS application from AWS to GCP. The
+  current AWS architecture: ECS Fargate (6 services), RDS PostgreSQL db.r5.large Multi-AZ,
+  ElastiCache Redis, S3 for file storage, CloudFront CDN, and SQS for async tasks. The company
+  is switching to GCP due to a Google Workspace enterprise agreement with committed spend.
+  Map each AWS service to its GCP equivalent: ECS Fargate -> Cloud Run, RDS PostgreSQL ->
+  Cloud SQL PostgreSQL, ElastiCache -> Memorystore, S3 -> Cloud Storage, CloudFront -> Cloud CDN,
+  SQS -> Cloud Pub/Sub. Design the migration using Migrate for Compute Engine for stateful
+  workloads and Storage Transfer Service for data. Include a dual-write transition period for
+  zero downtime. Calculate GCP costs and compare to current AWS bill of $6,500/month.
+constraints:
+  provider: gcp
+  budget_monthly: 6000
+  compliance: []
+  regions: ["us-central1"]
+expected:
+  min_components: 6
+  required_services: ["cloud_run", "cloud_sql", "memorystore", "cloud_storage", "pubsub"]
+  required_connections: 5
+  max_monthly_cost: 6000
+tags: ["gcp", "aws", "migration", "cloud-to-cloud", "cloud-run", "cloud-sql"]

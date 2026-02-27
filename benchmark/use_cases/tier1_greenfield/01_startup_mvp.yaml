@@ -1,0 +1,20 @@
+id: "01"
+name: "Startup MVP on AWS"
+tier: 1
+category: "greenfield"
+prompt: >
+  Design a startup MVP web application on AWS with a React frontend served via CloudFront with
+  an S3 origin, a REST API on ECS Fargate behind an Application Load Balancer, a PostgreSQL
+  database on RDS db.t3.micro, and Redis on ElastiCache t3.micro for session caching. The app
+  expects fewer than 1,000 daily active users initially. Budget must stay under $500/month.
+constraints:
+  provider: aws
+  budget_monthly: 500
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 5
+  required_services: ["cloudfront", "ecs", "alb", "rds", "elasticache"]
+  required_connections: 4
+  max_monthly_cost: 500
+tags: ["aws", "startup", "web", "budget", "fargate"]

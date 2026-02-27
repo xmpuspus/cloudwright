@@ -1,0 +1,24 @@
+id: "27"
+name: "Real-Time Streaming Analytics Platform"
+tier: 2
+category: "data"
+prompt: >
+  Design a real-time streaming analytics platform on AWS for a ride-sharing company processing
+  driver location updates, ride events, and surge pricing signals at 50,000 events per second.
+  Use Kinesis Data Streams with 50 shards for ingestion, Kinesis Data Analytics (Flink application)
+  for stateful stream processing to compute 1-minute rolling aggregations and surge multipliers,
+  DynamoDB for the low-latency surge pricing lookup table updated by Flink, Kinesis Data Firehose
+  for archiving raw events to S3 Parquet, Redshift for historical analysis and BI queries, and
+  ElastiCache Redis for real-time driver location caching. The entire pipeline must have an
+  end-to-end latency under 2 seconds from event ingestion to pricing update.
+constraints:
+  provider: aws
+  budget_monthly: 10000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 6
+  required_services: ["kinesis", "dynamodb", "redshift", "s3", "elasticache"]
+  required_connections: 5
+  max_monthly_cost: 10000
+tags: ["aws", "streaming", "kinesis", "flink", "real-time", "analytics", "ride-sharing"]

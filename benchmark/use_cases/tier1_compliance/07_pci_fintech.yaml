@@ -1,0 +1,23 @@
+id: "07"
+name: "PCI-DSS Payment Processing Platform"
+tier: 1
+category: "compliance"
+prompt: >
+  Design a PCI-DSS Level 1 compliant payment processing platform on AWS for a fintech company
+  processing 500,000 transactions per day. The cardholder data environment must be in a dedicated
+  VPC with strict network segmentation — payment processing Lambda functions in a private subnet
+  with no internet access, a WAF in front of the API Gateway for the public-facing payment API,
+  KMS for all encryption key management, RDS PostgreSQL in a separate isolated subnet for
+  tokenized card data, and CloudTrail with GuardDuty for intrusion detection. All cardholder
+  data must be tokenized before storage. Include VPC Flow Logs for network-level audit trails.
+constraints:
+  provider: aws
+  budget_monthly: 4000
+  compliance: ["pci-dss"]
+  regions: ["us-east-1"]
+expected:
+  min_components: 7
+  required_services: ["waf", "api_gateway", "lambda", "rds", "kms", "guardduty", "cloudtrail"]
+  required_connections: 6
+  max_monthly_cost: 4000
+tags: ["aws", "pci-dss", "fintech", "payment", "compliance", "security"]

@@ -1,0 +1,47 @@
+category: messaging
+description: "Message queues, pub/sub, and event bus services"
+
+services:
+  aws:
+    sqs:
+      name: "Amazon SQS"
+      description: "Fully managed message queuing service"
+      terraform_types: ["aws_sqs_queue"]
+      pricing_formula: per_request
+      default_config: {monthly_requests: 1000000}
+    sns:
+      name: "Amazon SNS"
+      description: "Fully managed pub/sub messaging service"
+      terraform_types: ["aws_sns_topic", "aws_sns_topic_subscription"]
+      pricing_formula: per_request
+      default_config: {monthly_publishes: 1000000}
+    eventbridge:
+      name: "Amazon EventBridge"
+      description: "Serverless event bus connecting application data"
+      terraform_types: ["aws_cloudwatch_event_rule", "aws_cloudwatch_event_bus"]
+      pricing_formula: per_request
+      default_config: {monthly_events: 1000000}
+
+  gcp:
+    pub_sub:
+      name: "Google Cloud Pub/Sub"
+      description: "Asynchronous and scalable messaging service"
+      terraform_types: ["google_pubsub_topic", "google_pubsub_subscription"]
+      pricing_formula: per_gb
+      default_config: {monthly_data_gb: 10}
+
+  azure:
+    service_bus:
+      name: "Azure Service Bus"
+      description: "Enterprise message broker with queues and pub/sub topics"
+      terraform_types: ["azurerm_servicebus_namespace", "azurerm_servicebus_queue", "azurerm_servicebus_topic"]
+      pricing_formula: per_request
+      default_config: {monthly_operations: 1000000, tier: standard}
+
+equivalences:
+  - aws: sqs
+    gcp: pub_sub
+    azure: service_bus
+  - aws: sns
+    gcp: pub_sub
+    azure: service_bus

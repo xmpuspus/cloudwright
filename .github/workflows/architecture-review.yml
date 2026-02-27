@@ -1,0 +1,47 @@
+name: Architecture Review
+
+on:
+  pull_request:
+    paths:
+      - '**.yaml'
+      - '**.yml'
+      - '.cloudwright/**'
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Find changed specs
+        id: specs
+        run: |
+          SPECS=$(git diff --name-only HEAD~1 HEAD -- '*.yaml' '*.yml' | grep -E '(spec|arch)' | head -1 || true)
+          echo "file=$SPECS" >> "$GITHUB_OUTPUT"
+          echo "found=$([ -n "$SPECS" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Get previous spec for diff
+        id: prev
+        if: steps.specs.outputs.found == 'true'
+        run: |
+          SPEC="${{ steps.specs.outputs.file }}"
+          if git show HEAD~1:"$SPEC" > /tmp/prev-spec.yaml 2>/dev/null; then
+            echo "path=/tmp/prev-spec.yaml" >> "$GITHUB_OUTPUT"
+          else
+            echo "path=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run Cloudwright checks
+        if: steps.specs.outputs.found == 'true'
+        uses: ./.github/actions/cloudwright
+        with:
+          spec-file: ${{ steps.specs.outputs.file }}
+          old-spec-file: ${{ steps.prev.outputs.path }}
+          checks: validate,cost,score,lint,diff
+          compliance: hipaa,soc2
+          fail-on: error
+          comment: 'true'

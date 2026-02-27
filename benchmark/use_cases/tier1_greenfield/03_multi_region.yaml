@@ -1,0 +1,22 @@
+id: "03"
+name: "Multi-Region Active-Active on AWS"
+tier: 1
+category: "greenfield"
+prompt: >
+  Design an active-active multi-region architecture on AWS deployed in us-east-1 and eu-west-1.
+  Use Route 53 with latency-based routing and health checks for global traffic management,
+  CloudFront for static asset delivery, ECS Fargate for the application tier in each region,
+  DynamoDB Global Tables for the database layer with cross-region replication, and S3 Cross-Region
+  Replication for file storage. The system must tolerate a complete regional outage with automatic
+  failover under 60 seconds. Budget is $5,000/month across both regions.
+constraints:
+  provider: aws
+  budget_monthly: 5000
+  compliance: []
+  regions: ["us-east-1", "eu-west-1"]
+expected:
+  min_components: 6
+  required_services: ["route53", "cloudfront", "ecs", "dynamodb", "s3"]
+  required_connections: 5
+  max_monthly_cost: 5000
+tags: ["aws", "multi-region", "active-active", "global", "high-availability"]

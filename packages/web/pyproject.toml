@@ -3,13 +3,13 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "silmaril-web"
+name = "cloudwright-web"
 version = "0.1.0"
-description = "Web UI for Silmaril architecture intelligence"
+description = "Web UI for Cloudwright architecture intelligence"
 requires-python = ">=3.12"
 license = "MIT"
 dependencies = [
-    "silmaril>=0.1.0",
+    "cloudwright>=0.1.0",
     "fastapi>=0.115.0,<1",
     "uvicorn[standard]>=0.32.0,<1",
 ]

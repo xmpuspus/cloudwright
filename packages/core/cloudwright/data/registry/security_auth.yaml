@@ -1,0 +1,29 @@
+category: security_auth
+services:
+  aws:
+    cognito:
+      name: "Amazon Cognito"
+      terraform_types: ["aws_cognito_user_pool", "aws_cognito_identity_pool"]
+      pricing_formula: per_mau
+      default_config:
+        monthly_active_users: 10000
+  gcp:
+    firebase_auth:
+      name: "Firebase Authentication"
+      terraform_types: ["google_identity_platform_config"]
+      pricing_formula: per_mau
+      default_config:
+        monthly_active_users: 10000
+  azure:
+    azure_ad:
+      name: "Microsoft Entra ID (Azure AD)"
+      terraform_types: ["azuread_application", "azuread_service_principal"]
+      pricing_formula: per_mau
+      default_config:
+        monthly_active_users: 10000
+        tier: P1
+
+equivalences:
+  - aws: cognito
+    gcp: firebase_auth
+    azure: azure_ad

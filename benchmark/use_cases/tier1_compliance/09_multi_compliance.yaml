@@ -1,0 +1,23 @@
+id: "09"
+name: "Multi-Compliance Healthcare Fintech Platform"
+tier: 1
+category: "compliance"
+prompt: >
+  Design an AWS architecture for a healthcare payments company that must simultaneously satisfy
+  HIPAA (for protected health information) and PCI-DSS (for payment card data). The platform
+  processes insurance claims and patient copayments. Architect separate VPCs for the PHI workloads
+  and cardholder data environments with no direct connectivity between them — use a dedicated
+  API Gateway with WAF as the integration layer. Both environments need KMS encryption, CloudTrail
+  audit logs, and GuardDuty threat detection. The PHI environment uses Aurora PostgreSQL; the
+  payment environment uses RDS with tokenization via Lambda. MFA required for all human access.
+constraints:
+  provider: aws
+  budget_monthly: 6000
+  compliance: ["hipaa", "pci-dss"]
+  regions: ["us-east-1"]
+expected:
+  min_components: 8
+  required_services: ["waf", "api_gateway", "rds", "kms", "guardduty", "cloudtrail", "lambda"]
+  required_connections: 7
+  max_monthly_cost: 6000
+tags: ["aws", "hipaa", "pci-dss", "healthcare", "fintech", "multi-compliance"]

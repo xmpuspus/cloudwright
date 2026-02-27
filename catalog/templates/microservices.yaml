@@ -1,0 +1,131 @@
+name: ECS Microservices
+version: 1
+provider: aws
+region: us-east-1
+components:
+  - id: cloudfront
+    service: cloudfront
+    provider: aws
+    label: CloudFront CDN
+    description: CDN caching and global entry point for the platform
+    tier: 0
+    config:
+      estimated_gb: 500
+  - id: alb
+    service: alb
+    provider: aws
+    label: Application Load Balancer
+    description: L7 load balancer routing traffic to ECS services by path
+    tier: 1
+  - id: ecs_api
+    service: ecs
+    provider: aws
+    label: API Service
+    description: Core API service handling client requests
+    tier: 2
+    config:
+      cpu: 512
+      memory_mb: 1024
+      desired_count: 2
+      auto_scaling: true
+  - id: ecs_user
+    service: ecs
+    provider: aws
+    label: User Service
+    description: Manages user accounts, profiles, and authentication
+    tier: 2
+    config:
+      cpu: 256
+      memory_mb: 512
+      desired_count: 2
+      auto_scaling: true
+  - id: ecs_order
+    service: ecs
+    provider: aws
+    label: Order Service
+    description: Handles order lifecycle and fulfillment logic
+    tier: 2
+    config:
+      cpu: 512
+      memory_mb: 1024
+      desired_count: 2
+      auto_scaling: true
+  - id: elasticache
+    service: elasticache
+    provider: aws
+    label: ElastiCache Redis
+    description: Distributed cache for sessions, rate limiting, and hot data
+    tier: 3
+    config:
+      engine: redis
+      node_type: cache.t3.medium
+      num_nodes: 2
+  - id: rds
+    service: rds
+    provider: aws
+    label: RDS PostgreSQL
+    description: Primary relational database for persistent service data
+    tier: 3
+    config:
+      engine: postgres
+      instance_class: db.r5.large
+      multi_az: true
+      storage_gb: 200
+      encryption: true
+  - id: sqs
+    service: sqs
+    provider: aws
+    label: SQS Event Queue
+    description: Async inter-service messaging for decoupled workflows
+    tier: 2
+    config:
+      visibility_timeout_seconds: 120
+connections:
+  - source: cloudfront
+    target: alb
+    label: HTTPS
+    protocol: HTTPS
+    port: 443
+  - source: alb
+    target: ecs_api
+    label: /api/*
+    protocol: HTTP
+    port: 8080
+  - source: alb
+    target: ecs_user
+    label: /users/*
+    protocol: HTTP
+    port: 8081
+  - source: alb
+    target: ecs_order
+    label: /orders/*
+    protocol: HTTP
+    port: 8082
+  - source: ecs_api
+    target: rds
+    label: Read/Write
+    protocol: TCP
+    port: 5432
+  - source: ecs_user
+    target: rds
+    label: Read/Write
+    protocol: TCP
+    port: 5432
+  - source: ecs_order
+    target: rds
+    label: Read/Write
+    protocol: TCP
+    port: 5432
+  - source: ecs_api
+    target: elasticache
+    label: Cache
+    protocol: TCP
+    port: 6379
+  - source: ecs_order
+    target: sqs
+    label: Publish events
+  - source: ecs_api
+    target: sqs
+    label: Consume events
+constraints:
+  availability: 99.9

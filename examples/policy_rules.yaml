@@ -1,0 +1,47 @@
+rules:
+  - name: max-components
+    description: "Architecture must not exceed 20 components"
+    severity: deny
+    check: max_components
+    value: 20
+
+  - name: require-encryption
+    description: "All data stores must have encryption configured"
+    severity: deny
+    check: all_encrypted
+
+  - name: require-multi-az
+    description: "Database components must use Multi-AZ deployment"
+    severity: warn
+    check: require_multi_az
+
+  - name: budget-limit
+    description: "Monthly cost must not exceed $5,000"
+    severity: warn
+    check: budget_monthly
+    value: 5000
+
+  - name: no-dynamodb
+    description: "DynamoDB is not allowed in this organization"
+    severity: deny
+    check: no_banned_services
+    value:
+      - dynamodb
+      - cosmos_db
+
+  - name: aws-only
+    description: "Only AWS and GCP are approved providers"
+    severity: deny
+    check: allowed_providers
+    value:
+      - aws
+      - gcp
+
+  - name: us-regions-only
+    description: "Only US regions are allowed"
+    severity: deny
+    check: allowed_regions
+    value:
+      - us-east-1
+      - us-west-2
+      - us-central1

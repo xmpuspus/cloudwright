@@ -1,0 +1,23 @@
+id: "19"
+name: "Import Mixed Multi-Cloud Providers"
+tier: 1
+category: "import"
+prompt: >
+  Import and consolidate an architecture spread across AWS and Cloudflare from two separate
+  Terraform state files. The AWS side: ECS Fargate application, RDS PostgreSQL, ElastiCache,
+  and an S3 bucket. The Cloudflare side: DNS zones, Workers for edge logic, R2 storage buckets,
+  and WAF rules. Merge these into a single ArchSpec that captures all components across both
+  providers, maps the network connections between AWS and Cloudflare (Cloudflare Workers proxying
+  to AWS ALB), and calculates a blended monthly cost. Identify any redundancy between AWS CloudFront
+  and Cloudflare's CDN capabilities.
+constraints:
+  provider: aws
+  budget_monthly: 2000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 6
+  required_services: ["ecs", "rds", "elasticache", "s3", "alb"]
+  required_connections: 5
+  max_monthly_cost: 2000
+tags: ["aws", "cloudflare", "multi-cloud", "import", "terraform", "mixed-providers"]

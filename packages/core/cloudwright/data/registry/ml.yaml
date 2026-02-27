@@ -1,0 +1,32 @@
+category: ml
+description: "Machine learning training and serving platforms"
+
+services:
+  aws:
+    sagemaker:
+      name: "Amazon SageMaker"
+      description: "Build, train, and deploy machine learning models"
+      terraform_types: ["aws_sagemaker_endpoint", "aws_sagemaker_model", "aws_sagemaker_notebook_instance", "aws_sagemaker_domain"]
+      pricing_formula: per_hour
+      default_config: {instance_type: ml.m5.xlarge, training_hours: 10}
+
+  gcp:
+    vertex_ai:
+      name: "Google Vertex AI"
+      description: "Unified ML platform for building and deploying ML models"
+      terraform_types: ["google_vertex_ai_endpoint", "google_vertex_ai_dataset", "google_vertex_ai_tensorboard"]
+      pricing_formula: per_hour
+      default_config: {machine_type: n1-standard-4, training_hours: 10}
+
+  azure:
+    azure_ml:
+      name: "Azure Machine Learning"
+      description: "End-to-end machine learning lifecycle management"
+      terraform_types: ["azurerm_machine_learning_workspace", "azurerm_machine_learning_compute_cluster", "azurerm_machine_learning_compute_instance"]
+      pricing_formula: per_hour
+      default_config: {instance_type: Standard_DS3_v2, training_hours: 10}
+
+equivalences:
+  - aws: sagemaker
+    gcp: vertex_ai
+    azure: azure_ml

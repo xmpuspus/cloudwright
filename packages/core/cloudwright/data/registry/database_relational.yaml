@@ -1,0 +1,96 @@
+category: database_relational
+services:
+  aws:
+    rds:
+      name: "Amazon RDS"
+      terraform_types: ["aws_db_instance", "aws_db_cluster"]
+      pricing_formula: per_hour
+      default_config:
+        instance_class: db.t3.medium
+        storage_gb: 100
+        engine: postgres
+    aurora:
+      name: "Amazon Aurora"
+      terraform_types: ["aws_rds_cluster", "aws_rds_cluster_instance"]
+      pricing_formula: per_hour
+      default_config:
+        instance_class: db.r5.large
+        storage_gb: 100
+        engine: aurora-postgresql
+  gcp:
+    cloud_sql:
+      name: "Google Cloud SQL"
+      terraform_types: ["google_sql_database_instance"]
+      pricing_formula: per_hour
+      default_config:
+        instance_type: db-n1-standard-2
+        storage_gb: 100
+        engine: postgres
+    spanner:
+      name: "Google Cloud Spanner"
+      terraform_types: ["google_spanner_instance"]
+      pricing_formula: per_node_hour
+      default_config:
+        num_nodes: 1
+        storage_gb: 100
+  azure:
+    azure_sql:
+      name: "Azure SQL Database"
+      terraform_types: ["azurerm_mssql_database", "azurerm_mssql_server"]
+      pricing_formula: per_hour
+      default_config:
+        tier: General Purpose
+        vcores: 4
+        storage_gb: 100
+
+equivalences:
+  - aws: rds
+    gcp: cloud_sql
+    azure: azure_sql
+  # Aurora is a premium variant of RDS; no distinct cross-cloud equivalent
+  - aws: aurora
+    azure: azure_sql
+
+feature_parity:
+  - equivalence: [rds, cloud_sql, azure_sql]
+    features:
+      multi_az_failover:
+        aws: true     # Multi-AZ deployment with automatic failover
+        gcp: true     # Regional instances with automatic failover
+        azure: true   # Zone-redundant configuration
+      read_replicas:
+        aws: true     # Up to 15 read replicas (Aurora), 5 (RDS)
+        gcp: true     # Read replicas in same or cross-region
+        azure: true   # Active geo-replication, up to 4 secondaries
+      point_in_time_restore:
+        aws: true     # Up to 35 days retention
+        gcp: true     # Up to 365 days retention
+        azure: true   # Up to 35 days retention
+      automatic_backups:
+        aws: true
+        gcp: true
+        azure: true
+      encryption_at_rest:
+        aws: true     # KMS-managed keys
+        gcp: true     # Google-managed or CMEK
+        azure: true   # TDE with service-managed or customer-managed keys
+      iam_authentication:
+        aws: true     # IAM database authentication for MySQL/Postgres
+        gcp: true     # Cloud SQL IAM authentication
+        azure: false  # Azure AD auth for Postgres only (preview)
+      serverless_mode:
+        aws: true     # Aurora Serverless v2
+        gcp: false    # No serverless Cloud SQL
+        azure: true   # Azure SQL Serverless compute tier
+      cross_region_replicas:
+        aws: true
+        gcp: true
+        azure: true   # Active geo-replication
+      postgis_extension:
+        aws: true
+        gcp: true
+        azure: true   # via Azure Database for PostgreSQL
+      query_performance_insights:
+        aws: true     # Performance Insights
+        gcp: true     # Query Insights
+        azure: true   # Query Performance Insight

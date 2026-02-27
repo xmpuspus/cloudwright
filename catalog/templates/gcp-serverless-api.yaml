@@ -1,0 +1,48 @@
+name: Serverless REST API (GCP)
+version: 1
+provider: gcp
+region: us-central1
+components:
+  - id: gateway
+    service: api_gateway
+    provider: gcp
+    label: API Gateway
+    tier: 1
+    config:
+      type: managed
+  - id: functions
+    service: cloud_functions
+    provider: gcp
+    label: Cloud Functions
+    tier: 2
+    config:
+      runtime: python312
+      memory_mb: 256
+      timeout: 60
+  - id: db
+    service: firestore
+    provider: gcp
+    label: Firestore
+    tier: 3
+    config:
+      mode: native
+      encryption: true
+  - id: storage
+    service: cloud_storage
+    provider: gcp
+    label: Cloud Storage
+    tier: 3
+    config:
+      class: STANDARD
+      versioning: true
+connections:
+  - source: gateway
+    target: functions
+    label: API routing
+    protocol: HTTPS
+  - source: functions
+    target: db
+    label: Data access
+  - source: functions
+    target: storage
+    label: File storage

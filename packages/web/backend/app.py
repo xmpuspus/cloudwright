@@ -1,24 +1,24 @@
-"""FastAPI backend wrapping the Silmaril core package."""
+"""FastAPI backend wrapping the Cloudwright core package."""
 
 from __future__ import annotations
 
 import traceback
 from pathlib import Path
 
+from cloudwright import ArchSpec, Constraints
+from cloudwright.architect import Architect
+from cloudwright.catalog import Catalog
+from cloudwright.cost import CostEngine
+from cloudwright.differ import Differ
+from cloudwright.exporter import FORMATS, export_spec
+from cloudwright.validator import Validator
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from silmaril import ArchSpec, Constraints
-from silmaril.architect import Architect
-from silmaril.catalog import Catalog
-from silmaril.cost import CostEngine
-from silmaril.differ import Differ
-from silmaril.exporter import FORMATS, export_spec
-from silmaril.validator import Validator
 
-app = FastAPI(title="Silmaril", version="0.1.0", description="Architecture intelligence for cloud engineers")
+app = FastAPI(title="Cloudwright", version="0.1.0", description="Architecture intelligence for cloud engineers")
 
 app.add_middleware(
     CORSMiddleware,
@@ -270,7 +270,7 @@ if _frontend_dist.exists():
 
 
 def serve(host: str = "0.0.0.0", port: int = 8000):
-    """Start the Silmaril web server."""
+    """Start the Cloudwright web server."""
     import uvicorn
 
     uvicorn.run(app, host=host, port=port)

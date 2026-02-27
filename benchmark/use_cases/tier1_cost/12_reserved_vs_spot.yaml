@@ -1,0 +1,23 @@
+id: "12"
+name: "Reserved vs Spot Pricing for Batch Processing"
+tier: 1
+category: "cost"
+prompt: >
+  Design a cost-optimized batch processing architecture on AWS for a data analytics company that
+  runs nightly ETL jobs (8pm-4am) and ad-hoc ML training jobs (unpredictable, fault-tolerant).
+  For the ETL workload: evaluate 1-year Reserved EC2 r5.4xlarge vs on-demand pricing for 8 hours/night.
+  For ML training: use Spot Instance fleets with diversified instance types (p3.2xlarge, p3.8xlarge,
+  g4dn.xlarge) with automatic interruption handling via checkpointing to S3. Include SQS for job
+  queuing, Step Functions for ETL orchestration, and S3 for data staging. Show the cost breakdown
+  comparing on-demand vs the hybrid Reserved+Spot strategy.
+constraints:
+  provider: aws
+  budget_monthly: 2000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 5
+  required_services: ["ec2", "s3", "sqs", "step_functions"]
+  required_connections: 4
+  max_monthly_cost: 2000
+tags: ["aws", "cost-optimization", "spot", "reserved", "batch", "ml-training"]

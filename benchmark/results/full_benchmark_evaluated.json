@@ -1,0 +1,5432 @@
+[
+  {
+    "case_id": "01",
+    "case_name": "Startup MVP on AWS",
+    "tool": "cloudwright",
+    "elapsed_seconds": 10.55203104019165,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 6
+      },
+      "cost_accuracy": {
+        "score": 100,
+        "estimated": 158.08,
+        "budget": 500
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "cloudfront",
+          "ecs",
+          "elasticache",
+          "rds"
+        ],
+        "missing": [],
+        "total_services": 6
+      },
+      "compliance_completeness": {
+        "score": 42.9,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 95.6,
+        "seconds": 10.6,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "01",
+    "case_name": "Startup MVP on AWS",
+    "tool": "claude_raw",
+    "elapsed_seconds": 37.903138637542725,
+    "scores": {
+      "structural_validity": {
+        "score": 80,
+        "pass": true,
+        "reason": "yaml block with components/services"
+      },
+      "cost_accuracy": {
+        "score": 100.0,
+        "estimated": 500.0,
+        "budget": 500
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "cloudfront",
+          "ecs",
+          "elasticache",
+          "rds"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 30.0,
+        "terms_found": 3,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 37.9,
+        "estimated_total_minutes": 30.6,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "02",
+    "case_name": "Enterprise Web Application on AWS",
+    "tool": "cloudwright",
+    "elapsed_seconds": 14.518104076385498,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 8
+      },
+      "cost_accuracy": {
+        "score": 100,
+        "estimated": 173.08,
+        "budget": 3000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "cloudfront",
+          "ecs",
+          "elasticache",
+          "rds",
+          "s3",
+          "waf"
+        ],
+        "missing": [],
+        "total_services": 8
+      },
+      "compliance_completeness": {
+        "score": 71.4,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 94.0,
+        "seconds": 14.5,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "02",
+    "case_name": "Enterprise Web Application on AWS",
+    "tool": "claude_raw",
+    "elapsed_seconds": 40.09127593040466,
+    "scores": {
+      "structural_validity": {
+        "score": 20,
+        "pass": false,
+        "reason": "yaml block present but invalid yaml"
+      },
+      "cost_accuracy": {
+        "score": 0,
+        "reason": "no cost estimate found in response"
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "cloudfront",
+          "ecs",
+          "elasticache",
+          "rds",
+          "s3",
+          "waf"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 50.0,
+        "terms_found": 5,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 40.1,
+        "estimated_total_minutes": 30.7,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "03",
+    "case_name": "Multi-Region Active-Active on AWS",
+    "tool": "cloudwright",
+    "elapsed_seconds": 18.000065088272095,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 9
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 69.66,
+        "budget": 5000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "cloudfront",
+          "dynamodb",
+          "ecs",
+          "route53",
+          "s3"
+        ],
+        "missing": [],
+        "total_services": 6
+      },
+      "compliance_completeness": {
+        "score": 57.1,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 92.5,
+        "seconds": 18.0,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "03",
+    "case_name": "Multi-Region Active-Active on AWS",
+    "tool": "claude_raw",
+    "elapsed_seconds": 47.54108905792236,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 46.9,
+        "estimated": 2345.0,
+        "budget": 5000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "cloudfront",
+          "dynamodb",
+          "ecs",
+          "route53",
+          "s3"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 40.0,
+        "terms_found": 4,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 47.5,
+        "estimated_total_minutes": 30.8,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "04",
+    "case_name": "Hybrid Cloud with On-Premises Connection",
+    "tool": "cloudwright",
+    "elapsed_seconds": 17.539093017578125,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 9
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 84.52,
+        "budget": 2000
+      },
+      "service_correctness": {
+        "score": 60.0,
+        "found": [
+          "ec2",
+          "rds",
+          "s3"
+        ],
+        "missing": [
+          "direct_connect",
+          "transit_gateway"
+        ],
+        "total_services": 4
+      },
+      "compliance_completeness": {
+        "score": 57.1,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 92.7,
+        "seconds": 17.5,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "04",
+    "case_name": "Hybrid Cloud with On-Premises Connection",
+    "tool": "claude_raw",
+    "elapsed_seconds": 42.80016016960144,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 5.0,
+        "estimated": 100.0,
+        "budget": 2000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "direct_connect",
+          "ec2",
+          "rds",
+          "s3",
+          "transit_gateway"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 30.0,
+        "terms_found": 3,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 42.8,
+        "estimated_total_minutes": 30.7,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "05",
+    "case_name": "Serverless API Backend on AWS",
+    "tool": "cloudwright",
+    "elapsed_seconds": 16.14954686164856,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 10
+      },
+      "cost_accuracy": {
+        "score": 100,
+        "estimated": 48.39,
+        "budget": 200
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "api_gateway",
+          "cognito",
+          "dynamodb",
+          "lambda",
+          "s3",
+          "sns",
+          "sqs"
+        ],
+        "missing": [],
+        "total_services": 8
+      },
+      "compliance_completeness": {
+        "score": 28.6,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 93.3,
+        "seconds": 16.1,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "05",
+    "case_name": "Serverless API Backend on AWS",
+    "tool": "claude_raw",
+    "elapsed_seconds": 38.492161989212036,
+    "scores": {
+      "structural_validity": {
+        "score": 80,
+        "pass": true,
+        "reason": "yaml block with components/services"
+      },
+      "cost_accuracy": {
+        "score": 100.0,
+        "estimated": 200.0,
+        "budget": 200
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "api_gateway",
+          "cognito",
+          "dynamodb",
+          "lambda",
+          "s3",
+          "sns",
+          "sqs"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 50.0,
+        "terms_found": 5,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 38.5,
+        "estimated_total_minutes": 30.6,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "06",
+    "case_name": "HIPAA-Compliant Healthcare Patient Portal",
+    "tool": "cloudwright",
+    "elapsed_seconds": 19.801616191864014,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 10
+      },
+      "cost_accuracy": {
+        "score": 100,
+        "estimated": 158.08,
+        "budget": 2500
+      },
+      "service_correctness": {
+        "score": 83.3,
+        "found": [
+          "cloudtrail",
+          "cognito",
+          "ecs",
+          "rds",
+          "s3"
+        ],
+        "missing": [
+          "kms"
+        ],
+        "total_services": 10
+      },
+      "compliance_completeness": {
+        "score": 80.0,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 91.7,
+        "seconds": 19.8,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "06",
+    "case_name": "HIPAA-Compliant Healthcare Patient Portal",
+    "tool": "claude_raw",
+    "elapsed_seconds": 49.823163986206055,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 0,
+        "reason": "no cost estimate found in response"
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "cloudtrail",
+          "cognito",
+          "ecs",
+          "kms",
+          "rds",
+          "s3"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 90.0,
+        "terms_found": 9,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 49.8,
+        "estimated_total_minutes": 30.8,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "07",
+    "case_name": "PCI-DSS Payment Processing Platform",
+    "tool": "cloudwright",
+    "elapsed_seconds": 17.19982886314392,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 9
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 71.24,
+        "budget": 4000
+      },
+      "service_correctness": {
+        "score": 71.4,
+        "found": [
+          "api_gateway",
+          "cloudtrail",
+          "lambda",
+          "rds",
+          "waf"
+        ],
+        "missing": [
+          "guardduty",
+          "kms"
+        ],
+        "total_services": 8
+      },
+      "compliance_completeness": {
+        "score": 100.0,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 92.8,
+        "seconds": 17.2,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "07",
+    "case_name": "PCI-DSS Payment Processing Platform",
+    "tool": "claude_raw",
+    "elapsed_seconds": 47.47865390777588,
+    "scores": {
+      "structural_validity": {
+        "score": 80,
+        "pass": true,
+        "reason": "yaml block with components/services"
+      },
+      "cost_accuracy": {
+        "score": 0,
+        "reason": "no cost estimate found in response"
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "api_gateway",
+          "cloudtrail",
+          "guardduty",
+          "kms",
+          "lambda",
+          "rds",
+          "waf"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 70.0,
+        "terms_found": 7,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 47.5,
+        "estimated_total_minutes": 30.8,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "08",
+    "case_name": "SOC 2 Type II SaaS Platform",
+    "tool": "cloudwright",
+    "elapsed_seconds": 17.151113033294678,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 9
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 201.08,
+        "budget": 5000
+      },
+      "service_correctness": {
+        "score": 66.7,
+        "found": [
+          "cloudtrail",
+          "cognito",
+          "eks",
+          "rds"
+        ],
+        "missing": [
+          "config",
+          "security_hub"
+        ],
+        "total_services": 9
+      },
+      "compliance_completeness": {
+        "score": 75.0,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 92.9,
+        "seconds": 17.2,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "08",
+    "case_name": "SOC 2 Type II SaaS Platform",
+    "tool": "claude_raw",
+    "elapsed_seconds": 54.09513282775879,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 100.0,
+        "estimated": 5000.0,
+        "budget": 5000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "cloudtrail",
+          "cognito",
+          "config",
+          "eks",
+          "rds",
+          "security_hub"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 50.0,
+        "terms_found": 5,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 54.1,
+        "estimated_total_minutes": 30.9,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "09",
+    "case_name": "Multi-Compliance Healthcare Fintech Platform",
+    "tool": "cloudwright",
+    "elapsed_seconds": 17.73990559577942,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 10
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 148.89,
+        "budget": 6000
+      },
+      "service_correctness": {
+        "score": 71.4,
+        "found": [
+          "api_gateway",
+          "cloudtrail",
+          "lambda",
+          "rds",
+          "waf"
+        ],
+        "missing": [
+          "guardduty",
+          "kms"
+        ],
+        "total_services": 9
+      },
+      "compliance_completeness": {
+        "score": 100.0,
+        "frameworks_checked": 2
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 92.6,
+        "seconds": 17.7,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "09",
+    "case_name": "Multi-Compliance Healthcare Fintech Platform",
+    "tool": "claude_raw",
+    "elapsed_seconds": 66.9507749080658,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 0,
+        "reason": "no cost estimate found in response"
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "api_gateway",
+          "cloudtrail",
+          "guardduty",
+          "kms",
+          "lambda",
+          "rds",
+          "waf"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 70.0,
+        "terms_found": 7,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 67.0,
+        "estimated_total_minutes": 31.1,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "10",
+    "case_name": "HIPAA-Compliant Serverless Telehealth API",
+    "tool": "cloudwright",
+    "elapsed_seconds": 20.267131090164185,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 11
+      },
+      "cost_accuracy": {
+        "score": 100,
+        "estimated": 114.13,
+        "budget": 800
+      },
+      "service_correctness": {
+        "score": 83.3,
+        "found": [
+          "api_gateway",
+          "cloudtrail",
+          "dynamodb",
+          "lambda",
+          "s3"
+        ],
+        "missing": [
+          "kms"
+        ],
+        "total_services": 7
+      },
+      "compliance_completeness": {
+        "score": 80.0,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 91.6,
+        "seconds": 20.3,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "10",
+    "case_name": "HIPAA-Compliant Serverless Telehealth API",
+    "tool": "claude_raw",
+    "elapsed_seconds": 52.19975924491882,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 2.8,
+        "estimated": 22.0,
+        "budget": 800
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "api_gateway",
+          "cloudtrail",
+          "dynamodb",
+          "kms",
+          "lambda",
+          "s3"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 60.0,
+        "terms_found": 6,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 52.2,
+        "estimated_total_minutes": 30.9,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "11",
+    "case_name": "EC2 Fleet Rightsizing Optimization",
+    "tool": "cloudwright",
+    "elapsed_seconds": 13.36301302909851,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 6
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 147.95,
+        "budget": 3000
+      },
+      "service_correctness": {
+        "score": 75.0,
+        "found": [
+          "alb",
+          "ec2",
+          "rds"
+        ],
+        "missing": [
+          "autoscaling"
+        ],
+        "total_services": 6
+      },
+      "compliance_completeness": {
+        "score": 71.4,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 94.4,
+        "seconds": 13.4,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "11",
+    "case_name": "EC2 Fleet Rightsizing Optimization",
+    "tool": "claude_raw",
+    "elapsed_seconds": 30.257878065109253,
+    "scores": {
+      "structural_validity": {
+        "score": 80,
+        "pass": true,
+        "reason": "yaml block with components/services"
+      },
+      "cost_accuracy": {
+        "score": 15.4,
+        "estimated": 463.0,
+        "budget": 3000
+      },
+      "service_correctness": {
+        "score": 75.0,
+        "found": [
+          "alb",
+          "ec2",
+          "rds"
+        ],
+        "missing": [
+          "autoscaling"
+        ]
+      },
+      "compliance_completeness": {
+        "score": 20.0,
+        "terms_found": 2,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 30.3,
+        "estimated_total_minutes": 30.5,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "12",
+    "case_name": "Reserved vs Spot Pricing for Batch Processing",
+    "tool": "cloudwright",
+    "elapsed_seconds": 17.79233717918396,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 8
+      },
+      "cost_accuracy": {
+        "score": 100,
+        "estimated": 748.64,
+        "budget": 2000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "ec2",
+          "s3",
+          "sqs",
+          "step_functions"
+        ],
+        "missing": [],
+        "total_services": 6
+      },
+      "compliance_completeness": {
+        "score": 42.9,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 92.6,
+        "seconds": 17.8,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "12",
+    "case_name": "Reserved vs Spot Pricing for Batch Processing",
+    "tool": "claude_raw",
+    "elapsed_seconds": 37.53702092170715,
+    "scores": {
+      "structural_validity": {
+        "score": 80,
+        "pass": true,
+        "reason": "yaml block with components/services"
+      },
+      "cost_accuracy": {
+        "score": 0,
+        "reason": "no cost estimate found in response"
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "ec2",
+          "s3",
+          "sqs",
+          "step_functions"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 20.0,
+        "terms_found": 2,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 37.5,
+        "estimated_total_minutes": 30.6,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "13",
+    "case_name": "Cross-Cloud Cost Comparison \u2014 3-Tier Web App",
+    "tool": "cloudwright",
+    "elapsed_seconds": 13.41047716140747,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 7
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 121.93,
+        "budget": 3000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "cloudfront",
+          "ecs",
+          "elasticache",
+          "rds"
+        ],
+        "missing": [],
+        "total_services": 7
+      },
+      "compliance_completeness": {
+        "score": 57.1,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 94.4,
+        "seconds": 13.4,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "13",
+    "case_name": "Cross-Cloud Cost Comparison \u2014 3-Tier Web App",
+    "tool": "claude_raw",
+    "elapsed_seconds": 34.889681816101074,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 0.6,
+        "estimated": 18.0,
+        "budget": 3000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "cloudfront",
+          "ecs",
+          "elasticache",
+          "rds"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 10.0,
+        "terms_found": 1,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 34.9,
+        "estimated_total_minutes": 30.6,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "14",
+    "case_name": "Full-Featured App Under $100/Month",
+    "tool": "cloudwright",
+    "elapsed_seconds": 17.807706117630005,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 9
+      },
+      "cost_accuracy": {
+        "score": 100,
+        "estimated": 95.89,
+        "budget": 100
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "cloudfront",
+          "cognito",
+          "dynamodb",
+          "lambda",
+          "s3"
+        ],
+        "missing": [],
+        "total_services": 8
+      },
+      "compliance_completeness": {
+        "score": 28.6,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 92.6,
+        "seconds": 17.8,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "14",
+    "case_name": "Full-Featured App Under $100/Month",
+    "tool": "claude_raw",
+    "elapsed_seconds": 38.09200096130371,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 100.0,
+        "estimated": 100.0,
+        "budget": 100
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "cloudfront",
+          "cognito",
+          "dynamodb",
+          "lambda",
+          "s3"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 40.0,
+        "terms_found": 4,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 38.1,
+        "estimated_total_minutes": 30.6,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "15",
+    "case_name": "FinOps Review of Existing Architecture",
+    "tool": "cloudwright",
+    "elapsed_seconds": 17.053598165512085,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 9
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 223.79,
+        "budget": 7000
+      },
+      "service_correctness": {
+        "score": 80.0,
+        "found": [
+          "ec2",
+          "elasticache",
+          "rds",
+          "s3"
+        ],
+        "missing": [
+          "nat_gateway"
+        ],
+        "total_services": 6
+      },
+      "compliance_completeness": {
+        "score": 71.4,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 92.9,
+        "seconds": 17.1,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "15",
+    "case_name": "FinOps Review of Existing Architecture",
+    "tool": "claude_raw",
+    "elapsed_seconds": 30.338867902755737,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 61.7,
+        "estimated": 4320.0,
+        "budget": 7000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "ec2",
+          "elasticache",
+          "nat_gateway",
+          "rds",
+          "s3"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 30.0,
+        "terms_found": 3,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 30.3,
+        "estimated_total_minutes": 30.5,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "16",
+    "case_name": "Import Small Terraform State",
+    "tool": "cloudwright",
+    "elapsed_seconds": 15.501185178756714,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 8
+      },
+      "cost_accuracy": {
+        "score": 100,
+        "estimated": 133.32,
+        "budget": 500
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "ec2",
+          "rds",
+          "s3"
+        ],
+        "missing": [],
+        "total_services": 7
+      },
+      "compliance_completeness": {
+        "score": 75.0,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 93.5,
+        "seconds": 15.5,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "16",
+    "case_name": "Import Small Terraform State",
+    "tool": "claude_raw",
+    "elapsed_seconds": 43.47372603416443,
+    "scores": {
+      "structural_validity": {
+        "score": 80,
+        "pass": true,
+        "reason": "yaml block with components/services"
+      },
+      "cost_accuracy": {
+        "score": 0,
+        "reason": "no cost estimate found in response"
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "ec2",
+          "rds",
+          "s3"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 60.0,
+        "terms_found": 6,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 43.5,
+        "estimated_total_minutes": 30.7,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "17",
+    "case_name": "Import Large Multi-Module Terraform State",
+    "tool": "cloudwright",
+    "elapsed_seconds": 14.63002896308899,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 8
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 225.08,
+        "budget": 8000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "cloudfront",
+          "eks",
+          "elasticache",
+          "rds",
+          "route53",
+          "s3"
+        ],
+        "missing": [],
+        "total_services": 8
+      },
+      "compliance_completeness": {
+        "score": 71.4,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 93.9,
+        "seconds": 14.6,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "17",
+    "case_name": "Import Large Multi-Module Terraform State",
+    "tool": "claude_raw",
+    "elapsed_seconds": 77.43986296653748,
+    "scores": {
+      "structural_validity": {
+        "score": 20,
+        "pass": false,
+        "reason": "yaml block present but invalid yaml"
+      },
+      "cost_accuracy": {
+        "score": 0.6,
+        "estimated": 45.0,
+        "budget": 8000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "cloudfront",
+          "eks",
+          "elasticache",
+          "rds",
+          "route53",
+          "s3"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 30.0,
+        "terms_found": 3,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 77.4,
+        "estimated_total_minutes": 31.3,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "18",
+    "case_name": "Import CloudFormation Template",
+    "tool": "cloudwright",
+    "elapsed_seconds": 14.537561178207397,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 8
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 137.58,
+        "budget": 3000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "cloudtrail",
+          "cognito",
+          "ecs",
+          "rds",
+          "s3",
+          "waf"
+        ],
+        "missing": [],
+        "total_services": 8
+      },
+      "compliance_completeness": {
+        "score": 100.0,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 93.9,
+        "seconds": 14.5,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "18",
+    "case_name": "Import CloudFormation Template",
+    "tool": "claude_raw",
+    "elapsed_seconds": 64.12905287742615,
+    "scores": {
+      "structural_validity": {
+        "score": 20,
+        "pass": false,
+        "reason": "yaml block present but invalid yaml"
+      },
+      "cost_accuracy": {
+        "score": 0,
+        "reason": "no cost estimate found in response"
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "cloudtrail",
+          "cognito",
+          "ecs",
+          "rds",
+          "s3",
+          "waf"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 70.0,
+        "terms_found": 7,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 64.1,
+        "estimated_total_minutes": 31.1,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "19",
+    "case_name": "Import Mixed Multi-Cloud Providers",
+    "tool": "cloudwright",
+    "elapsed_seconds": 16.81086301803589,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 9
+      },
+      "cost_accuracy": {
+        "score": 100,
+        "estimated": 158.6,
+        "budget": 2000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "ecs",
+          "elasticache",
+          "rds",
+          "s3"
+        ],
+        "missing": [],
+        "total_services": 8
+      },
+      "compliance_completeness": {
+        "score": 57.1,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 93.0,
+        "seconds": 16.8,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "19",
+    "case_name": "Import Mixed Multi-Cloud Providers",
+    "tool": "claude_raw",
+    "elapsed_seconds": 50.816251277923584,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 43.1,
+        "estimated": 862.43,
+        "budget": 2000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "ecs",
+          "elasticache",
+          "rds",
+          "s3"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 30.0,
+        "terms_found": 3,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 50.8,
+        "estimated_total_minutes": 30.8,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "20",
+    "case_name": "Import Serverless Framework Deployment",
+    "tool": "cloudwright",
+    "elapsed_seconds": 15.013142824172974,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 9
+      },
+      "cost_accuracy": {
+        "score": 100,
+        "estimated": 41.76,
+        "budget": 300
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "api_gateway",
+          "cognito",
+          "dynamodb",
+          "lambda",
+          "s3",
+          "sns",
+          "sqs"
+        ],
+        "missing": [],
+        "total_services": 7
+      },
+      "compliance_completeness": {
+        "score": 42.9,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 93.7,
+        "seconds": 15.0,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "20",
+    "case_name": "Import Serverless Framework Deployment",
+    "tool": "claude_raw",
+    "elapsed_seconds": 44.340012073516846,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 6.2,
+        "estimated": 18.5,
+        "budget": 300
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "api_gateway",
+          "cognito",
+          "dynamodb",
+          "lambda",
+          "s3",
+          "sns",
+          "sqs"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 10.0,
+        "terms_found": 1,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 44.3,
+        "estimated_total_minutes": 30.7,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "21",
+    "case_name": "EKS Microservices Platform on AWS",
+    "tool": "cloudwright",
+    "elapsed_seconds": 13.989510297775269,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 8
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 241.43,
+        "budget": 6000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "dynamodb",
+          "ecr",
+          "eks",
+          "elasticache",
+          "rds"
+        ],
+        "missing": [],
+        "total_services": 8
+      },
+      "compliance_completeness": {
+        "score": 71.4,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 94.2,
+        "seconds": 14.0,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "21",
+    "case_name": "EKS Microservices Platform on AWS",
+    "tool": "claude_raw",
+    "elapsed_seconds": 44.78488874435425,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 0,
+        "reason": "no cost estimate found in response"
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "dynamodb",
+          "ecr",
+          "eks",
+          "elasticache",
+          "rds"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 30.0,
+        "terms_found": 3,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 44.8,
+        "estimated_total_minutes": 30.7,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "22",
+    "case_name": "GKE Microservices Platform on GCP",
+    "tool": "cloudwright",
+    "elapsed_seconds": 15.621608018875122,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 9
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 209.06,
+        "budget": 8000
+      },
+      "service_correctness": {
+        "score": 80.0,
+        "found": [
+          "cloud_load_balancing",
+          "cloud_sql",
+          "gke",
+          "memorystore"
+        ],
+        "missing": [
+          "artifact_registry"
+        ],
+        "total_services": 8
+      },
+      "compliance_completeness": {
+        "score": 71.4,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 93.5,
+        "seconds": 15.6,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "22",
+    "case_name": "GKE Microservices Platform on GCP",
+    "tool": "claude_raw",
+    "elapsed_seconds": 41.91245698928833,
+    "scores": {
+      "structural_validity": {
+        "score": 80,
+        "pass": true,
+        "reason": "yaml block with components/services"
+      },
+      "cost_accuracy": {
+        "score": 30.9,
+        "estimated": 2475.0,
+        "budget": 8000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "artifact_registry",
+          "cloud_load_balancing",
+          "cloud_sql",
+          "gke",
+          "memorystore"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 20.0,
+        "terms_found": 2,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 41.9,
+        "estimated_total_minutes": 30.7,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "23",
+    "case_name": "AKS Microservices Platform on Azure",
+    "tool": "cloudwright",
+    "elapsed_seconds": 16.639426708221436,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 9
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 159.45,
+        "budget": 7000
+      },
+      "service_correctness": {
+        "score": 60.0,
+        "found": [
+          "aks",
+          "azure_cache_redis",
+          "cosmos_db"
+        ],
+        "missing": [
+          "azure_container_registry",
+          "azure_database_postgresql"
+        ],
+        "total_services": 9
+      },
+      "compliance_completeness": {
+        "score": 71.4,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 93.1,
+        "seconds": 16.6,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "23",
+    "case_name": "AKS Microservices Platform on Azure",
+    "tool": "claude_raw",
+    "elapsed_seconds": 34.22081398963928,
+    "scores": {
+      "structural_validity": {
+        "score": 80,
+        "pass": true,
+        "reason": "yaml block with components/services"
+      },
+      "cost_accuracy": {
+        "score": 47.8,
+        "estimated": 3347.0,
+        "budget": 7000
+      },
+      "service_correctness": {
+        "score": 60.0,
+        "found": [
+          "aks",
+          "azure_container_registry",
+          "cosmos_db"
+        ],
+        "missing": [
+          "azure_cache_redis",
+          "azure_database_postgresql"
+        ]
+      },
+      "compliance_completeness": {
+        "score": 40.0,
+        "terms_found": 4,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 34.2,
+        "estimated_total_minutes": 30.6,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "24",
+    "case_name": "Event-Driven Microservices on AWS",
+    "tool": "cloudwright",
+    "elapsed_seconds": 20.88444709777832,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 12
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 131.74,
+        "budget": 3000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "dynamodb",
+          "ecs",
+          "eventbridge",
+          "kinesis",
+          "lambda",
+          "sns",
+          "sqs"
+        ],
+        "missing": [],
+        "total_services": 9
+      },
+      "compliance_completeness": {
+        "score": 42.9,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 91.3,
+        "seconds": 20.9,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "24",
+    "case_name": "Event-Driven Microservices on AWS",
+    "tool": "claude_raw",
+    "elapsed_seconds": 51.35528898239136,
+    "scores": {
+      "structural_validity": {
+        "score": 80,
+        "pass": true,
+        "reason": "yaml block with components/services"
+      },
+      "cost_accuracy": {
+        "score": 100.0,
+        "estimated": 3000.0,
+        "budget": 3000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "dynamodb",
+          "ecs",
+          "eventbridge",
+          "kinesis",
+          "lambda",
+          "sns",
+          "sqs"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 20.0,
+        "terms_found": 2,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 51.4,
+        "estimated_total_minutes": 30.9,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "25",
+    "case_name": "gRPC Service Mesh on EKS",
+    "tool": "cloudwright",
+    "elapsed_seconds": 20.154571056365967,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 9
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 292.93,
+        "budget": 7000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "eks",
+          "elasticache",
+          "nlb",
+          "rds"
+        ],
+        "missing": [],
+        "total_services": 7
+      },
+      "compliance_completeness": {
+        "score": 71.4,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 91.6,
+        "seconds": 20.2,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "25",
+    "case_name": "gRPC Service Mesh on EKS",
+    "tool": "claude_raw",
+    "elapsed_seconds": 70.46405291557312,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 2.1,
+        "estimated": 150.0,
+        "budget": 7000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "eks",
+          "elasticache",
+          "nlb",
+          "rds"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 50.0,
+        "terms_found": 5,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 70.5,
+        "estimated_total_minutes": 31.2,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "26",
+    "case_name": "Data Lake on AWS S3 with Athena",
+    "tool": "cloudwright",
+    "elapsed_seconds": 19.134137868881226,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 10
+      },
+      "cost_accuracy": {
+        "score": 100,
+        "estimated": 413.82,
+        "budget": 4000
+      },
+      "service_correctness": {
+        "score": 40.0,
+        "found": [
+          "kinesis",
+          "s3"
+        ],
+        "missing": [
+          "athena",
+          "glue",
+          "lake_formation"
+        ],
+        "total_services": 6
+      },
+      "compliance_completeness": {
+        "score": 28.6,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 92.0,
+        "seconds": 19.1,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "26",
+    "case_name": "Data Lake on AWS S3 with Athena",
+    "tool": "claude_raw",
+    "elapsed_seconds": 47.251376152038574,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 100.0,
+        "estimated": 4000.0,
+        "budget": 4000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "athena",
+          "glue",
+          "kinesis",
+          "lake_formation",
+          "s3"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 60.0,
+        "terms_found": 6,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 47.3,
+        "estimated_total_minutes": 30.8,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "27",
+    "case_name": "Real-Time Streaming Analytics Platform",
+    "tool": "cloudwright",
+    "elapsed_seconds": 15.771403074264526,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 8
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 301.15,
+        "budget": 10000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "dynamodb",
+          "elasticache",
+          "kinesis",
+          "redshift",
+          "s3"
+        ],
+        "missing": [],
+        "total_services": 6
+      },
+      "compliance_completeness": {
+        "score": 42.9,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 93.4,
+        "seconds": 15.8,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "27",
+    "case_name": "Real-Time Streaming Analytics Platform",
+    "tool": "claude_raw",
+    "elapsed_seconds": 45.89936089515686,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 75.0,
+        "estimated": 12500.0,
+        "budget": 10000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "dynamodb",
+          "elasticache",
+          "kinesis",
+          "redshift",
+          "s3"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 20.0,
+        "terms_found": 2,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 45.9,
+        "estimated_total_minutes": 30.8,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "28",
+    "case_name": "Data Mesh Architecture on AWS",
+    "tool": "cloudwright",
+    "elapsed_seconds": 21.08450222015381,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 10
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 211.67,
+        "budget": 15000
+      },
+      "service_correctness": {
+        "score": 80.0,
+        "found": [
+          "eventbridge",
+          "glue",
+          "redshift",
+          "s3"
+        ],
+        "missing": [
+          "lake_formation"
+        ],
+        "total_services": 8
+      },
+      "compliance_completeness": {
+        "score": 42.9,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 91.2,
+        "seconds": 21.1,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "28",
+    "case_name": "Data Mesh Architecture on AWS",
+    "tool": "claude_raw",
+    "elapsed_seconds": 44.750405073165894,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 100.0,
+        "estimated": 15000.0,
+        "budget": 15000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "eventbridge",
+          "glue",
+          "lake_formation",
+          "redshift",
+          "s3"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 30.0,
+        "terms_found": 3,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 44.8,
+        "estimated_total_minutes": 30.7,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "29",
+    "case_name": "Change Data Capture Pipeline with DMS",
+    "tool": "cloudwright",
+    "elapsed_seconds": 14.90796422958374,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 8
+      },
+      "cost_accuracy": {
+        "score": 100,
+        "estimated": 186.02,
+        "budget": 3000
+      },
+      "service_correctness": {
+        "score": 83.3,
+        "found": [
+          "dynamodb",
+          "kinesis",
+          "lambda",
+          "rds",
+          "s3"
+        ],
+        "missing": [
+          "dms"
+        ],
+        "total_services": 7
+      },
+      "compliance_completeness": {
+        "score": 57.1,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 93.8,
+        "seconds": 14.9,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "29",
+    "case_name": "Change Data Capture Pipeline with DMS",
+    "tool": "claude_raw",
+    "elapsed_seconds": 40.199872732162476,
+    "scores": {
+      "structural_validity": {
+        "score": 80,
+        "pass": true,
+        "reason": "yaml block with components/services"
+      },
+      "cost_accuracy": {
+        "score": 0,
+        "reason": "no cost estimate found in response"
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "dms",
+          "dynamodb",
+          "kinesis",
+          "lambda",
+          "rds",
+          "s3"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 30.0,
+        "terms_found": 3,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 40.2,
+        "estimated_total_minutes": 30.7,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "30",
+    "case_name": "ML Feature Store on AWS",
+    "tool": "cloudwright",
+    "elapsed_seconds": 16.56204319000244,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 10
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 234.02,
+        "budget": 12000
+      },
+      "service_correctness": {
+        "score": 83.3,
+        "found": [
+          "dynamodb",
+          "elasticache",
+          "lambda",
+          "s3",
+          "sagemaker"
+        ],
+        "missing": [
+          "glue"
+        ],
+        "total_services": 8
+      },
+      "compliance_completeness": {
+        "score": 42.9,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 93.1,
+        "seconds": 16.6,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "30",
+    "case_name": "ML Feature Store on AWS",
+    "tool": "claude_raw",
+    "elapsed_seconds": 51.007826805114746,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 6.7,
+        "estimated": 800.0,
+        "budget": 12000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "dynamodb",
+          "elasticache",
+          "glue",
+          "lambda",
+          "s3",
+          "sagemaker"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 40.0,
+        "terms_found": 4,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 51.0,
+        "estimated_total_minutes": 30.9,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "31",
+    "case_name": "Fintech Crypto Exchange Platform (PCI-DSS)",
+    "tool": "cloudwright",
+    "elapsed_seconds": 14.622793912887573,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 8
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 237.93,
+        "budget": 20000
+      },
+      "service_correctness": {
+        "score": 71.4,
+        "found": [
+          "eks",
+          "elasticache",
+          "kinesis",
+          "rds",
+          "waf"
+        ],
+        "missing": [
+          "guardduty",
+          "kms"
+        ],
+        "total_services": 8
+      },
+      "compliance_completeness": {
+        "score": 100.0,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 93.9,
+        "seconds": 14.6,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "31",
+    "case_name": "Fintech Crypto Exchange Platform (PCI-DSS)",
+    "tool": "claude_raw",
+    "elapsed_seconds": 54.14938402175903,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 20.2,
+        "estimated": 4032.0,
+        "budget": 20000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "eks",
+          "elasticache",
+          "guardduty",
+          "kinesis",
+          "kms",
+          "rds",
+          "waf"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 90.0,
+        "terms_found": 9,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 54.1,
+        "estimated_total_minutes": 30.9,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "32",
+    "case_name": "Healthcare EHR Platform (HIPAA)",
+    "tool": "cloudwright",
+    "elapsed_seconds": 15.741261959075928,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 7
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 86.52,
+        "budget": 15000
+      },
+      "service_correctness": {
+        "score": 71.4,
+        "found": [
+          "api_gateway",
+          "cloudtrail",
+          "lambda",
+          "rds",
+          "s3"
+        ],
+        "missing": [
+          "config",
+          "kms"
+        ],
+        "total_services": 7
+      },
+      "compliance_completeness": {
+        "score": 80.0,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 93.4,
+        "seconds": 15.7,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "32",
+    "case_name": "Healthcare EHR Platform (HIPAA)",
+    "tool": "claude_raw",
+    "elapsed_seconds": 46.126116037368774,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 0,
+        "reason": "no cost estimate found in response"
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "api_gateway",
+          "cloudtrail",
+          "config",
+          "kms",
+          "lambda",
+          "rds",
+          "s3"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 70.0,
+        "terms_found": 7,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 46.1,
+        "estimated_total_minutes": 30.8,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "33",
+    "case_name": "E-Commerce Platform for Black Friday Scale",
+    "tool": "cloudwright",
+    "elapsed_seconds": 18.34288787841797,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 9
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 215.8,
+        "budget": 15000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "cloudfront",
+          "dynamodb",
+          "ecs",
+          "elasticache",
+          "rds",
+          "sqs"
+        ],
+        "missing": [],
+        "total_services": 9
+      },
+      "compliance_completeness": {
+        "score": 71.4,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 92.4,
+        "seconds": 18.3,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "33",
+    "case_name": "E-Commerce Platform for Black Friday Scale",
+    "tool": "claude_raw",
+    "elapsed_seconds": 49.367825746536255,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 26.7,
+        "estimated": 4000.0,
+        "budget": 15000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "cloudfront",
+          "dynamodb",
+          "ecs",
+          "elasticache",
+          "rds",
+          "sqs"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 30.0,
+        "terms_found": 3,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 49.4,
+        "estimated_total_minutes": 30.8,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "34",
+    "case_name": "Multi-Tenant B2B SaaS on AWS",
+    "tool": "cloudwright",
+    "elapsed_seconds": 22.04795789718628,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 12
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 164.0,
+        "budget": 20000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "api_gateway",
+          "cloudfront",
+          "cognito",
+          "ecs",
+          "elasticache",
+          "eventbridge",
+          "rds"
+        ],
+        "missing": [],
+        "total_services": 9
+      },
+      "compliance_completeness": {
+        "score": 75.0,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 90.8,
+        "seconds": 22.0,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "34",
+    "case_name": "Multi-Tenant B2B SaaS on AWS",
+    "tool": "claude_raw",
+    "elapsed_seconds": 37.156182050704956,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 0.8,
+        "estimated": 150.0,
+        "budget": 20000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "api_gateway",
+          "cloudfront",
+          "cognito",
+          "ecs",
+          "elasticache",
+          "eventbridge",
+          "rds"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 20.0,
+        "terms_found": 2,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 37.2,
+        "estimated_total_minutes": 30.6,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "35",
+    "case_name": "Real-Time Multiplayer Gaming Backend",
+    "tool": "cloudwright",
+    "elapsed_seconds": 14.677584171295166,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 8
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 350.94,
+        "budget": 30000
+      },
+      "service_correctness": {
+        "score": 60.0,
+        "found": [
+          "dynamodb",
+          "elasticache",
+          "kinesis"
+        ],
+        "missing": [
+          "gamelift",
+          "global_accelerator"
+        ],
+        "total_services": 7
+      },
+      "compliance_completeness": {
+        "score": 42.9,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 93.9,
+        "seconds": 14.7,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "35",
+    "case_name": "Real-Time Multiplayer Gaming Backend",
+    "tool": "claude_raw",
+    "elapsed_seconds": 47.861167192459106,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 1.8,
+        "estimated": 540.0,
+        "budget": 30000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "dynamodb",
+          "elasticache",
+          "gamelift",
+          "global_accelerator",
+          "kinesis"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 50.0,
+        "terms_found": 5,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 47.9,
+        "estimated_total_minutes": 30.8,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "36",
+    "case_name": "Lift-and-Shift Data Center Migration",
+    "tool": "cloudwright",
+    "elapsed_seconds": 18.47221803665161,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 10
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 581.15,
+        "budget": 12000
+      },
+      "service_correctness": {
+        "score": 40.0,
+        "found": [
+          "ec2",
+          "rds"
+        ],
+        "missing": [
+          "application_migration_service",
+          "fsx",
+          "vpn"
+        ],
+        "total_services": 6
+      },
+      "compliance_completeness": {
+        "score": 42.9,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 92.3,
+        "seconds": 18.5,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "36",
+    "case_name": "Lift-and-Shift Data Center Migration",
+    "tool": "claude_raw",
+    "elapsed_seconds": 45.3821120262146,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 0,
+        "reason": "no cost estimate found in response"
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "application_migration_service",
+          "ec2",
+          "fsx",
+          "rds",
+          "vpn"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 30.0,
+        "terms_found": 3,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 45.4,
+        "estimated_total_minutes": 30.8,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "37",
+    "case_name": "Replatform to Containers from VMs",
+    "tool": "cloudwright",
+    "elapsed_seconds": 17.552021980285645,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 10
+      },
+      "cost_accuracy": {
+        "score": 100,
+        "estimated": 205.58,
+        "budget": 3000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "codepipeline",
+          "ecr",
+          "ecs",
+          "elasticache",
+          "rds"
+        ],
+        "missing": [],
+        "total_services": 9
+      },
+      "compliance_completeness": {
+        "score": 71.4,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 92.7,
+        "seconds": 17.6,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "37",
+    "case_name": "Replatform to Containers from VMs",
+    "tool": "claude_raw",
+    "elapsed_seconds": 53.877601861953735,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 0,
+        "reason": "no cost estimate found in response"
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "codepipeline",
+          "ecr",
+          "ecs",
+          "elasticache",
+          "rds"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 50.0,
+        "terms_found": 5,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 53.9,
+        "estimated_total_minutes": 30.9,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "38",
+    "case_name": "Re-architect Monolith to Serverless",
+    "tool": "cloudwright",
+    "elapsed_seconds": 18.643146991729736,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 10
+      },
+      "cost_accuracy": {
+        "score": 100,
+        "estimated": 276.61,
+        "budget": 400
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "api_gateway",
+          "cognito",
+          "dynamodb",
+          "lambda",
+          "rds",
+          "sqs"
+        ],
+        "missing": [],
+        "total_services": 8
+      },
+      "compliance_completeness": {
+        "score": 42.9,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 92.2,
+        "seconds": 18.6,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "38",
+    "case_name": "Re-architect Monolith to Serverless",
+    "tool": "claude_raw",
+    "elapsed_seconds": 54.857844829559326,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 100.0,
+        "estimated": 400.0,
+        "budget": 400
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "api_gateway",
+          "cognito",
+          "dynamodb",
+          "lambda",
+          "rds",
+          "sqs"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 30.0,
+        "terms_found": 3,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 54.9,
+        "estimated_total_minutes": 30.9,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "39",
+    "case_name": "Cloud-to-Cloud Migration AWS to GCP",
+    "tool": "cloudwright",
+    "elapsed_seconds": 28.04677700996399,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 12
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 124.56,
+        "budget": 6000
+      },
+      "service_correctness": {
+        "score": 80.0,
+        "found": [
+          "cloud_run",
+          "cloud_sql",
+          "cloud_storage",
+          "memorystore"
+        ],
+        "missing": [
+          "pubsub"
+        ],
+        "total_services": 8
+      },
+      "compliance_completeness": {
+        "score": 71.4,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 88.3,
+        "seconds": 28.0,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "39",
+    "case_name": "Cloud-to-Cloud Migration AWS to GCP",
+    "tool": "claude_raw",
+    "elapsed_seconds": 40.59477710723877,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 0,
+        "reason": "no cost estimate found in response"
+      },
+      "service_correctness": {
+        "score": 80.0,
+        "found": [
+          "cloud_run",
+          "cloud_sql",
+          "cloud_storage",
+          "memorystore"
+        ],
+        "missing": [
+          "pubsub"
+        ]
+      },
+      "compliance_completeness": {
+        "score": 30.0,
+        "terms_found": 3,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 40.6,
+        "estimated_total_minutes": 30.7,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "40",
+    "case_name": "Phased Hybrid Migration with Parallel Run",
+    "tool": "cloudwright",
+    "elapsed_seconds": 18.816130876541138,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 12
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 563.5,
+        "budget": 25000
+      },
+      "service_correctness": {
+        "score": 40.0,
+        "found": [
+          "rds",
+          "waf"
+        ],
+        "missing": [
+          "direct_connect",
+          "dms",
+          "shield"
+        ],
+        "total_services": 11
+      },
+      "compliance_completeness": {
+        "score": 75.0,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 92.2,
+        "seconds": 18.8,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "40",
+    "case_name": "Phased Hybrid Migration with Parallel Run",
+    "tool": "claude_raw",
+    "elapsed_seconds": 52.08647394180298,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 80.0,
+        "estimated": 20000.0,
+        "budget": 25000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "direct_connect",
+          "dms",
+          "rds",
+          "shield",
+          "waf"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 70.0,
+        "terms_found": 7,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 52.1,
+        "estimated_total_minutes": 30.9,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "41",
+    "case_name": "Contradictory Requirements \u2014 CAP Theorem Stress Test",
+    "tool": "cloudwright",
+    "elapsed_seconds": 14.953055381774902,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 8
+      },
+      "cost_accuracy": {
+        "score": 100,
+        "estimated": 91.74,
+        "budget": 500
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "cloudfront",
+          "dynamodb",
+          "lambda"
+        ],
+        "missing": [],
+        "total_services": 7
+      },
+      "compliance_completeness": {
+        "score": 57.1,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 93.8,
+        "seconds": 15.0,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "41",
+    "case_name": "Contradictory Requirements \u2014 CAP Theorem Stress Test",
+    "tool": "claude_raw",
+    "elapsed_seconds": 31.96932601928711,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 3.0,
+        "estimated": 15.0,
+        "budget": 500
+      },
+      "service_correctness": {
+        "score": 66.7,
+        "found": [
+          "dynamodb",
+          "lambda"
+        ],
+        "missing": [
+          "cloudfront"
+        ]
+      },
+      "compliance_completeness": {
+        "score": 20.0,
+        "terms_found": 2,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 32.0,
+        "estimated_total_minutes": 30.5,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "42",
+    "case_name": "Impossible Budget \u2014 $10/Month Full Stack",
+    "tool": "cloudwright",
+    "elapsed_seconds": 18.10325598716736,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 8
+      },
+      "cost_accuracy": {
+        "score": 100,
+        "estimated": 43.67,
+        "budget": 50
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "dynamodb",
+          "lambda",
+          "s3"
+        ],
+        "missing": [],
+        "total_services": 7
+      },
+      "compliance_completeness": {
+        "score": 14.3,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 92.5,
+        "seconds": 18.1,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "42",
+    "case_name": "Impossible Budget \u2014 $10/Month Full Stack",
+    "tool": "claude_raw",
+    "elapsed_seconds": 38.732069969177246,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 20.0,
+        "estimated": 10.0,
+        "budget": 50
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "dynamodb",
+          "lambda",
+          "s3"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 40.0,
+        "terms_found": 4,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 38.7,
+        "estimated_total_minutes": 30.6,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "43",
+    "case_name": "Anti-Pattern Detection and Remediation",
+    "tool": "cloudwright",
+    "elapsed_seconds": 18.78704810142517,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 9
+      },
+      "cost_accuracy": {
+        "score": 100,
+        "estimated": 96.13,
+        "budget": 500
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "ec2",
+          "iam",
+          "rds",
+          "s3"
+        ],
+        "missing": [],
+        "total_services": 9
+      },
+      "compliance_completeness": {
+        "score": 71.4,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 92.2,
+        "seconds": 18.8,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "43",
+    "case_name": "Anti-Pattern Detection and Remediation",
+    "tool": "claude_raw",
+    "elapsed_seconds": 54.573156118392944,
+    "scores": {
+      "structural_validity": {
+        "score": 80,
+        "pass": true,
+        "reason": "yaml block with components/services"
+      },
+      "cost_accuracy": {
+        "score": 0,
+        "reason": "no cost estimate found in response"
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "alb",
+          "ec2",
+          "iam",
+          "rds",
+          "s3"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 90.0,
+        "terms_found": 9,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 54.6,
+        "estimated_total_minutes": 30.9,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "44",
+    "case_name": "Strict Multi-Compliance \u2014 HIPAA + PCI + FedRAMP",
+    "tool": "cloudwright",
+    "elapsed_seconds": 24.97497320175171,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 10
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 275.59,
+        "budget": 30000
+      },
+      "service_correctness": {
+        "score": 60.0,
+        "found": [
+          "cloudtrail",
+          "config",
+          "waf"
+        ],
+        "missing": [
+          "guardduty",
+          "kms"
+        ],
+        "total_services": 8
+      },
+      "compliance_completeness": {
+        "score": 90.0,
+        "frameworks_checked": 2
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 89.6,
+        "seconds": 25.0,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "44",
+    "case_name": "Strict Multi-Compliance \u2014 HIPAA + PCI + FedRAMP",
+    "tool": "claude_raw",
+    "elapsed_seconds": 77.88285493850708,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 2.7,
+        "estimated": 800.0,
+        "budget": 30000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "cloudtrail",
+          "config",
+          "guardduty",
+          "kms",
+          "waf"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 100.0,
+        "terms_found": 10,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 77.9,
+        "estimated_total_minutes": 31.3,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "45",
+    "case_name": "Air-Gapped AWS Outposts Deployment",
+    "tool": "cloudwright",
+    "elapsed_seconds": 16.554710149765015,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 8
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 238.31,
+        "budget": 50000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "ec2",
+          "ecs",
+          "rds",
+          "s3"
+        ],
+        "missing": [],
+        "total_services": 5
+      },
+      "compliance_completeness": {
+        "score": 28.6,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 93.1,
+        "seconds": 16.6,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "45",
+    "case_name": "Air-Gapped AWS Outposts Deployment",
+    "tool": "claude_raw",
+    "elapsed_seconds": 51.99238991737366,
+    "scores": {
+      "structural_validity": {
+        "score": 20,
+        "pass": false,
+        "reason": "yaml block present but invalid yaml"
+      },
+      "cost_accuracy": {
+        "score": 0,
+        "reason": "no cost estimate found in response"
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "ec2",
+          "ecs",
+          "rds",
+          "s3"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 50.0,
+        "terms_found": 5,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 52.0,
+        "estimated_total_minutes": 30.9,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "46",
+    "case_name": "Container Orchestration Comparison \u2014 EKS vs GKE vs AKS",
+    "tool": "cloudwright",
+    "elapsed_seconds": 20.798744201660156,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 11
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 171.68,
+        "budget": 8000
+      },
+      "service_correctness": {
+        "score": 50.0,
+        "found": [
+          "cloudwatch",
+          "eks"
+        ],
+        "missing": [
+          "ebs",
+          "ec2"
+        ],
+        "total_services": 11
+      },
+      "compliance_completeness": {
+        "score": 71.4,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 91.3,
+        "seconds": 20.8,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "46",
+    "case_name": "Container Orchestration Comparison \u2014 EKS vs GKE vs AKS",
+    "tool": "claude_raw",
+    "elapsed_seconds": 36.97059679031372,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 1.8,
+        "estimated": 144.0,
+        "budget": 8000
+      },
+      "service_correctness": {
+        "score": 75.0,
+        "found": [
+          "cloudwatch",
+          "ebs",
+          "eks"
+        ],
+        "missing": [
+          "ec2"
+        ]
+      },
+      "compliance_completeness": {
+        "score": 10.0,
+        "terms_found": 1,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 37.0,
+        "estimated_total_minutes": 30.6,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "47",
+    "case_name": "Serverless Comparison \u2014 Lambda vs Cloud Functions vs Azure Functions",
+    "tool": "cloudwright",
+    "elapsed_seconds": 33.07601976394653,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 6
+      },
+      "cost_accuracy": {
+        "score": 100,
+        "estimated": 64.13,
+        "budget": 200
+      },
+      "service_correctness": {
+        "score": 0.0,
+        "found": [],
+        "missing": [
+          "api_gateway",
+          "lambda"
+        ],
+        "total_services": 6
+      },
+      "compliance_completeness": {
+        "score": 28.6,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 86.2,
+        "seconds": 33.1,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "47",
+    "case_name": "Serverless Comparison \u2014 Lambda vs Cloud Functions vs Azure Functions",
+    "tool": "claude_raw",
+    "elapsed_seconds": 47.8166880607605,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 84.9,
+        "estimated": 169.8,
+        "budget": 200
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "api_gateway",
+          "lambda"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 10.0,
+        "terms_found": 1,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 47.8,
+        "estimated_total_minutes": 30.8,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "48",
+    "case_name": "Managed PostgreSQL Comparison \u2014 RDS vs Cloud SQL vs Azure Database",
+    "tool": "cloudwright",
+    "elapsed_seconds": 15.791628122329712,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 8
+      },
+      "cost_accuracy": {
+        "score": 100,
+        "estimated": 346.8,
+        "budget": 1000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "rds"
+        ],
+        "missing": [],
+        "total_services": 5
+      },
+      "compliance_completeness": {
+        "score": 42.9,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 93.4,
+        "seconds": 15.8,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "48",
+    "case_name": "Managed PostgreSQL Comparison \u2014 RDS vs Cloud SQL vs Azure Database",
+    "tool": "claude_raw",
+    "elapsed_seconds": 49.69274711608887,
+    "scores": {
+      "structural_validity": {
+        "score": 80,
+        "pass": true,
+        "reason": "yaml block with components/services"
+      },
+      "cost_accuracy": {
+        "score": 76.0,
+        "estimated": 760.16,
+        "budget": 1000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "rds"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 30.0,
+        "terms_found": 3,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 49.7,
+        "estimated_total_minutes": 30.8,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "49",
+    "case_name": "CDN Comparison \u2014 CloudFront vs Cloudflare vs Fastly",
+    "tool": "cloudwright",
+    "elapsed_seconds": 15.423609972000122,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 9
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 300.15,
+        "budget": 15000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "cloudfront",
+          "s3"
+        ],
+        "missing": [],
+        "total_services": 9
+      },
+      "compliance_completeness": {
+        "score": 71.4,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 93.6,
+        "seconds": 15.4,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "49",
+    "case_name": "CDN Comparison \u2014 CloudFront vs Cloudflare vs Fastly",
+    "tool": "claude_raw",
+    "elapsed_seconds": 45.60989713668823,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 20.0,
+        "estimated": 3000.0,
+        "budget": 15000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "cloudfront",
+          "s3"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 20.0,
+        "terms_found": 2,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 45.6,
+        "estimated_total_minutes": 30.8,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  },
+  {
+    "case_id": "50",
+    "case_name": "Total Cost of Ownership \u2014 AWS vs GCP vs Azure Full Stack",
+    "tool": "cloudwright",
+    "elapsed_seconds": 16.500477075576782,
+    "scores": {
+      "structural_validity": {
+        "score": 100,
+        "pass": true,
+        "component_count": 9
+      },
+      "cost_accuracy": {
+        "score": 60,
+        "estimated": 407.58,
+        "budget": 45000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "cloudfront",
+          "eks",
+          "elasticache",
+          "rds",
+          "s3"
+        ],
+        "missing": [],
+        "total_services": 9
+      },
+      "compliance_completeness": {
+        "score": 71.4,
+        "frameworks_checked": 1
+      },
+      "export_quality": {
+        "score": 70,
+        "pass": true,
+        "tf_files": 1
+      },
+      "diff_capability": {
+        "score": 100,
+        "pass": true,
+        "reason": "built-in structured diff via `cloudwright diff`"
+      },
+      "reproducibility": {
+        "score": 85,
+        "reason": "schema-constrained ArchSpec \u2014 structure reproducible, service selection varies"
+      },
+      "time_to_iac": {
+        "score": 93.1,
+        "seconds": 16.5,
+        "automated": true
+      }
+    }
+  },
+  {
+    "case_id": "50",
+    "case_name": "Total Cost of Ownership \u2014 AWS vs GCP vs Azure Full Stack",
+    "tool": "claude_raw",
+    "elapsed_seconds": 44.73134899139404,
+    "scores": {
+      "structural_validity": {
+        "score": 40,
+        "pass": false,
+        "reason": "yaml block but no components structure"
+      },
+      "cost_accuracy": {
+        "score": 100.0,
+        "estimated": 45000.0,
+        "budget": 45000
+      },
+      "service_correctness": {
+        "score": 100.0,
+        "found": [
+          "cloudfront",
+          "eks",
+          "elasticache",
+          "rds",
+          "s3"
+        ],
+        "missing": []
+      },
+      "compliance_completeness": {
+        "score": 10.0,
+        "terms_found": 1,
+        "terms_checked": 10
+      },
+      "export_quality": {
+        "score": 0,
+        "pass": false,
+        "reason": "no IaC output found"
+      },
+      "diff_capability": {
+        "score": 0,
+        "pass": false,
+        "reason": "raw output is prose; no structural diff possible without manual parsing"
+      },
+      "reproducibility": {
+        "score": 35,
+        "reason": "free-form prose \u2014 structure, formatting, and content all vary across runs"
+      },
+      "time_to_iac": {
+        "score": 0,
+        "api_seconds": 44.7,
+        "estimated_total_minutes": 30.7,
+        "automated": false,
+        "note": "includes ~30min estimated manual extraction time"
+      }
+    }
+  }
+]

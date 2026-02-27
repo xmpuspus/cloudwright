@@ -1,0 +1,49 @@
+name: Serverless REST API (Azure)
+version: 1
+provider: azure
+region: eastus
+components:
+  - id: apim
+    service: api_management
+    provider: azure
+    label: API Management
+    tier: 1
+    config:
+      sku: Consumption
+  - id: functions
+    service: azure_functions
+    provider: azure
+    label: Azure Functions
+    tier: 2
+    config:
+      runtime: python
+      plan: Consumption
+  - id: db
+    service: cosmos_db
+    provider: azure
+    label: Cosmos DB
+    tier: 3
+    config:
+      api: sql
+      consistency: Session
+      encryption: true
+  - id: storage
+    service: blob_storage
+    provider: azure
+    label: Blob Storage
+    tier: 3
+    config:
+      tier: Hot
+      redundancy: LRS
+      versioning: true
+connections:
+  - source: apim
+    target: functions
+    label: API routing
+    protocol: HTTPS
+  - source: functions
+    target: db
+    label: Data access
+  - source: functions
+    target: storage
+    label: File storage

@@ -1,0 +1,24 @@
+id: "24"
+name: "Event-Driven Microservices on AWS"
+tier: 2
+category: "microservices"
+prompt: >
+  Design an event-driven microservices architecture on AWS for an order management system that
+  processes 100,000 orders per day across 8 domains: order intake, payment, inventory, fulfillment,
+  shipping, notifications, analytics, and fraud detection. Use EventBridge as the central event
+  bus with domain-specific event patterns, SQS FIFO queues for guaranteed ordering in payment
+  and inventory, SNS fan-out for notifications, Lambda for lightweight event processors, ECS
+  Fargate for stateful services (order management, inventory), DynamoDB for order state, and
+  Kinesis Data Streams for high-throughput analytics events. Include DLQs on all queues with
+  CloudWatch alarms for DLQ depth. Budget is $3,000/month.
+constraints:
+  provider: aws
+  budget_monthly: 3000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 7
+  required_services: ["eventbridge", "sqs", "sns", "lambda", "ecs", "dynamodb", "kinesis"]
+  required_connections: 8
+  max_monthly_cost: 3000
+tags: ["aws", "event-driven", "eventbridge", "microservices", "order-management", "kinesis"]

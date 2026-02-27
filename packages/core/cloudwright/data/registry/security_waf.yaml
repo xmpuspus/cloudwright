@@ -1,0 +1,31 @@
+category: security_waf
+services:
+  aws:
+    waf:
+      name: "AWS WAF"
+      terraform_types: ["aws_wafv2_web_acl", "aws_waf_web_acl"]
+      pricing_formula: fixed_plus_request
+      default_config:
+        rules: 5
+        monthly_requests: 10000000
+  gcp:
+    cloud_armor:
+      name: "Google Cloud Armor"
+      terraform_types: ["google_compute_security_policy"]
+      pricing_formula: fixed_plus_request
+      default_config:
+        policies: 1
+        monthly_requests: 10000000
+  azure:
+    azure_waf:
+      name: "Azure Web Application Firewall"
+      terraform_types: ["azurerm_web_application_firewall_policy"]
+      pricing_formula: fixed_plus_request
+      default_config:
+        policies: 1
+        monthly_requests: 10000000
+
+equivalences:
+  - aws: waf
+    gcp: cloud_armor
+    azure: azure_waf

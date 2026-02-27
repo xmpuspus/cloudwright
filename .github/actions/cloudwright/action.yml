@@ -1,0 +1,201 @@
+name: 'Cloudwright Architecture Check'
+description: 'Run architecture validation, cost estimation, scoring, analysis, and policy checks on ArchSpec files'
+inputs:
+  spec-file:
+    description: 'Path to the ArchSpec YAML file'
+    required: true
+  old-spec-file:
+    description: 'Path to previous ArchSpec for diff comparison (optional)'
+    required: false
+    default: ''
+  checks:
+    description: 'Comma-separated list of checks: validate,cost,score,analyze,lint,diff,policy'
+    required: false
+    default: 'validate,cost,score,lint'
+  compliance:
+    description: 'Comma-separated compliance frameworks: hipaa,pci-dss,soc2,fedramp,gdpr'
+    required: false
+    default: ''
+  policy-file:
+    description: 'Path to policy YAML file'
+    required: false
+    default: ''
+  fail-on:
+    description: 'Fail on: error (deny/critical only), warning (warn+deny), none'
+    required: false
+    default: 'error'
+  comment:
+    description: 'Post results as PR comment (true/false)'
+    required: false
+    default: 'true'
+  python-version:
+    description: 'Python version'
+    required: false
+    default: '3.12'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install Cloudwright
+      shell: bash
+      run: pip install cloudwright cloudwright-cli
+
+    - name: Run checks
+      shell: bash
+      id: checks
+      env:
+        SPEC_FILE: ${{ inputs.spec-file }}
+        OLD_SPEC_FILE: ${{ inputs.old-spec-file }}
+        CHECKS: ${{ inputs.checks }}
+        COMPLIANCE: ${{ inputs.compliance }}
+        POLICY_FILE: ${{ inputs.policy-file }}
+        FAIL_ON: ${{ inputs.fail-on }}
+      run: |
+        RESULTS=""
+        HAS_ERRORS=0
+        HAS_WARNINGS=0
+
+        # Validate
+        if echo "$CHECKS" | grep -q "validate"; then
+          echo "::group::Validation"
+          COMPLIANCE_ARGS=""
+          if [ -n "$COMPLIANCE" ]; then
+            for fw in $(echo "$COMPLIANCE" | tr ',' ' '); do
+              COMPLIANCE_ARGS="$COMPLIANCE_ARGS --compliance $fw"
+            done
+          fi
+          VALIDATE_OUT=$(cloudwright validate "$SPEC_FILE" $COMPLIANCE_ARGS --json 2>&1) || true
+          echo "$VALIDATE_OUT"
+          RESULTS="${RESULTS}
+## Validation
+${VALIDATE_OUT}
+"
+          if echo "$VALIDATE_OUT" | python3 -c "import json,sys; d=json.load(sys.stdin); exit(0 if d.get('passed', True) else 1)" 2>/dev/null; then
+            :
+          else
+            HAS_ERRORS=1
+          fi
+          echo "::endgroup::"
+        fi
+
+        # Cost
+        if echo "$CHECKS" | grep -q "cost"; then
+          echo "::group::Cost Estimation"
+          COST_OUT=$(cloudwright cost "$SPEC_FILE" --json 2>&1) || true
+          echo "$COST_OUT"
+          RESULTS="${RESULTS}
+## Cost Estimate
+${COST_OUT}
+"
+          echo "::endgroup::"
+        fi
+
+        # Score
+        if echo "$CHECKS" | grep -q "score"; then
+          echo "::group::Score"
+          SCORE_OUT=$(cloudwright score "$SPEC_FILE" --json 2>&1) || true
+          echo "$SCORE_OUT"
+          RESULTS="${RESULTS}
+## Score
+${SCORE_OUT}
+"
+          echo "::endgroup::"
+        fi
+
+        # Lint
+        if echo "$CHECKS" | grep -q "lint"; then
+          echo "::group::Lint"
+          LINT_OUT=$(cloudwright lint "$SPEC_FILE" --json 2>&1) || true
+          echo "$LINT_OUT"
+          RESULTS="${RESULTS}
+## Lint
+${LINT_OUT}
+"
+          if echo "$LINT_OUT" | python3 -c "import json,sys; d=json.load(sys.stdin); issues=d if isinstance(d,list) else d.get('issues',[]); exit(1 if any(i.get('severity')=='error' for i in issues if isinstance(i,dict)) else 0)" 2>/dev/null; then
+            :
+          else
+            HAS_WARNINGS=1
+          fi
+          echo "::endgroup::"
+        fi
+
+        # Analyze
+        if echo "$CHECKS" | grep -q "analyze"; then
+          echo "::group::Blast Radius Analysis"
+          ANALYZE_OUT=$(cloudwright analyze "$SPEC_FILE" --json 2>&1) || true
+          echo "$ANALYZE_OUT"
+          RESULTS="${RESULTS}
+## Analyze
+${ANALYZE_OUT}
+"
+          echo "::endgroup::"
+        fi
+
+        # Diff (requires old-spec-file and diff in checks)
+        if [ -n "$OLD_SPEC_FILE" ] && echo "$CHECKS" | grep -q "diff"; then
+          echo "::group::Diff"
+          DIFF_OUT=$(cloudwright diff "$OLD_SPEC_FILE" "$SPEC_FILE" --json 2>&1) || true
+          echo "$DIFF_OUT"
+          RESULTS="${RESULTS}
+## Diff
+${DIFF_OUT}
+"
+          echo "::endgroup::"
+        fi
+
+        # Policy
+        if echo "$CHECKS" | grep -q "policy"; then
+          if [ -n "$POLICY_FILE" ]; then
+            echo "::group::Policy Check"
+            POLICY_OUT=$(cloudwright policy "$SPEC_FILE" "$POLICY_FILE" --json 2>&1) || true
+            echo "$POLICY_OUT"
+            RESULTS="${RESULTS}
+## Policy
+${POLICY_OUT}
+"
+            if echo "$POLICY_OUT" | python3 -c "import json,sys; d=json.load(sys.stdin); exit(0 if d.get('passed', True) else 1)" 2>/dev/null; then
+              :
+            else
+              HAS_ERRORS=1
+            fi
+            echo "::endgroup::"
+          fi
+        fi
+
+        printf '%s' "$RESULTS" > /tmp/cloudwright-results.md
+
+        # Determine exit code
+        if [ "$FAIL_ON" = "error" ] && [ "$HAS_ERRORS" = "1" ]; then
+          echo "exit_code=1" >> "$GITHUB_OUTPUT"
+        elif [ "$FAIL_ON" = "warning" ] && [ "$HAS_WARNINGS" = "1" ] || [ "$FAIL_ON" = "warning" ] && [ "$HAS_ERRORS" = "1" ]; then
+          echo "exit_code=1" >> "$GITHUB_OUTPUT"
+        else
+          echo "exit_code=0" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Format PR comment
+      if: inputs.comment == 'true' && github.event_name == 'pull_request'
+      shell: bash
+      run: python3 ${{ github.action_path }}/format-comment.py /tmp/cloudwright-results.md > /tmp/cloudwright-comment.md
+
+    - name: Post PR comment
+      if: inputs.comment == 'true' && github.event_name == 'pull_request'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        if [ -f /tmp/cloudwright-comment.md ]; then
+          gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/cloudwright-comment.md
+        fi
+
+    - name: Check exit status
+      if: steps.checks.outputs.exit_code != '0'
+      shell: bash
+      run: |
+        echo "::error::Cloudwright architecture checks failed"
+        exit 1

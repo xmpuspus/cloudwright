@@ -3,19 +3,19 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "silmaril-cli"
+name = "cloudwright-cli"
 version = "0.1.0"
-description = "CLI for Silmaril architecture intelligence"
+description = "CLI for Cloudwright architecture intelligence"
 requires-python = ">=3.12"
 license = "MIT"
 dependencies = [
-    "silmaril>=0.1.0",
+    "cloudwright>=0.1.0",
     "typer>=0.12.0,<1",
     "rich>=13.7.0,<14",
 ]
 
 [project.scripts]
-silmaril = "silmaril_cli.main:app"
+cloudwright = "cloudwright_cli.main:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["silmaril_cli"]
+packages = ["cloudwright_cli"]

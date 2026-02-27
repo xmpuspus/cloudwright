@@ -1,0 +1,24 @@
+id: "25"
+name: "gRPC Service Mesh on EKS"
+tier: 2
+category: "microservices"
+prompt: >
+  Design a high-performance gRPC-based service mesh on AWS EKS for a financial data platform
+  where latency is critical — p99 must be under 10ms for inter-service calls. Use EKS with
+  Nitro-based C6i instances for consistent network performance, Istio service mesh with gRPC
+  load balancing (L7 load balancing aware of HTTP/2 streams), Envoy sidecars with custom
+  filters for circuit breaking and retries, AWS Network Load Balancer for external gRPC traffic
+  (NLB required for HTTP/2 end-to-end), Aurora PostgreSQL with read replicas for low-latency
+  reads, ElastiCache Redis for sub-millisecond caching, and X-Ray with custom OpenTelemetry
+  instrumentation for distributed tracing at the gRPC method level.
+constraints:
+  provider: aws
+  budget_monthly: 7000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 6
+  required_services: ["eks", "nlb", "rds", "elasticache"]
+  required_connections: 5
+  max_monthly_cost: 7000
+tags: ["aws", "grpc", "service-mesh", "istio", "eks", "low-latency", "fintech"]

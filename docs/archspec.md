@@ -1,6 +1,6 @@
 # ArchSpec Format Specification
 
-ArchSpec is Silmaril's core data format — a structured, machine-readable architecture specification.
+ArchSpec is Cloudwright's core data format — a structured, machine-readable architecture specification.
 
 ## Overview
 

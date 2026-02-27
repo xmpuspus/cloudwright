@@ -1,0 +1,25 @@
+id: "28"
+name: "Data Mesh Architecture on AWS"
+tier: 2
+category: "data"
+prompt: >
+  Design a data mesh architecture on AWS for a multinational retail company with 6 domain teams
+  (sales, inventory, marketing, finance, operations, and customer). Each domain owns its data
+  products. Use a federated governance model: each domain team has its own AWS account, S3
+  data lake, and Glue catalog. Cross-domain data sharing via AWS Lake Formation data sharing
+  across accounts without data copying. A central governance account manages IAM permission
+  boundaries and Lake Formation tag-based access control. EventBridge for domain event publishing,
+  S3 presigned URLs for data product APIs, and a central DataZone portal for data discovery.
+  Redshift Serverless in the analytics account for cross-domain queries. Budget is $15,000/month
+  across all accounts.
+constraints:
+  provider: aws
+  budget_monthly: 15000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 7
+  required_services: ["s3", "glue", "lake_formation", "eventbridge", "redshift"]
+  required_connections: 6
+  max_monthly_cost: 15000
+tags: ["aws", "data-mesh", "lake-formation", "multi-account", "federated", "retail"]

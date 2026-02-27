@@ -1,0 +1,33 @@
+category: database_nosql
+services:
+  aws:
+    dynamodb:
+      name: "Amazon DynamoDB"
+      terraform_types: ["aws_dynamodb_table"]
+      pricing_formula: per_request
+      default_config:
+        read_capacity_units: 5
+        write_capacity_units: 5
+        storage_gb: 10
+  gcp:
+    firestore:
+      name: "Google Cloud Firestore"
+      terraform_types: ["google_firestore_database"]
+      pricing_formula: per_request
+      default_config:
+        reads_per_month: 1000000
+        writes_per_month: 500000
+        storage_gb: 10
+  azure:
+    cosmos_db:
+      name: "Azure Cosmos DB"
+      terraform_types: ["azurerm_cosmosdb_account", "azurerm_cosmosdb_sql_database"]
+      pricing_formula: per_request
+      default_config:
+        request_units: 400
+        storage_gb: 10
+
+equivalences:
+  - aws: dynamodb
+    gcp: firestore
+    azure: cosmos_db

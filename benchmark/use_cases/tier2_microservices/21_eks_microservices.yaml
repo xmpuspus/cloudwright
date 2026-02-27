@@ -1,0 +1,24 @@
+id: "21"
+name: "EKS Microservices Platform on AWS"
+tier: 2
+category: "microservices"
+prompt: >
+  Design a production-grade microservices platform on AWS EKS for an e-commerce company with
+  12 independent services. The platform needs: EKS 1.29 with managed node groups (3x m5.xlarge
+  per AZ, across 3 AZs), AWS Load Balancer Controller with ingress for external traffic, service
+  mesh via AWS App Mesh or Istio for inter-service communication, RDS Aurora PostgreSQL for
+  stateful services that need SQL, DynamoDB for high-throughput catalog and cart services,
+  ElastiCache Redis for distributed sessions and rate limiting, ECR for container registry,
+  and CloudWatch Container Insights for observability. Include Cluster Autoscaler for node
+  scaling and KEDA for pod-level event-driven scaling. Budget is $6,000/month.
+constraints:
+  provider: aws
+  budget_monthly: 6000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 7
+  required_services: ["eks", "rds", "dynamodb", "elasticache", "ecr", "alb"]
+  required_connections: 6
+  max_monthly_cost: 6000
+tags: ["aws", "eks", "kubernetes", "microservices", "service-mesh", "e-commerce"]

@@ -1,4 +1,4 @@
-"""Comprehensive end-to-end tests for Silmaril.
+"""Comprehensive end-to-end tests for Cloudwright.
 
 Tests every module, edge case, integration point, and CLI flow.
 Non-LLM tests run fast; LLM tests require ANTHROPIC_API_KEY.
@@ -10,18 +10,18 @@ from pathlib import Path
 
 import pytest
 import yaml
-from silmaril import ArchSpec
-from silmaril.catalog import Catalog
-from silmaril.cost import CostEngine
-from silmaril.differ import Differ
-from silmaril.spec import (
+from cloudwright import ArchSpec
+from cloudwright.catalog import Catalog
+from cloudwright.cost import CostEngine
+from cloudwright.differ import Differ
+from cloudwright.spec import (
     Component,
     ComponentCost,
     Connection,
     Constraints,
     CostEstimate,
 )
-from silmaril.validator import Validator
+from cloudwright.validator import Validator
 
 try:
     from dotenv import load_dotenv
@@ -695,7 +695,7 @@ class TestExportersComprehensive:
         assert "azurerm" in hcl.lower()
 
     def test_terraform_write_to_dir(self, three_tier, tmp_path):
-        from silmaril.exporter.terraform import render
+        from cloudwright.exporter.terraform import render
 
         hcl = render(three_tier)
         out_file = tmp_path / "main.tf"
@@ -755,9 +755,9 @@ class TestExportersComprehensive:
             data = json.loads(aibom)
             assert data["aibomVersion"]
             assert "aiComponents" in data
-            # Silmaril AI should always be present
+            # Cloudwright AI should always be present
             names = [c["name"] for c in data["aiComponents"]]
-            assert any("Silmaril" in n for n in names)
+            assert any("Cloudwright" in n for n in names)
 
     def test_aibom_detects_ml_services(self, ml_pipeline):
         aibom = ml_pipeline.export("aibom")
@@ -877,7 +877,7 @@ class TestIntegrationFlows:
 class TestLLMComprehensive:
     @pytest.mark.timeout(60)
     def test_design_aws_three_tier(self):
-        from silmaril.architect import Architect
+        from cloudwright.architect import Architect
 
         arch = Architect()
         spec = arch.design("3-tier web application on AWS with CloudFront, ALB, EC2, and RDS PostgreSQL")
@@ -888,7 +888,7 @@ class TestLLMComprehensive:
 
     @pytest.mark.timeout(60)
     def test_design_gcp(self):
-        from silmaril.architect import Architect
+        from cloudwright.architect import Architect
 
         arch = Architect()
         spec = arch.design("Serverless API on GCP with Cloud Run, Firestore, and Pub/Sub")
@@ -898,7 +898,7 @@ class TestLLMComprehensive:
 
     @pytest.mark.timeout(60)
     def test_design_azure(self):
-        from silmaril.architect import Architect
+        from cloudwright.architect import Architect
 
         arch = Architect()
         spec = arch.design("Web app on Azure with App Service, Azure SQL, and Blob Storage")
@@ -908,7 +908,7 @@ class TestLLMComprehensive:
 
     @pytest.mark.timeout(60)
     def test_design_with_budget_constraint(self):
-        from silmaril.architect import Architect
+        from cloudwright.architect import Architect
 
         arch = Architect()
         spec = arch.design(
@@ -920,7 +920,7 @@ class TestLLMComprehensive:
 
     @pytest.mark.timeout(60)
     def test_design_with_compliance(self):
-        from silmaril.architect import Architect
+        from cloudwright.architect import Architect
 
         arch = Architect()
         spec = arch.design(
@@ -931,7 +931,7 @@ class TestLLMComprehensive:
 
     @pytest.mark.timeout(120)
     def test_modify_add_component(self):
-        from silmaril.architect import Architect
+        from cloudwright.architect import Architect
 
         arch = Architect()
         spec = arch.design("Simple web app with EC2 and RDS on AWS")
@@ -944,7 +944,7 @@ class TestLLMComprehensive:
     @pytest.mark.timeout(120)
     def test_design_then_cost_then_validate(self):
         """Full flow: design -> cost -> validate."""
-        from silmaril.architect import Architect
+        from cloudwright.architect import Architect
 
         arch = Architect()
         spec = arch.design("Production web app on AWS with ALB, ECS, RDS, ElastiCache")
@@ -962,7 +962,7 @@ class TestLLMComprehensive:
     @pytest.mark.timeout(120)
     def test_design_then_compare_providers(self):
         """Design on AWS, then compare across clouds."""
-        from silmaril.architect import Architect
+        from cloudwright.architect import Architect
 
         arch = Architect()
         spec = arch.design("3-tier web app with load balancer, compute, and database on AWS")
@@ -984,74 +984,74 @@ class TestLLMComprehensive:
 
 class TestProviderEquivalences:
     def test_ec2_to_gcp(self):
-        from silmaril.providers import get_equivalent
+        from cloudwright.providers import get_equivalent
 
         equiv = get_equivalent("ec2", "aws", "gcp")
         assert equiv == "compute_engine"
 
     def test_ec2_to_azure(self):
-        from silmaril.providers import get_equivalent
+        from cloudwright.providers import get_equivalent
 
         equiv = get_equivalent("ec2", "aws", "azure")
         assert equiv == "virtual_machines"
 
     def test_rds_to_gcp(self):
-        from silmaril.providers import get_equivalent
+        from cloudwright.providers import get_equivalent
 
         equiv = get_equivalent("rds", "aws", "gcp")
         assert equiv == "cloud_sql"
 
     def test_rds_to_azure(self):
-        from silmaril.providers import get_equivalent
+        from cloudwright.providers import get_equivalent
 
         equiv = get_equivalent("rds", "aws", "azure")
         assert equiv == "azure_sql"
 
     def test_s3_to_gcp(self):
-        from silmaril.providers import get_equivalent
+        from cloudwright.providers import get_equivalent
 
         equiv = get_equivalent("s3", "aws", "gcp")
         assert equiv == "cloud_storage"
 
     def test_s3_to_azure(self):
-        from silmaril.providers import get_equivalent
+        from cloudwright.providers import get_equivalent
 
         equiv = get_equivalent("s3", "aws", "azure")
         assert equiv == "blob_storage"
 
     def test_lambda_to_gcp(self):
-        from silmaril.providers import get_equivalent
+        from cloudwright.providers import get_equivalent
 
         equiv = get_equivalent("lambda", "aws", "gcp")
         assert equiv == "cloud_functions"
 
     def test_lambda_to_azure(self):
-        from silmaril.providers import get_equivalent
+        from cloudwright.providers import get_equivalent
 
         equiv = get_equivalent("lambda", "aws", "azure")
         assert equiv == "azure_functions"
 
     def test_unknown_service(self):
-        from silmaril.providers import get_equivalent
+        from cloudwright.providers import get_equivalent
 
         equiv = get_equivalent("totally_fake_service", "aws", "gcp")
         assert equiv is None
 
     def test_same_provider(self):
-        from silmaril.providers import get_equivalent
+        from cloudwright.providers import get_equivalent
 
         equiv = get_equivalent("ec2", "aws", "aws")
         # Same provider should return the same service
         assert equiv == "ec2" or equiv is None
 
     def test_gcp_to_aws(self):
-        from silmaril.providers import get_equivalent
+        from cloudwright.providers import get_equivalent
 
         equiv = get_equivalent("compute_engine", "gcp", "aws")
         assert equiv == "ec2"
 
     def test_azure_to_aws(self):
-        from silmaril.providers import get_equivalent
+        from cloudwright.providers import get_equivalent
 
         equiv = get_equivalent("virtual_machines", "azure", "aws")
         assert equiv == "ec2"

@@ -1,0 +1,25 @@
+id: "38"
+name: "Re-architect Monolith to Serverless"
+tier: 2
+category: "migration"
+prompt: >
+  Design the re-architecture of a PHP monolith (e-commerce application, 15 years old, 500K
+  lines of code) into a serverless microservices architecture on AWS. The monolith currently
+  runs on 4x EC2 m5.2xlarge instances costing $1,100/month plus an RDS MySQL db.m5.2xlarge
+  ($700/month). Proposed strangler fig pattern: start with the product catalog (read-heavy,
+  good fit for Lambda+DynamoDB), then extract checkout (Lambda+SQS+RDS), then user auth
+  (Cognito migration), and finally extract reporting (Lambda+Redshift Serverless). Map out
+  the intermediate states, the data migration strategy for moving from MySQL to DynamoDB
+  for catalog data, API Gateway versioning for gradual traffic shifting, and the target-state
+  serverless architecture with cost projection (target under $400/month).
+constraints:
+  provider: aws
+  budget_monthly: 400
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 6
+  required_services: ["lambda", "api_gateway", "dynamodb", "sqs", "cognito", "rds"]
+  required_connections: 5
+  max_monthly_cost: 400
+tags: ["aws", "migration", "re-architect", "serverless", "strangler-fig", "monolith", "php"]

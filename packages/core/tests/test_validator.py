@@ -1,6 +1,6 @@
 """Tests for the compliance validator."""
 
-from silmaril.spec import ArchSpec, Component, Connection, Constraints
+from cloudwright.spec import ArchSpec, Component, Connection, Constraints
 
 
 def _hipaa_compliant_spec() -> ArchSpec:
@@ -51,7 +51,7 @@ def _minimal_spec() -> ArchSpec:
 
 class TestHIPAAValidation:
     def test_compliant_spec_passes(self):
-        from silmaril.validator import Validator
+        from cloudwright.validator import Validator
 
         v = Validator()
         results = v.validate(_hipaa_compliant_spec(), compliance=["hipaa"])
@@ -62,7 +62,7 @@ class TestHIPAAValidation:
         assert len(hipaa.checks) > 0
 
     def test_minimal_spec_has_failures(self):
-        from silmaril.validator import Validator
+        from cloudwright.validator import Validator
 
         v = Validator()
         results = v.validate(_minimal_spec(), compliance=["hipaa"])
@@ -73,7 +73,7 @@ class TestHIPAAValidation:
 
 class TestWellArchitected:
     def test_well_architected_review(self):
-        from silmaril.validator import Validator
+        from cloudwright.validator import Validator
 
         v = Validator()
         results = v.validate(_hipaa_compliant_spec(), well_architected=True)
@@ -82,7 +82,7 @@ class TestWellArchitected:
         assert len(wa[0].checks) > 0
 
     def test_minimal_has_recommendations(self):
-        from silmaril.validator import Validator
+        from cloudwright.validator import Validator
 
         v = Validator()
         results = v.validate(_minimal_spec(), well_architected=True)
@@ -93,7 +93,7 @@ class TestWellArchitected:
 
 class TestMultipleFrameworks:
     def test_multiple_compliance_frameworks(self):
-        from silmaril.validator import Validator
+        from cloudwright.validator import Validator
 
         v = Validator()
         results = v.validate(_hipaa_compliant_spec(), compliance=["hipaa", "soc2"])

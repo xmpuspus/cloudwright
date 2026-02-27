@@ -1,0 +1,25 @@
+id: "36"
+name: "Lift-and-Shift Data Center Migration"
+tier: 2
+category: "migration"
+prompt: >
+  Design a lift-and-shift migration plan for a manufacturing company moving 40 on-premises
+  servers to AWS with a 6-week deadline and zero application changes allowed. The on-prem
+  environment: 20x Windows Server 2019 app servers (4-16 vCPU, 8-64GB RAM), 8x Linux app
+  servers, 5x SQL Server databases (2 of which are Always On AG pairs), 4x file servers
+  with 20TB SMB shares, and 3x legacy Oracle databases that are being retired post-migration.
+  Use AWS Application Migration Service (MGN) for server replication, FSx for Windows File
+  Server for SMB file shares, RDS SQL Server with Multi-AZ for the SQL Server workloads,
+  and Site-to-Site VPN for connectivity during the migration window. Calculate the AWS cost
+  post-migration and compare to the on-premises TCO of $180,000/year.
+constraints:
+  provider: aws
+  budget_monthly: 12000
+  compliance: []
+  regions: ["us-east-1"]
+expected:
+  min_components: 6
+  required_services: ["ec2", "rds", "fsx", "application_migration_service", "vpn"]
+  required_connections: 5
+  max_monthly_cost: 12000
+tags: ["aws", "migration", "lift-and-shift", "windows", "sql-server", "mgn", "datacenter"]

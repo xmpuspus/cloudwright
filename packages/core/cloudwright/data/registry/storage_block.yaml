@@ -1,0 +1,31 @@
+category: storage_block
+services:
+  aws:
+    ebs:
+      name: "Amazon EBS"
+      terraform_types: ["aws_ebs_volume", "aws_ebs_snapshot"]
+      pricing_formula: per_gb
+      default_config:
+        volume_type: gp3
+        storage_gb: 100
+  gcp:
+    persistent_disk:
+      name: "Google Persistent Disk"
+      terraform_types: ["google_compute_disk", "google_compute_snapshot"]
+      pricing_formula: per_gb
+      default_config:
+        type: pd-balanced
+        storage_gb: 100
+  azure:
+    managed_disks:
+      name: "Azure Managed Disks"
+      terraform_types: ["azurerm_managed_disk"]
+      pricing_formula: per_gb
+      default_config:
+        storage_account_type: Premium_LRS
+        storage_gb: 100
+
+equivalences:
+  - aws: ebs
+    gcp: persistent_disk
+    azure: managed_disks

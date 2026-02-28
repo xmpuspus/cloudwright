@@ -11,7 +11,7 @@ license = "MIT"
 dependencies = [
     "cloudwright==0.1.0",
     "fastapi==0.116.1",
-    "uvicorn[standard]==0.35.0",
+    "uvicorn[standard]==0.41.0",
 ]
 
 [tool.hatch.build.targets.wheel]

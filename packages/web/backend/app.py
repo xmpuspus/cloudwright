@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import traceback
+import logging
 from pathlib import Path
+from typing import Literal
 
 from cloudwright import ArchSpec, Constraints
 from cloudwright.architect import Architect
@@ -17,6 +18,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+
+log = logging.getLogger(__name__)
 
 app = FastAPI(title="Cloudwright", version="0.1.0", description="Architecture intelligence for cloud engineers")
 
@@ -97,7 +100,7 @@ class CatalogSearchRequest(BaseModel):
     vcpus: int | None = None
     memory_gb: float | None = None
     max_price_per_hour: float | None = None
-    limit: int = 20
+    limit: int = Field(default=20, ge=1, le=100)
 
 
 class CatalogCompareRequest(BaseModel):
@@ -105,7 +108,7 @@ class CatalogCompareRequest(BaseModel):
 
 
 class ChatMessage(BaseModel):
-    role: str
+    role: Literal["user", "assistant"]
     content: str
 
 
@@ -141,7 +144,8 @@ def design(req: DesignRequest):
         spec = architect.design(req.description, constraints=constraints)
         return {"spec": spec.model_dump(exclude_none=True), "yaml": spec.to_yaml()}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        log.exception("Design endpoint failed")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @app.post("/api/modify")
@@ -152,7 +156,8 @@ def modify(req: ModifyRequest):
         updated = architect.modify(spec, req.instruction)
         return {"spec": updated.model_dump(exclude_none=True), "yaml": updated.to_yaml()}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        log.exception("Modify endpoint failed")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @app.post("/api/cost")
@@ -171,7 +176,8 @@ def cost(req: CostRequest):
 
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        log.exception("Cost endpoint failed")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @app.post("/api/validate")
@@ -183,7 +189,8 @@ def validate(req: ValidateRequest):
         results = validator.validate(spec, compliance=frameworks or None, well_architected=req.well_architected)
         return {"results": [r.model_dump() for r in results]}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        log.exception("Validate endpoint failed")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @app.post("/api/export")
@@ -199,7 +206,8 @@ def export(req: ExportRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        log.exception("Export endpoint failed")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @app.post("/api/diff")
@@ -211,7 +219,8 @@ def diff(req: DiffRequest):
         result = differ.diff(old, new)
         return {"diff": result.model_dump()}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        log.exception("Diff endpoint failed")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @app.post("/api/catalog/search")
@@ -228,7 +237,8 @@ def catalog_search(req: CatalogSearchRequest):
         )
         return {"instances": instances}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        log.exception("Catalog search endpoint failed")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @app.post("/api/catalog/compare")
@@ -238,22 +248,35 @@ def catalog_compare(req: CatalogCompareRequest):
         result = catalog.compare(*req.instance_names)
         return {"comparison": result}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        log.exception("Catalog compare endpoint failed")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @app.post("/api/chat")
 def chat(req: ChatRequest):
     try:
+        from cloudwright.architect import ConversationSession
+
         architect = get_architect()
-        spec = architect.design(req.message)
-        return {
-            "reply": f"Here's the architecture for: {spec.name}",
-            "spec": spec.model_dump(exclude_none=True),
-            "yaml": spec.to_yaml(),
-        }
+        session = ConversationSession(llm=architect.llm)
+
+        # Replay history into the session
+        for msg in req.history:
+            session.history.append({"role": msg.role, "content": msg.content})
+
+        text, spec = session.send(req.message)
+        # Fallback: if session didn't extract a spec, try direct design
+        if spec is None and not req.history:
+            spec = architect.design(req.message)
+            text = f"Architecture: {spec.name}"
+        result: dict = {"reply": text, "history": session.history}
+        if spec:
+            result["spec"] = spec.model_dump(exclude_none=True)
+            result["yaml"] = spec.to_yaml()
+        return result
     except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        log.exception("Chat endpoint failed")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Serve frontend static files if they exist
@@ -263,13 +286,13 @@ if _frontend_dist.exists():
 
     @app.get("/{path:path}")
     def serve_frontend(path: str):
-        file_path = _frontend_dist / path
-        if file_path.exists() and file_path.is_file():
+        file_path = (_frontend_dist / path).resolve()
+        if file_path.is_relative_to(_frontend_dist.resolve()) and file_path.is_file():
             return FileResponse(str(file_path))
         return FileResponse(str(_frontend_dist / "index.html"))
 
 
-def serve(host: str = "0.0.0.0", port: int = 8000):
+def serve(host: str = "127.0.0.1", port: int = 8000):
     """Start the Cloudwright web server."""
     import uvicorn
 

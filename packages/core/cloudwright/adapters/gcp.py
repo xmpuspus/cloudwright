@@ -94,9 +94,7 @@ class GCPPricingAdapter(PricingAdapter):
         self._api_key = api_key or os.environ.get("GCP_API_KEY", "")
         self._timeout = timeout
 
-    # ------------------------------------------------------------------
     # Public interface
-    # ------------------------------------------------------------------
 
     def fetch_instance_pricing(self, region: str = "us-east1") -> Iterator[InstancePrice]:
         """Yield on-demand Compute Engine VM prices for the given region."""
@@ -150,9 +148,7 @@ class GCPPricingAdapter(PricingAdapter):
     def supported_managed_services(self) -> list[str]:
         return ["cloud_functions", "cloud_storage", "cloud_sql", "bigquery"]
 
-    # ------------------------------------------------------------------
     # Managed service parsers
-    # ------------------------------------------------------------------
 
     def _parse_cloud_functions(self, region: str) -> list[ManagedServicePrice]:
         skus = self._list_skus(_SERVICE_IDS.get("cloud_functions", "9B50-17A3-3F3D"))
@@ -270,9 +266,7 @@ class GCPPricingAdapter(PricingAdapter):
                 )
         return prices
 
-    # ------------------------------------------------------------------
     # API helpers
-    # ------------------------------------------------------------------
 
     def _list_skus(self, service_id: str) -> list[dict]:
         """Fetch all SKUs for a GCP service, following pagination."""

@@ -18,9 +18,7 @@ from cloudwright.adapters.aws import (
     _safe_int,
 )
 
-# ---------------------------------------------------------------------------
 # Fixture helpers
-# ---------------------------------------------------------------------------
 
 # Minimal EC2 pricing CSV — 5 metadata lines + header + 3 data rows
 _EC2_CSV = """\
@@ -201,9 +199,7 @@ _DYNAMODB_JSON = {
 }
 
 
-# ---------------------------------------------------------------------------
 # Mock helper
-# ---------------------------------------------------------------------------
 
 
 def _mock_urlopen(response_bytes: bytes):
@@ -215,9 +211,7 @@ def _mock_urlopen(response_bytes: bytes):
     return cm
 
 
-# ---------------------------------------------------------------------------
 # Unit tests: helpers
-# ---------------------------------------------------------------------------
 
 
 class TestHelpers:
@@ -242,9 +236,7 @@ class TestHelpers:
         assert _safe_float("N/A") == 0.0
 
 
-# ---------------------------------------------------------------------------
 # ABC conformance
-# ---------------------------------------------------------------------------
 
 
 class TestPricingAdapterABC:
@@ -261,9 +253,7 @@ class TestPricingAdapterABC:
         assert set(services) == {"lambda", "s3", "rds", "dynamodb"}
 
 
-# ---------------------------------------------------------------------------
 # EC2 CSV parsing
-# ---------------------------------------------------------------------------
 
 
 class TestEC2Parsing:
@@ -322,9 +312,7 @@ class TestEC2Parsing:
         assert all(r.region == "eu-west-1" for r in results)
 
 
-# ---------------------------------------------------------------------------
 # Lambda JSON parsing
-# ---------------------------------------------------------------------------
 
 
 class TestLambdaParsing:
@@ -354,9 +342,7 @@ class TestLambdaParsing:
         assert all(r.service == "lambda" for r in results)
 
 
-# ---------------------------------------------------------------------------
 # S3 JSON parsing
-# ---------------------------------------------------------------------------
 
 
 class TestS3Parsing:
@@ -381,9 +367,7 @@ class TestS3Parsing:
         assert all(r.tier_name == "standard_storage_gb" for r in results)
 
 
-# ---------------------------------------------------------------------------
 # RDS JSON parsing
-# ---------------------------------------------------------------------------
 
 
 class TestRDSParsing:
@@ -412,9 +396,7 @@ class TestRDSParsing:
                 assert r.price_per_month == pytest.approx(r.price_per_hour * 730, rel=1e-3)
 
 
-# ---------------------------------------------------------------------------
 # DynamoDB JSON parsing
-# ---------------------------------------------------------------------------
 
 
 class TestDynamoDBParsing:
@@ -440,9 +422,7 @@ class TestDynamoDBParsing:
         assert write.price_per_month == pytest.approx(1.25, rel=1e-3)
 
 
-# ---------------------------------------------------------------------------
 # Unsupported service
-# ---------------------------------------------------------------------------
 
 
 class TestUnsupportedService:
@@ -453,9 +433,7 @@ class TestUnsupportedService:
         assert result == []
 
 
-# ---------------------------------------------------------------------------
 # HTTP error propagation
-# ---------------------------------------------------------------------------
 
 
 class TestHTTPErrors:

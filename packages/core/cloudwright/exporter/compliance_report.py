@@ -84,6 +84,32 @@ def render(spec: "ArchSpec", validation: "ValidationResult") -> str:
     return "\n".join(lines)
 
 
+def render_pdf(spec: "ArchSpec", validation: "ValidationResult", output_path: str) -> None:
+    """Generate a PDF compliance report. Requires weasyprint: pip install cloudwright[pdf]."""
+    md_content = render(spec, validation)
+
+    try:
+        import markdown2
+        from weasyprint import HTML
+
+        html = markdown2.markdown(md_content, extras=["tables", "fenced-code-blocks"])
+        styled = f"""<!DOCTYPE html>
+<html><head><style>
+body {{ font-family: Helvetica, Arial, sans-serif; margin: 40px; font-size: 12px; line-height: 1.5; }}
+h1 {{ color: #1a1a2e; border-bottom: 2px solid #1a1a2e; padding-bottom: 8px; }}
+h2 {{ color: #16213e; margin-top: 24px; }}
+h3 {{ color: #0f3460; }}
+table {{ border-collapse: collapse; width: 100%; margin: 12px 0; }}
+th, td {{ border: 1px solid #ddd; padding: 6px 10px; text-align: left; }}
+th {{ background-color: #f4f4f4; }}
+</style></head><body>{html}</body></html>"""
+        HTML(string=styled).write_pdf(output_path)
+    except ImportError as exc:
+        raise ImportError(
+            "PDF export requires weasyprint and markdown2. Install with: pip install cloudwright[pdf]"
+        ) from exc
+
+
 def _find_relevant_components(spec: "ArchSpec", check) -> list[tuple[str, str]]:
     """Map a validation check to relevant components by check name heuristics."""
     relevant = []

@@ -56,7 +56,7 @@ def run_cloudwright(case: dict) -> dict:
         tf_dir = os.path.join(tmpdir, "terraform")
         os.makedirs(tf_dir, exist_ok=True)
 
-        # 1. Design
+        # Design
         design_cmd = [
             sys.executable,
             "-m",
@@ -100,7 +100,7 @@ def run_cloudwright(case: dict) -> dict:
         with open(spec_path) as f:
             result["spec"] = yaml.safe_load(f)
 
-        # 2. Cost
+        # Cost
         try:
             cost_cmd = [
                 sys.executable,
@@ -121,7 +121,7 @@ def run_cloudwright(case: dict) -> dict:
             result["cost_success"] = False
             result["cost_error"] = str(e)
 
-        # 3. Validate — use compliance from constraints, fall back to well-architected
+        # Validate — use compliance from constraints, fall back to well-architected
         try:
             compliance_list = constraints.get("compliance") or []
             validate_cmd = [
@@ -148,7 +148,7 @@ def run_cloudwright(case: dict) -> dict:
             result["validate_success"] = False
             result["validate_error"] = str(e)
 
-        # 4. Export to Terraform
+        # Export to Terraform
         try:
             export_cmd = [
                 sys.executable,

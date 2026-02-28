@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from typing import Any
 
 from cloudwright.spec import ArchSpec
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -295,8 +298,9 @@ class Scorer:
                                     if fc.recommendation
                                     else f"[{r.framework}] Fix: {fc.name}"
                                 )
-            except Exception:
-                details.append("Compliance validation unavailable")
+            except (ValueError, KeyError, ImportError) as e:
+                log.warning("Compliance scoring failed: %s", e)
+                details.append(f"Compliance validation error: {e}")
         else:
             details.append("No compliance requirements specified")
             score = 70.0

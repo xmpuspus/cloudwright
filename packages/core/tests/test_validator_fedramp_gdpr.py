@@ -5,9 +5,7 @@ from __future__ import annotations
 from cloudwright.spec import ArchSpec, Component, Connection, Constraints
 from cloudwright.validator import Validator
 
-# ---------------------------------------------------------------------------
 # Fixtures
-# ---------------------------------------------------------------------------
 
 
 def _fedramp_compliant_spec() -> ArchSpec:
@@ -120,9 +118,7 @@ def _gdpr_failing_spec() -> ArchSpec:
     )
 
 
-# ---------------------------------------------------------------------------
 # FedRAMP tests
-# ---------------------------------------------------------------------------
 
 
 class TestFedRAMPValidator:
@@ -283,9 +279,7 @@ class TestFedRAMPValidator:
         assert check.passed
 
 
-# ---------------------------------------------------------------------------
 # GDPR tests
-# ---------------------------------------------------------------------------
 
 
 class TestGDPRValidator:

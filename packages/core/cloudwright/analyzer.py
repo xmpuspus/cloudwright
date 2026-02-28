@@ -73,7 +73,7 @@ class Analyzer:
                 forward[conn.source].append(conn.target)
                 reverse[conn.target].append(conn.source)
 
-        # Ensure all components appear in both graphs
+        # Include isolated components (no connections)
         for cid in all_ids:
             if cid not in forward:
                 forward[cid] = []

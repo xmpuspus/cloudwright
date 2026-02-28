@@ -84,9 +84,7 @@ class AWSPricingAdapter(PricingAdapter):
     def __init__(self, timeout: int = _TIMEOUT):
         self._timeout = timeout
 
-    # ------------------------------------------------------------------
     # Public interface
-    # ------------------------------------------------------------------
 
     def fetch_instance_pricing(self, region: str = "us-east-1") -> Iterator[InstancePrice]:
         """Stream on-demand Linux EC2 instance prices for the given region."""
@@ -108,9 +106,7 @@ class AWSPricingAdapter(PricingAdapter):
     def supported_managed_services(self) -> list[str]:
         return ["lambda", "s3", "rds", "dynamodb"]
 
-    # ------------------------------------------------------------------
     # EC2 CSV parsing
-    # ------------------------------------------------------------------
 
     def _parse_ec2_csv(self, data: bytes, region: str) -> Iterator[InstancePrice]:
         """Parse EC2 pricing CSV.
@@ -156,9 +152,7 @@ class AWSPricingAdapter(PricingAdapter):
                     network_bandwidth=row.get("Network Performance", ""),
                 )
 
-    # ------------------------------------------------------------------
     # JSON API parsing
-    # ------------------------------------------------------------------
 
     def _fetch_json(self, offer_code: str, region: str) -> dict[str, Any]:
         url = f"{_PRICING_BASE}/offers/v1.0/aws/{offer_code}/current/{region}/index.json"
@@ -313,9 +307,7 @@ class AWSPricingAdapter(PricingAdapter):
 
         return prices
 
-    # ------------------------------------------------------------------
     # HTTP
-    # ------------------------------------------------------------------
 
     def _get(self, url: str) -> bytes:
         req = urllib.request.Request(url, headers={"Accept": "*/*"})

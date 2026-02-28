@@ -9,6 +9,7 @@ from typing import Any
 
 import yaml
 
+from cloudwright.importer.utils import align_ids
 from cloudwright.spec import ArchSpec, Component, Connection
 
 # Mapping: resource type prefix → provider name
@@ -129,15 +130,16 @@ class TerraformStateImporter:
         p = Path(path)
         return p.suffix == ".tfstate" or (p.suffix == ".json" and "tfstate" in p.name)
 
-    def do_import(self, path: str) -> ArchSpec:
+    def do_import(self, path: str, design_spec: ArchSpec | None = None) -> ArchSpec:
         data = json.loads(Path(path).read_text())
         version = data.get("version", 4)
         resources = self._parse_v3(data) if version <= 3 else self._parse_v4(data)
-        return self._build_spec(resources, path)
+        spec = self._build_spec(resources, path)
+        if design_spec:
+            spec = align_ids(spec, design_spec)
+        return spec
 
-    # ------------------------------------------------------------------
     # Parsing
-    # ------------------------------------------------------------------
 
     def _parse_v3(self, data: dict[str, Any]) -> list[dict[str, Any]]:
         resources = []
@@ -177,9 +179,7 @@ class TerraformStateImporter:
                 )
         return resources
 
-    # ------------------------------------------------------------------
     # ArchSpec construction
-    # ------------------------------------------------------------------
 
     def _detect_provider(self, resources: list[dict[str, Any]]) -> str:
         counts: dict[str, int] = {"aws": 0, "gcp": 0, "azure": 0}
@@ -222,9 +222,7 @@ class TerraformStateImporter:
         return ArchSpec(name=name, provider=provider, components=components, connections=connections)
 
 
-# ------------------------------------------------------------------
 # Helpers
-# ------------------------------------------------------------------
 
 
 def _extract_config(attrs: dict[str, Any]) -> dict[str, Any]:

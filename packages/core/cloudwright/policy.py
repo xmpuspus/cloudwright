@@ -149,7 +149,7 @@ class PolicyEngine:
     def _check_budget_monthly(self, spec: ArchSpec, value: Any, cost_estimate: Any) -> tuple[bool, str]:
         limit = float(value) if value is not None else 0
         if cost_estimate is None:
-            return True, "No cost estimate available to check"
+            return False, "No cost estimate available — run cloudwright cost first"
         monthly = cost_estimate.monthly_total if hasattr(cost_estimate, "monthly_total") else 0
         return monthly <= limit, f"${monthly:,.2f}/month (budget: ${limit:,.2f})"
 

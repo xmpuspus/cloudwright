@@ -327,3 +327,123 @@ class TestComplianceReportExporter:
         from cloudwright.exporter import FORMATS
 
         assert "compliance" in FORMATS
+
+
+class TestTerraformSecurity:
+    """Verify no hardcoded secrets or fake account IDs in Terraform output."""
+
+    def test_no_hardcoded_ami(self):
+        from cloudwright.exporter.terraform import render
+
+        hcl = render(_sample_spec())
+        assert "ami-0c55b159" not in hcl, "Hardcoded AMI found in Terraform output"
+
+    def test_no_hardcoded_account_id(self):
+        from cloudwright.exporter.terraform import render
+
+        hcl = render(_sample_spec())
+        assert "123456789012" not in hcl, "Hardcoded account ID found in Terraform output"
+
+    def test_provider_versions_pinned_exactly(self):
+        from cloudwright.exporter.terraform import render
+
+        hcl = render(_sample_spec())
+        # Should use exact pin (= X.Y.Z), not ~> range
+        assert "~>" not in hcl, "Provider versions should use exact pins, not ~>"
+
+    def test_uses_ssm_parameter_for_ami(self):
+        from cloudwright.exporter.terraform import render
+
+        hcl = render(_sample_spec())
+        assert "aws_ssm_parameter" in hcl, "Should use SSM parameter for AMI lookup"
+
+    def test_uses_data_source_for_azs(self):
+        from cloudwright.exporter.terraform import render
+
+        hcl = render(_sample_spec())
+        assert "aws_availability_zones" in hcl, "Should use data source for availability zones"
+
+
+class TestCloudFormationSecurity:
+    """Verify no plaintext passwords or hardcoded account IDs in CloudFormation output."""
+
+    def test_no_plaintext_password(self):
+        from cloudwright.exporter.cloudformation import render
+
+        # Spec with RDS to trigger password reference
+        spec = ArchSpec(
+            name="CFN Test",
+            provider="aws",
+            region="us-east-1",
+            components=[
+                Component(id="db", service="rds", provider="aws", label="DB", tier=3, config={"engine": "postgres"}),
+            ],
+            connections=[],
+        )
+        cfn = render(spec)
+        assert "changeme" not in cfn.lower(), "Plaintext password found in CloudFormation"
+        assert "DBPassword" in cfn, "Should reference DBPassword parameter"
+
+    def test_no_hardcoded_account_id(self):
+        from cloudwright.exporter.cloudformation import render
+
+        spec = ArchSpec(
+            name="CFN Test",
+            provider="aws",
+            region="us-east-1",
+            components=[
+                Component(id="fn", service="lambda", provider="aws", label="Lambda", tier=2, config={}),
+                Component(id="cluster", service="eks", provider="aws", label="EKS", tier=2, config={}),
+            ],
+            connections=[],
+        )
+        cfn = render(spec)
+        assert "ACCOUNT_ID" not in cfn, "Hardcoded ACCOUNT_ID in CloudFormation"
+        assert "AWS::AccountId" in cfn, "Should use AWS::AccountId pseudo-parameter"
+
+    def test_db_password_parameter_has_noecho(self):
+        import yaml as _yaml
+        from cloudwright.exporter.cloudformation import render
+
+        spec = ArchSpec(
+            name="CFN Test",
+            provider="aws",
+            region="us-east-1",
+            components=[
+                Component(id="db", service="rds", provider="aws", label="DB", tier=3, config={"engine": "postgres"}),
+            ],
+            connections=[],
+        )
+        cfn = render(spec)
+        template = _yaml.safe_load(cfn)
+        assert template["Parameters"]["DBPassword"]["NoEcho"] is True
+
+
+class TestD2Export:
+    """Test D2 diagram exporter."""
+
+    def test_renders_d2(self):
+        from cloudwright.exporter.d2 import render
+
+        d2 = render(_sample_spec())
+        assert "# Test Web App" in d2
+        assert "->" in d2
+
+    def test_includes_tier_containers(self):
+        from cloudwright.exporter.d2 import render
+
+        d2 = render(_sample_spec())
+        assert "Edge" in d2 or "tier_0" in d2
+        assert "Compute" in d2 or "tier_2" in d2
+
+    def test_d2_in_formats(self):
+        from cloudwright.exporter import FORMATS
+
+        assert "d2" in FORMATS
+
+    def test_export_spec_dispatches_d2(self):
+        from cloudwright.exporter import export_spec
+
+        content = export_spec(_sample_spec(), "d2")
+        assert "->" in content
+        assert "Test Web App" in content

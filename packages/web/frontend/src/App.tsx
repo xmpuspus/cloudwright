@@ -49,7 +49,13 @@ function App() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [currentSpec, setCurrentSpec] = useState<ArchSpec | null>(null);
-  const [activeTab, setActiveTab] = useState<"chat" | "diagram" | "cost" | "yaml">("chat");
+  const [activeTab, setActiveTab] = useState<
+    "chat" | "diagram" | "cost" | "yaml" | "validate" | "export" | "modify"
+  >("chat");
+  const [validateResult, setValidateResult] = useState<unknown>(null);
+  const [exportResult, setExportResult] = useState<string>("");
+  const [exportFormat, setExportFormat] = useState("terraform");
+  const [modifyInput, setModifyInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -184,7 +190,7 @@ function App() {
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {/* Tabs */}
         <div style={{ display: "flex", borderBottom: "1px solid #1e293b", background: "#0f172a" }}>
-          {(["chat", "diagram", "cost", "yaml"] as const).map((tab) => (
+          {(["chat", "diagram", "cost", "yaml", "validate", "export", "modify"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -278,6 +284,158 @@ function App() {
                 {messages.findLast((m) => m.yaml)?.yaml || "No YAML available"}
               </pre>
             </div>
+          )}
+
+          {activeTab === "validate" && currentSpec && (
+            <div style={{ padding: 32, maxWidth: 800 }}>
+              <h2 style={{ fontSize: 18, marginBottom: 16 }}>Validate Architecture</h2>
+              <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                {["hipaa", "pci-dss", "soc2", "well-architected"].map((fw) => (
+                  <button
+                    key={fw}
+                    onClick={async () => {
+                      try {
+                        const isWA = fw === "well-architected";
+                        const res = await fetch(`${API_BASE}/validate`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            spec: currentSpec,
+                            compliance: isWA ? [] : [fw],
+                            well_architected: isWA,
+                          }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.detail || "Validation failed");
+                        setValidateResult(data.results);
+                      } catch (err) {
+                        setValidateResult({ error: err instanceof Error ? err.message : "Validation failed" });
+                      }
+                    }}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: 6,
+                      border: "1px solid #334155",
+                      background: "#1e293b",
+                      color: "#cbd5e1",
+                      cursor: "pointer",
+                      fontSize: 13,
+                    }}
+                  >
+                    {fw.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              {validateResult && (
+                <pre style={{ background: "#1e293b", padding: 16, borderRadius: 8, fontSize: 12, color: "#e2e8f0", overflow: "auto" }}>
+                  {JSON.stringify(validateResult, null, 2)}
+                </pre>
+              )}
+            </div>
+          )}
+          {activeTab === "validate" && !currentSpec && (
+            <div style={{ padding: 32, color: "#64748b" }}>Design an architecture first.</div>
+          )}
+
+          {activeTab === "export" && currentSpec && (
+            <div style={{ padding: 32, maxWidth: 800 }}>
+              <h2 style={{ fontSize: 18, marginBottom: 16 }}>Export Architecture</h2>
+              <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                {["terraform", "cloudformation", "mermaid", "d2", "sbom", "aibom"].map((fmt) => (
+                  <button
+                    key={fmt}
+                    onClick={async () => {
+                      try {
+                        setExportFormat(fmt);
+                        const res = await fetch(`${API_BASE}/export`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ spec: currentSpec, format: fmt }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.detail || "Export failed");
+                        setExportResult(data.content || JSON.stringify(data, null, 2));
+                      } catch (err) {
+                        setExportResult(`Error: ${err instanceof Error ? err.message : "Export failed"}`);
+                      }
+                    }}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: 6,
+                      border: exportFormat === fmt ? "1px solid #3b82f6" : "1px solid #334155",
+                      background: exportFormat === fmt ? "#1e3a5f" : "#1e293b",
+                      color: "#cbd5e1",
+                      cursor: "pointer",
+                      fontSize: 13,
+                    }}
+                  >
+                    {fmt}
+                  </button>
+                ))}
+              </div>
+              {exportResult && (
+                <pre style={{ background: "#1e293b", padding: 16, borderRadius: 8, fontSize: 12, color: "#e2e8f0", overflow: "auto", maxHeight: 600 }}>
+                  {exportResult}
+                </pre>
+              )}
+            </div>
+          )}
+          {activeTab === "export" && !currentSpec && (
+            <div style={{ padding: 32, color: "#64748b" }}>Design an architecture first.</div>
+          )}
+
+          {activeTab === "modify" && currentSpec && (
+            <div style={{ padding: 32, maxWidth: 800 }}>
+              <h2 style={{ fontSize: 18, marginBottom: 16 }}>Modify Architecture</h2>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  value={modifyInput}
+                  onChange={(e) => setModifyInput(e.target.value)}
+                  onKeyDown={async (e) => {
+                    if (e.key === "Enter" && modifyInput.trim()) {
+                      setLoading(true);
+                      try {
+                        const res = await fetch(`${API_BASE}/modify`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ spec: currentSpec, instruction: modifyInput }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.detail || "Modification failed");
+                        setCurrentSpec(data.spec);
+                        setModifyInput("");
+                        setMessages((prev) => [...prev,
+                          { role: "user", content: `Modify: ${modifyInput}` },
+                          { role: "assistant", content: `Updated to ${data.spec.name} with ${data.spec.components.length} components.`, spec: data.spec, yaml: data.yaml },
+                        ]);
+                      } catch (err) {
+                        setMessages((prev) => [...prev,
+                          { role: "user", content: `Modify: ${modifyInput}` },
+                          { role: "assistant", content: `Error: ${err instanceof Error ? err.message : "Modification failed"}` },
+                        ]);
+                      } finally {
+                        setLoading(false);
+                      }
+                    }
+                  }}
+                  placeholder="e.g. Add a Redis cache between web and database"
+                  style={{
+                    flex: 1,
+                    padding: "10px 14px",
+                    borderRadius: 8,
+                    border: "1px solid #334155",
+                    background: "#1e293b",
+                    color: "#f8fafc",
+                    fontSize: 14,
+                    outline: "none",
+                  }}
+                />
+              </div>
+              <p style={{ fontSize: 12, color: "#475569", marginTop: 8 }}>Press Enter to apply modification</p>
+            </div>
+          )}
+          {activeTab === "modify" && !currentSpec && (
+            <div style={{ padding: 32, color: "#64748b" }}>Design an architecture first.</div>
           )}
         </div>
       </div>

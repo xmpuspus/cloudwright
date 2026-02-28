@@ -25,9 +25,56 @@ class Differ:
         old_map = {c.id: c for c in old.components}
         new_map = {c.id: c for c in new.components}
 
-        added = [new_map[cid] for cid in new_map if cid not in old_map]
-        removed = [old_map[cid] for cid in old_map if cid not in new_map]
+        # Match by ID
+        added_ids = set(new_map) - set(old_map)
+        removed_ids = set(old_map) - set(new_map)
+
+        # Fall back to service name for unmatched components
+        matched_pairs: list[tuple[str, str]] = []
+        if removed_ids and added_ids:
+            old_by_svc: dict[tuple[str, str], list[str]] = {}
+            for oid in removed_ids:
+                c = old_map[oid]
+                key = (c.service, c.provider)
+                old_by_svc.setdefault(key, []).append(oid)
+
+            new_by_svc: dict[tuple[str, str], list[str]] = {}
+            for nid in added_ids:
+                c = new_map[nid]
+                key = (c.service, c.provider)
+                new_by_svc.setdefault(key, []).append(nid)
+
+            for svc_key in old_by_svc:
+                if svc_key in new_by_svc:
+                    old_ids_for_svc = old_by_svc[svc_key]
+                    new_ids_for_svc = new_by_svc[svc_key]
+                    if len(old_ids_for_svc) == 1 and len(new_ids_for_svc) == 1:
+                        matched_pairs.append((old_ids_for_svc[0], new_ids_for_svc[0]))
+
+        for old_id, new_id in matched_pairs:
+            removed_ids.discard(old_id)
+            added_ids.discard(new_id)
+
+        added = [new_map[cid] for cid in added_ids]
+        removed = [old_map[cid] for cid in removed_ids]
+
+        # Find changes: ID-matched + service-matched pairs
         changed = _find_changes(old_map, new_map)
+        for old_id, new_id in matched_pairs:
+            old_c = old_map[old_id]
+            new_c = new_map[new_id]
+            for field_name in ("service", "provider", "label", "config"):
+                old_val = getattr(old_c, field_name)
+                new_val = getattr(new_c, field_name)
+                if old_val != new_val:
+                    changed.append(
+                        ComponentChange(
+                            component_id=f"{old_id}->{new_id}",
+                            field=field_name,
+                            old_value=str(old_val),
+                            new_value=str(new_val),
+                        )
+                    )
 
         cost_delta = 0.0
         if old.cost_estimate and new.cost_estimate:
@@ -133,7 +180,7 @@ def _assess_compliance_impact(
             comp = new_map.get(cid) or old_map.get(cid)
             if comp and comp.service in _SECURITY_SERVICES:
                 impacts.append(f"{cid}: security component config changed")
-            # Check if encryption was disabled
+            # Encryption downgrade
             if "encryption" in change.old_value and "True" in change.old_value and "False" in change.new_value:
                 impacts.append(f"{cid}: encryption may have been disabled")
 

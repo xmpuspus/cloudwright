@@ -173,9 +173,7 @@ class Validator:
         return results
 
 
-# ---------------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------------
 
 
 def _services(spec: ArchSpec) -> set[str]:
@@ -186,7 +184,7 @@ def _has_encryption_in_transit(spec: ArchSpec) -> bool:
     """True if all connections use HTTPS/TLS, or no connections exist."""
     if not spec.connections:
         return True
-    insecure = {"HTTP", "http", "PLAIN", "plain", "FTP", "ftp"}
+    insecure = {"HTTP", "PLAIN", "FTP"}
     for conn in spec.connections:
         proto = (conn.protocol or "").upper()
         if proto in insecure:
@@ -210,9 +208,7 @@ def _score(checks: list[ValidationCheck]) -> float:
     return sum(1 for ch in checks if ch.passed) / len(checks)
 
 
-# ---------------------------------------------------------------------------
 # Frameworks
-# ---------------------------------------------------------------------------
 
 
 def _check_hipaa(spec: ArchSpec) -> ValidationResult:
@@ -633,7 +629,7 @@ def _check_fedramp(spec: ArchSpec) -> ValidationResult:
     svcs = _services(spec)
     checks = []
 
-    # 1. FIPS encryption — data stores must have encryption enabled
+    # FIPS encryption — data stores must have encryption enabled
     unencrypted = _stores_encrypted(spec)
     checks.append(
         ValidationCheck(
@@ -650,7 +646,7 @@ def _check_fedramp(spec: ArchSpec) -> ValidationResult:
         )
     )
 
-    # 2. Authorized regions — must be US or GovCloud
+    # Authorized regions — must be US or GovCloud
     regions = _get_regions(spec)
     unauthorized = [r for r in regions if not any(r.startswith(p) for p in _US_REGION_PREFIXES)]
     checks.append(
@@ -668,7 +664,7 @@ def _check_fedramp(spec: ArchSpec) -> ValidationResult:
         )
     )
 
-    # 3. Multi-factor auth — auth service present
+    # Multi-factor auth — auth service present
     has_auth = bool(svcs & _AUTH_SERVICES)
     checks.append(
         ValidationCheck(
@@ -681,7 +677,7 @@ def _check_fedramp(spec: ArchSpec) -> ValidationResult:
         )
     )
 
-    # 4. Audit logging — cloudtrail or equivalent
+    # Audit logging — cloudtrail or equivalent
     has_logging = bool(svcs & _LOGGING_SERVICES)
     checks.append(
         ValidationCheck(
@@ -694,7 +690,7 @@ def _check_fedramp(spec: ArchSpec) -> ValidationResult:
         )
     )
 
-    # 5. Access control — IAM/auth
+    # Access control — IAM/auth
     checks.append(
         ValidationCheck(
             name="access_control",
@@ -706,7 +702,7 @@ def _check_fedramp(spec: ArchSpec) -> ValidationResult:
         )
     )
 
-    # 6. Continuous monitoring
+    # Continuous monitoring
     has_monitoring = bool(svcs & (_MONITORING_SERVICES | _LOGGING_SERVICES))
     checks.append(
         ValidationCheck(
@@ -719,7 +715,7 @@ def _check_fedramp(spec: ArchSpec) -> ValidationResult:
         )
     )
 
-    # 7. Incident response — alerting service
+    # Incident response — alerting service
     has_alerting = bool(svcs & _ALERTING_SERVICES)
     checks.append(
         ValidationCheck(
@@ -745,7 +741,7 @@ def _check_gdpr(spec: ArchSpec) -> ValidationResult:
     svcs = _services(spec)
     checks = []
 
-    # 1. Data residency — regions must be EU
+    # Data residency — regions must be EU
     regions = _get_regions(spec)
     non_eu = [r for r in regions if not r.startswith("eu-")]
     checks.append(
@@ -759,7 +755,7 @@ def _check_gdpr(spec: ArchSpec) -> ValidationResult:
         )
     )
 
-    # 2. Encryption at rest
+    # Encryption at rest
     unencrypted = _stores_encrypted(spec)
     checks.append(
         ValidationCheck(
@@ -776,7 +772,7 @@ def _check_gdpr(spec: ArchSpec) -> ValidationResult:
         )
     )
 
-    # 3. Encryption in transit
+    # Encryption in transit
     in_transit = _has_encryption_in_transit(spec)
     checks.append(
         ValidationCheck(
@@ -789,7 +785,7 @@ def _check_gdpr(spec: ArchSpec) -> ValidationResult:
         )
     )
 
-    # 4. Access controls
+    # Access controls
     has_auth = bool(svcs & _AUTH_SERVICES)
     checks.append(
         ValidationCheck(
@@ -802,7 +798,7 @@ def _check_gdpr(spec: ArchSpec) -> ValidationResult:
         )
     )
 
-    # 5. Audit trail
+    # Audit trail
     has_logging = bool(svcs & _LOGGING_SERVICES)
     checks.append(
         ValidationCheck(
@@ -815,7 +811,7 @@ def _check_gdpr(spec: ArchSpec) -> ValidationResult:
         )
     )
 
-    # 6. Data deletion capability — ttl, lifecycle, or retention_days in config
+    # Data deletion capability — ttl, lifecycle, or retention_days in config
     has_deletion = any(
         c.config.get("ttl") or c.config.get("lifecycle") or c.config.get("retention_days")
         for c in spec.components

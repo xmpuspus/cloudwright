@@ -9,6 +9,7 @@ from typing import Any
 
 import yaml
 
+from cloudwright.importer.utils import align_ids
 from cloudwright.spec import ArchSpec, Component, Connection
 
 # CloudFormation resource type → service_key
@@ -103,16 +104,17 @@ class CloudFormationImporter:
                 return False
         return False
 
-    def do_import(self, path: str) -> ArchSpec:
+    def do_import(self, path: str, design_spec: ArchSpec | None = None) -> ArchSpec:
         data = _load_template(Path(path))
         resources = data.get("Resources", {})
         name = _derive_name(path, data)
-        return _build_spec(name, resources)
+        spec = _build_spec(name, resources)
+        if design_spec:
+            spec = align_ids(spec, design_spec)
+        return spec
 
 
-# ------------------------------------------------------------------
 # Internal helpers
-# ------------------------------------------------------------------
 
 
 def _load_template(path: Path) -> dict[str, Any]:

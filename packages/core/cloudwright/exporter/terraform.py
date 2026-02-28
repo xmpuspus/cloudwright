@@ -62,15 +62,15 @@ _PROVIDER_REGISTRY: dict[str, dict[str, str]] = {
 _REQUIRED_PROVIDERS: dict[str, dict] = {
     "aws": {
         "source": "hashicorp/aws",
-        "version": "~> 5.0",
+        "version": "= 5.82.2",
     },
     "gcp": {
         "source": "hashicorp/google",
-        "version": "~> 5.0",
+        "version": "= 6.14.1",
     },
     "azure": {
         "source": "hashicorp/azurerm",
-        "version": "~> 3.0",
+        "version": "= 4.14.0",
     },
 }
 
@@ -88,7 +88,7 @@ def _render_aws_resource(c: "Component") -> str:
         instance_type = cfg.get("instance_type", "t3.medium")
         lines += [
             f'resource "aws_instance" "{c.id}" {{',
-            '  ami           = "ami-0c55b159cbfafe1f0"',
+            "  ami           = data.aws_ssm_parameter.amazon_linux.value",
             f'  instance_type = "{instance_type}"',
             "  subnet_id     = tolist(data.aws_subnets.default.ids)[0]",
             "  tags = {",
@@ -144,7 +144,7 @@ def _render_aws_resource(c: "Component") -> str:
             f'resource "aws_cloudfront_distribution" "{c.id}" {{',
             "  enabled = true",
             "  origin {",
-            '    domain_name = "origin.example.com"',
+            "    domain_name = var.cloudfront_origin_domain",
             f'    origin_id   = "{c.id}-origin"',
             "  }",
             "  default_cache_behavior {",
@@ -389,7 +389,7 @@ def _render_aws_resource(c: "Component") -> str:
     elif svc == "ebs":
         lines += [
             f'resource "aws_ebs_volume" "{c.id}" {{',
-            "  availability_zone = data.aws_subnets.default.ids[0]",
+            "  availability_zone = data.aws_availability_zones.available.names[0]",
             f"  size              = {cfg.get('size', 100)}",
             '  type              = "gp3"',
             "  tags = {",
@@ -400,8 +400,44 @@ def _render_aws_resource(c: "Component") -> str:
 
     elif svc == "codepipeline":
         lines += [
-            "# aws_codepipeline requires complex stage config — define in pipeline module",
-            f"# component: {c.id} ({c.label})",
+            f'resource "aws_codepipeline" "{c.id}" {{',
+            f'  name     = "{c.id.replace("_", "-")}"',
+            "  role_arn = var.codepipeline_role_arn",
+            "  artifact_store {",
+            '    type     = "S3"',
+            "    location = var.artifact_bucket",
+            "  }",
+            "  stage {",
+            '    name = "Source"',
+            "    action {",
+            '      name             = "Source"',
+            '      category         = "Source"',
+            '      owner            = "AWS"',
+            '      provider         = "CodeStarSourceConnection"',
+            '      version          = "1"',
+            '      output_artifacts = ["source_output"]',
+            "      configuration = {",
+            "        ConnectionArn    = var.codestar_connection_arn",
+            '        FullRepositoryId = "org/repo"',
+            '        BranchName       = "main"',
+            "      }",
+            "    }",
+            "  }",
+            "  stage {",
+            '    name = "Deploy"',
+            "    action {",
+            '      name            = "Deploy"',
+            '      category        = "Deploy"',
+            '      owner           = "AWS"',
+            '      provider        = "ECS"',
+            '      version         = "1"',
+            '      input_artifacts = ["source_output"]',
+            "    }",
+            "  }",
+            "  tags = {",
+            f'    Name = "{c.label}"',
+            "  }",
+            "}",
         ]
 
     else:
@@ -660,7 +696,25 @@ def _render_azure_resource(c: "Component") -> str:
         ]
 
     elif svc == "azure_functions":
+        storage_name = c.id.replace("_", "")[:20] + "stor"
+        plan_name = c.id.replace("_", "-") + "-plan"
         lines += [
+            f'resource "azurerm_storage_account" "{c.id}_storage" {{',
+            f'  name                     = "{storage_name[:24]}"',
+            f"  resource_group_name      = {rg}",
+            f"  location                 = {location}",
+            '  account_tier             = "Standard"',
+            '  account_replication_type = "LRS"',
+            "}",
+            "",
+            f'resource "azurerm_service_plan" "{c.id}_plan" {{',
+            f'  name                = "{plan_name}"',
+            f"  resource_group_name = {rg}",
+            f"  location            = {location}",
+            '  os_type             = "Linux"',
+            '  sku_name            = "Y1"',
+            "}",
+            "",
             f'resource "azurerm_linux_function_app" "{c.id}" {{',
             f'  name                = "{c.id.replace("_", "-")}"',
             f"  resource_group_name = {rg}",
@@ -849,6 +903,16 @@ def render(spec: "ArchSpec") -> str:
         parts.append("  }")
         parts.append("}")
         parts.append("")
+        parts.append('data "aws_ssm_parameter" "amazon_linux" {')
+        parts.append('  name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"')
+        parts.append("}")
+        parts.append("")
+        parts.append('data "aws_availability_zones" "available" {')
+        parts.append('  state = "available"')
+        parts.append("}")
+        parts.append("")
+        parts.append('data "aws_caller_identity" "current" {}')
+        parts.append("")
 
     if "azure" in providers:
         parts.append('resource "azurerm_resource_group" "main" {')
@@ -883,17 +947,40 @@ def render(spec: "ArchSpec") -> str:
     parts.append("")
     parts.append('variable "account_id" {')
     parts.append('  description = "AWS account ID"')
-    parts.append('  default     = "123456789012"')
+    parts.append('  default     = ""')
     parts.append("}")
     parts.append("")
     parts.append('variable "lambda_role_arn" {')
     parts.append('  description = "IAM role ARN for Lambda functions"')
-    parts.append('  default     = "arn:aws:iam::123456789012:role/lambda-role"')
     parts.append("}")
     parts.append("")
     parts.append('variable "eks_role_arn" {')
     parts.append('  description = "IAM role ARN for EKS cluster"')
-    parts.append('  default     = "arn:aws:iam::123456789012:role/eks-role"')
+    parts.append("}")
+    parts.append("")
+    parts.append('variable "cloudfront_origin_domain" {')
+    parts.append('  description = "Domain name for CloudFront origin"')
+    parts.append('  default     = "origin.example.com"')
+    parts.append("}")
+    parts.append("")
+    parts.append('variable "trail_bucket" {')
+    parts.append('  description = "S3 bucket for CloudTrail logs"')
+    parts.append('  default     = ""')
+    parts.append("}")
+    parts.append("")
+    parts.append('variable "codepipeline_role_arn" {')
+    parts.append('  description = "IAM role ARN for CodePipeline"')
+    parts.append('  default     = ""')
+    parts.append("}")
+    parts.append("")
+    parts.append('variable "artifact_bucket" {')
+    parts.append('  description = "S3 bucket for pipeline artifacts"')
+    parts.append('  default     = ""')
+    parts.append("}")
+    parts.append("")
+    parts.append('variable "codestar_connection_arn" {')
+    parts.append('  description = "CodeStar connection ARN for source"')
+    parts.append('  default     = ""')
     parts.append("}")
     parts.append("")
     parts.append('variable "task_definition_arn" {')

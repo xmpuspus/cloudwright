@@ -5,6 +5,7 @@ Shows how to design, validate, and export to IaC.
 
 from cloudwright import ArchSpec, Validator
 from cloudwright.differ import Differ
+from cloudwright.spec import Component, Connection
 
 # Load a spec from YAML
 spec_yaml = """
@@ -92,8 +93,6 @@ print(spec.export("mermaid"))
 spec_v2 = ArchSpec.from_yaml(spec_yaml)
 spec_v2.version = 2
 # Add a cache layer
-from cloudwright.spec import Component, Connection
-
 spec_v2.components.append(
     Component(
         id="cache",
@@ -111,7 +110,7 @@ spec_v2.connections.append(
 
 differ = Differ()
 diff = differ.diff(spec, spec_v2)
-print(f"\n--- Diff ---")
+print("\n--- Diff ---")
 print(diff.summary)
 for comp in diff.added:
     print(f"  + {comp.label} ({comp.service})")

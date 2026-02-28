@@ -18,9 +18,7 @@ from cloudwright.adapters.gcp import (
     _safe_float,
 )
 
-# ---------------------------------------------------------------------------
 # Fixture helpers
-# ---------------------------------------------------------------------------
 
 
 def _unit_price(usd: float, units_str: str = "hour") -> dict:
@@ -111,9 +109,7 @@ def _make_adapter(skus: list[dict], api_key: str = "test-key") -> GCPPricingAdap
     return adapter
 
 
-# ---------------------------------------------------------------------------
 # Unit tests: helpers
-# ---------------------------------------------------------------------------
 
 
 class TestHelpers:
@@ -135,9 +131,7 @@ class TestHelpers:
         assert _extract_unit_price(info) == 0.0
 
 
-# ---------------------------------------------------------------------------
 # ABC conformance
-# ---------------------------------------------------------------------------
 
 
 class TestGCPAdapterABC:
@@ -152,9 +146,7 @@ class TestGCPAdapterABC:
         assert set(services) == {"cloud_functions", "cloud_storage", "cloud_sql", "bigquery"}
 
 
-# ---------------------------------------------------------------------------
 # No API key — graceful degradation
-# ---------------------------------------------------------------------------
 
 
 class TestNoAPIKey:
@@ -194,9 +186,7 @@ class TestNoAPIKey:
         assert results == []
 
 
-# ---------------------------------------------------------------------------
 # Compute Engine pricing
-# ---------------------------------------------------------------------------
 
 
 class TestGCPInstancePricing:
@@ -235,9 +225,7 @@ class TestGCPInstancePricing:
         assert all(r.price_type == "on_demand" for r in results)
 
 
-# ---------------------------------------------------------------------------
 # Pagination
-# ---------------------------------------------------------------------------
 
 
 class TestGCPPagination:
@@ -261,9 +249,7 @@ class TestGCPPagination:
         assert len(skus) == 2
 
 
-# ---------------------------------------------------------------------------
 # Cloud Functions
-# ---------------------------------------------------------------------------
 
 
 class TestCloudFunctionsPricing:
@@ -279,9 +265,7 @@ class TestCloudFunctionsPricing:
         assert all(r.service == "cloud_functions" for r in results)
 
 
-# ---------------------------------------------------------------------------
 # Cloud Storage
-# ---------------------------------------------------------------------------
 
 
 class TestCloudStoragePricing:
@@ -297,9 +281,7 @@ class TestCloudStoragePricing:
         assert all(r.service == "cloud_storage" for r in results)
 
 
-# ---------------------------------------------------------------------------
 # BigQuery
-# ---------------------------------------------------------------------------
 
 
 class TestBigQueryPricing:
@@ -316,9 +298,7 @@ class TestBigQueryPricing:
         assert all(r.service == "bigquery" for r in results)
 
 
-# ---------------------------------------------------------------------------
 # Unsupported service
-# ---------------------------------------------------------------------------
 
 
 class TestUnsupportedService:
@@ -328,9 +308,7 @@ class TestUnsupportedService:
         assert result == []
 
 
-# ---------------------------------------------------------------------------
 # Non-auth HTTP errors propagate
-# ---------------------------------------------------------------------------
 
 
 class TestGCPHTTPErrors:

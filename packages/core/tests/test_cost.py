@@ -201,3 +201,167 @@ class TestDataTransferCost:
         engine = CostEngine()
         estimate = engine.estimate(_sample_spec())
         assert hasattr(estimate, "data_transfer_monthly")
+
+
+class TestCostAccuracy:
+    """Validate that cost estimates are production-realistic (not $5 stubs)."""
+
+    def test_three_tier_web_app(self):
+        from cloudwright.cost import CostEngine
+
+        spec = ArchSpec(
+            name="3-Tier Web App",
+            provider="aws",
+            region="us-east-1",
+            components=[
+                Component(id="alb", service="alb", provider="aws", label="ALB", tier=1, config={}),
+                Component(
+                    id="web",
+                    service="ec2",
+                    provider="aws",
+                    label="Web",
+                    tier=2,
+                    config={"instance_type": "m5.large", "count": 2},
+                ),
+                Component(
+                    id="db",
+                    service="rds",
+                    provider="aws",
+                    label="DB",
+                    tier=3,
+                    config={"instance_class": "db.r5.large", "engine": "postgres", "storage_gb": 100},
+                ),
+                Component(id="cache", service="elasticache", provider="aws", label="Redis", tier=3, config={}),
+            ],
+            connections=[],
+        )
+        engine = CostEngine()
+        estimate = engine.estimate(spec)
+        # A real 3-tier app should cost hundreds per month, not $5
+        assert estimate.monthly_total > 300, f"Total ${estimate.monthly_total} is unrealistically low"
+
+    def test_kubernetes_cluster(self):
+        from cloudwright.cost import CostEngine
+
+        spec = ArchSpec(
+            name="K8s App",
+            provider="aws",
+            region="us-east-1",
+            components=[
+                Component(id="cluster", service="eks", provider="aws", label="EKS", tier=2, config={}),
+            ],
+            connections=[],
+        )
+        engine = CostEngine()
+        estimate = engine.estimate(spec)
+        # EKS with default 3x multiplier: base ~$400 * 3 = $1200
+        assert estimate.monthly_total >= 200, f"EKS at ${estimate.monthly_total} is too cheap"
+
+    def test_serverless_api(self):
+        from cloudwright.cost import CostEngine
+
+        spec = ArchSpec(
+            name="Serverless API",
+            provider="aws",
+            region="us-east-1",
+            components=[
+                Component(id="api", service="api_gateway", provider="aws", label="API GW", tier=1, config={}),
+                Component(id="fn", service="lambda", provider="aws", label="Lambda", tier=2, config={}),
+                Component(id="table", service="dynamodb", provider="aws", label="DDB", tier=3, config={}),
+            ],
+            connections=[],
+        )
+        engine = CostEngine()
+        estimate = engine.estimate(spec)
+        # Serverless should still cost something realistic
+        assert estimate.monthly_total > 10, f"Serverless at ${estimate.monthly_total} is suspiciously cheap"
+
+    def test_data_pipeline(self):
+        from cloudwright.cost import CostEngine
+
+        spec = ArchSpec(
+            name="Data Pipeline",
+            provider="aws",
+            region="us-east-1",
+            components=[
+                Component(
+                    id="store", service="s3", provider="aws", label="Data Lake", tier=4, config={"storage_gb": 500}
+                ),
+                Component(id="dw", service="redshift", provider="aws", label="Warehouse", tier=3, config={}),
+                Component(id="ml", service="sagemaker", provider="aws", label="ML", tier=4, config={}),
+            ],
+            connections=[],
+        )
+        engine = CostEngine()
+        estimate = engine.estimate(spec)
+        assert estimate.monthly_total > 200, f"Data pipeline at ${estimate.monthly_total} is too low"
+
+    def test_multi_az_doubles_db_cost(self):
+        from cloudwright.cost import CostEngine
+
+        engine = CostEngine()
+        single_az = ArchSpec(
+            name="Single AZ",
+            provider="aws",
+            region="us-east-1",
+            components=[
+                Component(
+                    id="db",
+                    service="rds",
+                    provider="aws",
+                    label="DB",
+                    tier=3,
+                    config={"instance_class": "db.t3.medium", "multi_az": False},
+                ),
+            ],
+            connections=[],
+        )
+        multi_az = ArchSpec(
+            name="Multi AZ",
+            provider="aws",
+            region="us-east-1",
+            components=[
+                Component(
+                    id="db",
+                    service="rds",
+                    provider="aws",
+                    label="DB",
+                    tier=3,
+                    config={"instance_class": "db.t3.medium", "multi_az": True},
+                ),
+            ],
+            connections=[],
+        )
+        single_est = engine.estimate(single_az)
+        multi_est = engine.estimate(multi_az)
+        ratio = multi_est.monthly_total / single_est.monthly_total
+        assert 1.9 <= ratio <= 2.1, f"Multi-AZ ratio {ratio:.2f} should be ~2x"
+
+    def test_eks_default_3x_multiplier(self):
+        from cloudwright.cost import CostEngine
+
+        engine = CostEngine()
+        # EKS without explicit node count gets 3x multiplier (simulates 3-node cluster)
+        eks_default = ArchSpec(
+            name="EKS Default",
+            provider="aws",
+            region="us-east-1",
+            components=[
+                Component(id="cluster", service="eks", provider="aws", label="EKS", tier=2, config={}),
+            ],
+            connections=[],
+        )
+        # EKS with explicit 2 nodes should be cheaper (2x base, no 3x multiplier)
+        eks_two_nodes = ArchSpec(
+            name="EKS Two Nodes",
+            provider="aws",
+            region="us-east-1",
+            components=[
+                Component(id="cluster", service="eks", provider="aws", label="EKS", tier=2, config={"node_count": 2}),
+            ],
+            connections=[],
+        )
+        default_est = engine.estimate(eks_default)
+        two_node_est = engine.estimate(eks_two_nodes)
+        # Default (3x multiplier) should cost more than explicit 2-node
+        assert default_est.monthly_total > two_node_est.monthly_total

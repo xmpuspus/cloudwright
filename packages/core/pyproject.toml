@@ -9,7 +9,7 @@ description = "Architecture intelligence for cloud engineers — design, cost, c
 requires-python = ">=3.12"
 license = "MIT"
 dependencies = [
-    "pydantic==2.11.7",
+    "pydantic==2.12.5",
     "pyyaml==6.0.2",
     "anthropic==0.58.2",
     "openai==1.95.1",

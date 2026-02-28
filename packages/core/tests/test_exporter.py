@@ -2,7 +2,21 @@
 
 import json
 
-from cloudwright.spec import ArchSpec, Component, Connection, ValidationCheck, ValidationResult
+from cloudwright.spec import ArchSpec, Boundary, Component, Connection, ValidationCheck, ValidationResult
+
+
+def _spec_with_boundaries() -> ArchSpec:
+    return ArchSpec(
+        name="Bounded App",
+        components=[
+            Component(id="web", service="ec2", provider="aws", label="Web", tier=2),
+            Component(id="db", service="rds", provider="aws", label="DB", tier=3),
+        ],
+        connections=[Connection(source="web", target="db")],
+        boundaries=[
+            Boundary(id="vpc_main", kind="vpc", label="Main VPC", component_ids=["web", "db"]),
+        ],
+    )
 
 
 def _sample_spec() -> ArchSpec:
@@ -151,6 +165,56 @@ class TestMermaidExporter:
 
         mmd = render(_sample_spec())
         assert "-->" in mmd
+
+    def test_includes_classdefs(self):
+        from cloudwright.exporter.mermaid import render
+
+        mmd = render(_sample_spec())
+        assert "classDef compute" in mmd
+
+    def test_database_cylinder_shape(self):
+        from cloudwright.exporter.mermaid import render
+
+        mmd = render(_sample_spec())
+        # RDS is database category -> cylinder -> [(Label)] syntax
+        assert "db[(" in mmd or "[(PostgreSQL)]" in mmd or "[(DB" in mmd
+
+    def test_serverless_hexagon_shape(self):
+        from cloudwright.exporter.mermaid import render
+
+        spec = ArchSpec(
+            name="Lambda App",
+            components=[
+                Component(id="fn", service="lambda", provider="aws", label="Handler", tier=2),
+            ],
+            connections=[],
+        )
+        mmd = render(spec)
+        # Lambda is serverless -> hexagon -> {{Label}} syntax
+        assert "{{" in mmd and "}}" in mmd
+
+    def test_class_assignment(self):
+        from cloudwright.exporter.mermaid import render
+
+        mmd = render(_sample_spec())
+        assert "class " in mmd
+
+    def test_backward_compat_no_boundaries(self):
+        from cloudwright.exporter.mermaid import render
+
+        # Spec without boundaries should still use tier subgraphs
+        mmd = render(_sample_spec())
+        assert "subgraph" in mmd
+        assert "Tier" in mmd
+
+    def test_boundary_rendering(self):
+        from cloudwright.exporter.mermaid import render
+
+        mmd = render(_spec_with_boundaries())
+        assert "Main VPC" in mmd
+        assert "subgraph" in mmd
+        # Tier labels should NOT appear when boundaries are used
+        assert "Tier 2" not in mmd
 
 
 class TestSBOMExporter:
@@ -447,3 +511,38 @@ class TestD2Export:
         content = export_spec(_sample_spec(), "d2")
         assert "->" in content
         assert "Test Web App" in content
+
+    def test_includes_theme(self):
+        from cloudwright.exporter.d2 import render
+
+        d2 = render(_sample_spec())
+        assert "theme-id" in d2
+
+    def test_node_has_shape(self):
+        from cloudwright.exporter.d2 import render
+
+        d2 = render(_sample_spec())
+        # RDS is database -> cylinder
+        assert "shape: cylinder" in d2
+
+    def test_node_has_icon(self):
+        from cloudwright.exporter.d2 import render
+
+        d2 = render(_sample_spec())
+        assert "icon:" in d2
+
+    def test_boundary_containers(self):
+        from cloudwright.exporter.d2 import render
+
+        d2 = render(_spec_with_boundaries())
+        assert "Main VPC" in d2
+        # Tier containers should NOT appear when boundaries are present
+        assert "tier_2" not in d2
+        assert "tier_3" not in d2
+
+    def test_backward_compat_tier_grouping(self):
+        from cloudwright.exporter.d2 import render
+
+        # Spec without boundaries should fall back to tier containers
+        d2 = render(_sample_spec())
+        assert "tier_2" in d2 or "Compute" in d2

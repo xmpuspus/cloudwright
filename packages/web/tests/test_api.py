@@ -117,6 +117,7 @@ class TestCostAPI:
         assert data["estimate"]["monthly_total"] > 0
         assert len(data["estimate"]["breakdown"]) == 2
 
+    @skip_no_llm
     def test_cost_with_comparison(self, client, sample_spec):
         resp = client.post("/api/cost", json={"spec": sample_spec, "compare_providers": ["gcp"]})
         assert resp.status_code == 200
@@ -161,6 +162,7 @@ class TestCostAPI:
         data = resp.json()
         assert data["estimate"]["monthly_total"] == 0
 
+    @skip_no_llm
     def test_cost_multi_cloud_comparison(self, client, sample_spec):
         resp = client.post("/api/cost", json={"spec": sample_spec, "compare_providers": ["gcp", "azure"]})
         assert resp.status_code == 200

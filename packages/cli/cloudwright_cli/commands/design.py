@@ -5,6 +5,9 @@ from typing import Annotated
 
 import typer
 from cloudwright import Architect, Constraints
+from cloudwright.ascii_diagram import render_ascii, render_next_steps
+from cloudwright.cost import CostEngine
+from cloudwright.validator import Validator
 from rich.console import Console
 from rich.panel import Panel
 from rich.syntax import Syntax
@@ -23,6 +26,7 @@ def design(
         list[str] | None, typer.Option(help="Compliance frameworks (hipaa, pci-dss, soc2, fedramp, gdpr)")
     ] = None,
     output: Annotated[Path | None, typer.Option("--output", "-o", help="Write YAML to file")] = None,
+    yaml_output: Annotated[bool, typer.Option("--yaml")] = False,
 ) -> None:
     """Design a cloud architecture from a natural language description."""
     constraints = Constraints(
@@ -47,20 +51,48 @@ def design(
 
     yaml_str = spec.to_yaml()
 
-    console.print(
-        Panel(
-            Syntax(yaml_str, "yaml", theme="monokai", word_wrap=True),
-            title=f"[bold cyan]{spec.name}[/bold cyan]",
-            subtitle=f"{spec.provider.upper()} / {spec.region}",
+    if yaml_output:
+        console.print(
+            Panel(
+                Syntax(yaml_str, "yaml", theme="monokai", word_wrap=True),
+                title=f"[bold cyan]{spec.name}[/bold cyan]",
+                subtitle=f"{spec.provider.upper()} / {spec.region}",
+            )
         )
+        if spec.cost_estimate:
+            _print_cost_table(spec)
+        if output:
+            output.write_text(yaml_str)
+            console.print(f"[green]Saved to {output}[/green]")
+        return
+
+    # Default: ASCII diagram + auto-save + next steps
+    console.print(render_ascii(spec))
+
+    if not spec.cost_estimate:
+        spec = spec.model_copy(update={"cost_estimate": CostEngine().estimate(spec)})
+    _print_cost_table(spec)
+
+    _print_compliance_flags(spec)
+
+    from cloudwright_cli.utils import auto_save_spec
+
+    save_path = auto_save_spec(spec, output)
+    console.print(f"[dim]Saved: {save_path}[/dim]")
+    console.print(f"[dim]{render_next_steps()}[/dim]")
+
+
+def _print_compliance_flags(spec) -> None:
+    results = Validator().validate(spec, well_architected=True)
+    if not results:
+        return
+    wa = results[0]
+    total = len(wa.checks)
+    passed = sum(1 for c in wa.checks if c.passed)
+    console.print(
+        f"[dim]Well-Architected: {passed}/{total} checks passed  |  "
+        "Run 'cloudwright validate --compliance hipaa' for full report[/dim]"
     )
-
-    if spec.cost_estimate:
-        _print_cost_table(spec)
-
-    if output:
-        output.write_text(yaml_str)
-        console.print(f"[green]Saved to {output}[/green]")
 
 
 def _print_cost_table(spec) -> None:

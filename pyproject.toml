@@ -26,3 +26,6 @@ ignore = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["packages/core/tests"]
+markers = [
+    "slow: marks tests that invoke external binaries that may take minutes (deselect with -m 'not slow')",
+]

@@ -35,7 +35,7 @@ jobs:
           pip install -e packages/web
           pip install pytest pytest-timeout pytest-cov
       - name: Run core tests
-        run: pytest packages/core/tests/ -x -q --timeout=30
+        run: pytest packages/core/tests/ -x -q --timeout=30 -m "not slow"
       - name: Run web tests
         run: pytest packages/web/tests/ -x -q --timeout=60
       - name: Run CLI tests

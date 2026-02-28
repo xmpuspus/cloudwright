@@ -12,7 +12,7 @@ dependencies = [
     "pydantic==2.11.7",
     "pyyaml==6.0.2",
     "anthropic==0.58.2",
-    "openai==1.95.1",
+    "openai==2.24.0",
 ]
 
 [project.optional-dependencies]

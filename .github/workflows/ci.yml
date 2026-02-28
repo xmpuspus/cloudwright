@@ -59,9 +59,20 @@ jobs:
           with zipfile.ZipFile(whl) as z:
               names = z.namelist()
               assert any('catalog.db' in n for n in names), f'catalog.db not found in wheel: {names}'
-              print('catalog.db found in wheel')
+              assert any('templates' in n for n in names), f'templates not found in wheel: {names}'
+              print('catalog.db and templates found in wheel')
           "
       - name: Build CLI wheel
         run: python -m build packages/cli
       - name: Build web wheel
         run: python -m build packages/web
+      - name: Verify web package name
+        run: |
+          python -c "
+          import zipfile, glob
+          whl = glob.glob('packages/web/dist/*.whl')[0]
+          with zipfile.ZipFile(whl) as z:
+              names = z.namelist()
+              assert any('cloudwright_web' in n for n in names), f'cloudwright_web not found in wheel: {names}'
+              print('cloudwright_web package found in wheel')
+          "

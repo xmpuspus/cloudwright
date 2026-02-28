@@ -1,0 +1,60 @@
+name: ML Training Pipeline
+version: 1
+provider: aws
+region: us-east-1
+components:
+  - id: data_lake
+    service: s3
+    provider: aws
+    label: Data Lake
+    description: Raw and processed training data
+    tier: 4
+    config:
+      storage_gb: 1000
+  - id: notebook
+    service: sagemaker
+    provider: aws
+    label: SageMaker Notebooks
+    description: Jupyter notebooks for exploration and experimentation
+    tier: 2
+    config:
+      instance_type: ml.t3.medium
+  - id: training
+    service: sagemaker
+    provider: aws
+    label: SageMaker Training
+    description: Managed training jobs
+    tier: 2
+    config:
+      instance_type: ml.p3.2xlarge
+  - id: warehouse
+    service: redshift
+    provider: aws
+    label: Redshift Warehouse
+    description: Data warehouse for analytics and feature engineering
+    tier: 3
+    config:
+      node_type: dc2.large
+      num_nodes: 2
+  - id: orchestrator
+    service: step_functions
+    provider: aws
+    label: Step Functions
+    description: ML pipeline orchestration
+    tier: 2
+connections:
+  - source: data_lake
+    target: notebook
+    label: Read data
+  - source: data_lake
+    target: training
+    label: Training data
+  - source: warehouse
+    target: data_lake
+    label: Feature export
+  - source: orchestrator
+    target: training
+    label: Trigger job
+  - source: training
+    target: data_lake
+    label: Model artifacts

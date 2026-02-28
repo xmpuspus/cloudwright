@@ -4,26 +4,34 @@ updates:
     directory: "/packages/core"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     labels:
       - "dependencies"
-      - "security"
+    groups:
+      core-deps:
+        patterns: ["*"]
 
   - package-ecosystem: "pip"
     directory: "/packages/cli"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     labels:
       - "dependencies"
+    groups:
+      cli-deps:
+        patterns: ["*"]
 
   - package-ecosystem: "pip"
     directory: "/packages/web"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     labels:
       - "dependencies"
+    groups:
+      web-deps:
+        patterns: ["*"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -32,3 +40,6 @@ updates:
     open-pull-requests-limit: 3
     labels:
       - "ci"
+    groups:
+      actions:
+        patterns: ["*"]

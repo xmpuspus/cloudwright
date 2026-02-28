@@ -50,4 +50,4 @@ The following are planned for production readiness but not yet in place:
 
 ## Dependency Management
 
-All dependencies are pinned to exact versions (`==`) to prevent supply chain attacks and ensure reproducible builds.
+Dependencies use compatible version ranges in `pyproject.toml` for PyPI compatibility. Exact versions are pinned in `requirements.lock` for reproducible CI builds.

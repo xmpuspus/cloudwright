@@ -1,0 +1,39 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install hatchling build
+
+      - name: Build core
+        run: python -m build packages/core
+      - name: Build CLI
+        run: python -m build packages/cli
+      - name: Build web
+        run: python -m build packages/web
+
+      - name: Publish core to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: packages/core/dist/
+
+      - name: Publish CLI to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: packages/cli/dist/
+
+      - name: Publish web to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: packages/web/dist/

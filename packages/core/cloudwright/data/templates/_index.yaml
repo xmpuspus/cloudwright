@@ -1,0 +1,99 @@
+templates:
+  three_tier_web:
+    name: Three-Tier Web Application
+    description: Classic web app with load balancer, compute, and database
+    provider: aws
+    file: three_tier_web.yaml
+    tags: [web, production, traditional]
+    complexity: medium
+  serverless_api:
+    name: Serverless REST API
+    description: API Gateway + Lambda + DynamoDB serverless backend
+    provider: aws
+    file: serverless_api.yaml
+    tags: [api, serverless, low-cost]
+    complexity: low
+  ml_pipeline:
+    name: ML Training Pipeline
+    description: SageMaker-based ML training and inference pipeline
+    provider: aws
+    file: ml_pipeline.yaml
+    tags: [ml, ai, data-science]
+    complexity: high
+  data_lake:
+    name: Data Lake
+    description: S3-based data lake with Kinesis ingestion and Redshift warehouse
+    provider: aws
+    file: data-lake.yaml
+    tags: [data, analytics, etl]
+    complexity: high
+  event_driven:
+    name: Event-Driven Microservices
+    description: EventBridge + SQS + Lambda event-driven architecture
+    provider: aws
+    file: event-driven.yaml
+    tags: [events, serverless, microservices]
+    complexity: medium
+  static_site:
+    name: Static Site with API
+    description: CloudFront + S3 static site with serverless API backend
+    provider: aws
+    file: static-site.yaml
+    tags: [web, static, cdn, low-cost]
+    complexity: low
+  microservices:
+    name: ECS Microservices
+    description: Containerized microservices on ECS with ALB and service mesh
+    provider: aws
+    file: microservices.yaml
+    tags: [containers, microservices, production]
+    complexity: high
+  batch_processing:
+    name: Batch Processing Pipeline
+    description: Step Functions orchestrated batch processing with Lambda
+    provider: aws
+    file: batch-processing.yaml
+    tags: [batch, etl, serverless]
+    complexity: medium
+  gcp_three_tier_web:
+    name: Three-Tier Web Application (GCP)
+    description: Classic web app on GCP with Cloud Load Balancing, Compute Engine, and Cloud SQL
+    provider: gcp
+    file: gcp-three-tier-web.yaml
+    tags: [web, production, traditional]
+    complexity: medium
+  gcp_serverless_api:
+    name: Serverless REST API (GCP)
+    description: API Gateway + Cloud Functions + Firestore serverless backend
+    provider: gcp
+    file: gcp-serverless-api.yaml
+    tags: [api, serverless, low-cost]
+    complexity: low
+  gcp_microservices:
+    name: GKE Microservices (GCP)
+    description: Containerized microservices on GKE with service mesh
+    provider: gcp
+    file: gcp-microservices.yaml
+    tags: [containers, microservices, production]
+    complexity: high
+  azure_three_tier_web:
+    name: Three-Tier Web Application (Azure)
+    description: Classic web app on Azure with Application Gateway, VMs, and Azure SQL
+    provider: azure
+    file: azure-three-tier-web.yaml
+    tags: [web, production, traditional]
+    complexity: medium
+  azure_serverless_api:
+    name: Serverless REST API (Azure)
+    description: API Management + Azure Functions + Cosmos DB serverless backend
+    provider: azure
+    file: azure-serverless-api.yaml
+    tags: [api, serverless, low-cost]
+    complexity: low
+  azure_microservices:
+    name: AKS Microservices (Azure)
+    description: Containerized microservices on AKS with Application Gateway
+    provider: azure
+    file: azure-microservices.yaml
+    tags: [containers, microservices, production]
+    complexity: high

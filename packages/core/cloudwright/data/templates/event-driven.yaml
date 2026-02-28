@@ -1,0 +1,89 @@
+name: Event-Driven Microservices
+version: 1
+provider: aws
+region: us-east-1
+components:
+  - id: api_gw
+    service: api_gateway
+    provider: aws
+    label: API Gateway
+    description: REST API accepting inbound commands and queries
+    tier: 0
+    config:
+      type: rest
+  - id: eventbridge
+    service: eventbridge
+    provider: aws
+    label: EventBridge Bus
+    description: Central event bus routing events to consumers
+    tier: 1
+    config:
+      event_bus: custom
+  - id: sns
+    service: sns
+    provider: aws
+    label: SNS Notifications
+    description: Fan-out notification delivery to subscribers
+    tier: 1
+  - id: sqs
+    service: sqs
+    provider: aws
+    label: SQS Work Queue
+    description: Durable queue buffering events for processing
+    tier: 2
+    config:
+      visibility_timeout_seconds: 60
+      message_retention_seconds: 86400
+  - id: lambda_processor
+    service: lambda
+    provider: aws
+    label: Event Processor
+    description: Processes queued events and writes to the database
+    tier: 2
+    config:
+      runtime: python3.12
+      memory_mb: 256
+      monthly_requests: 2000000
+      avg_duration_ms: 300
+  - id: lambda_notifier
+    service: lambda
+    provider: aws
+    label: Notification Handler
+    description: Sends downstream notifications on domain events
+    tier: 2
+    config:
+      runtime: python3.12
+      memory_mb: 128
+      monthly_requests: 500000
+      avg_duration_ms: 150
+  - id: dynamodb
+    service: dynamodb
+    provider: aws
+    label: DynamoDB State Store
+    description: Event-sourced state store with on-demand capacity
+    tier: 3
+    config:
+      billing_mode: on_demand
+      streams: true
+connections:
+  - source: api_gw
+    target: eventbridge
+    label: Publish event
+    protocol: HTTPS
+  - source: eventbridge
+    target: sqs
+    label: Route to queue
+  - source: eventbridge
+    target: lambda_notifier
+    label: Trigger notifier
+  - source: sqs
+    target: lambda_processor
+    label: Consume messages
+  - source: lambda_processor
+    target: dynamodb
+    label: Read/Write state
+  - source: lambda_notifier
+    target: sns
+    label: Publish notification
+constraints:
+  availability: 99.9

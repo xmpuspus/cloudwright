@@ -4,18 +4,34 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cloudwright-cli"
-version = "0.1.0"
+dynamic = ["version"]
 description = "CLI for Cloudwright architecture intelligence"
 requires-python = ">=3.12"
 license = "MIT"
+authors = [{name = "Xavier Puspus"}]
+readme = "README.md"
+keywords = ["cloud", "cli", "architecture", "terraform"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+]
 dependencies = [
-    "cloudwright==0.1.0",
-    "typer==0.21.0",
-    "rich==13.9.4",
+    "cloudwright>=0.1.0,<1",
+    "typer>=0.21,<1",
+    "rich>=13.9,<15",
 ]
 
 [project.scripts]
 cloudwright = "cloudwright_cli.main:app"
+
+[project.urls]
+Homepage = "https://github.com/xmpuspus/cloudwright"
+Repository = "https://github.com/xmpuspus/cloudwright"
+
+[tool.hatch.version]
+path = "cloudwright_cli/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["cloudwright_cli"]

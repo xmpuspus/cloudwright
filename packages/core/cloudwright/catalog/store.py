@@ -11,9 +11,9 @@ from typing import Any
 from cloudwright.catalog.formula import default_managed_price as _default_managed_price
 from cloudwright.registry import ServiceRegistry, get_registry
 
-# Catalog JSON data location: top-level catalog/ dir or bundled data/
-_CATALOG_DIR = Path(__file__).parent.parent.parent.parent.parent / "catalog"
-_BUNDLED_DB = Path(__file__).parent.parent / "data" / "catalog.db"
+_DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+_CATALOG_DIR = _DATA_DIR  # bundled catalog data ships with the package
+_BUNDLED_DB = _DATA_DIR / "catalog.db"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS providers (

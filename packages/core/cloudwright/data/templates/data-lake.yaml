@@ -1,0 +1,91 @@
+name: Data Lake
+version: 1
+provider: aws
+region: us-east-1
+components:
+  - id: kinesis
+    service: kinesis
+    provider: aws
+    label: Kinesis Data Streams
+    description: Real-time data ingestion from event sources
+    tier: 0
+    config:
+      shard_count: 4
+  - id: api_gw
+    service: api_gateway
+    provider: aws
+    label: Query API
+    description: REST API for querying the data warehouse
+    tier: 1
+    config:
+      type: rest
+  - id: lambda_processor
+    service: lambda
+    provider: aws
+    label: Stream Processor
+    description: Transforms and routes incoming stream records
+    tier: 2
+    config:
+      runtime: python3.12
+      memory_mb: 512
+      monthly_requests: 5000000
+      avg_duration_ms: 500
+  - id: glue
+    service: glue
+    provider: aws
+    label: Glue ETL
+    description: Serverless ETL jobs for data transformation and cataloging
+    tier: 2
+    config:
+      worker_type: G.1X
+      num_workers: 5
+  - id: s3_raw
+    service: s3
+    provider: aws
+    label: Raw Data Bucket
+    description: Landing zone for unprocessed ingested data
+    tier: 3
+    config:
+      storage_gb: 5000
+      lifecycle_days: 90
+  - id: s3_processed
+    service: s3
+    provider: aws
+    label: Processed Data Bucket
+    description: Curated, transformed data ready for analytics
+    tier: 3
+    config:
+      storage_gb: 2000
+  - id: redshift
+    service: redshift
+    provider: aws
+    label: Redshift Warehouse
+    description: Petabyte-scale data warehouse for analytics queries
+    tier: 3
+    config:
+      node_type: dc2.large
+      num_nodes: 4
+      encrypted: true
+connections:
+  - source: kinesis
+    target: lambda_processor
+    label: Stream records
+  - source: lambda_processor
+    target: s3_raw
+    label: Write raw
+  - source: s3_raw
+    target: glue
+    label: Source data
+  - source: glue
+    target: s3_processed
+    label: Write transformed
+  - source: s3_processed
+    target: redshift
+    label: COPY into warehouse
+  - source: api_gw
+    target: redshift
+    label: SQL queries
+    protocol: HTTPS
+    port: 443
+constraints:
+  availability: 99.9

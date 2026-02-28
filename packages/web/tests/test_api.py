@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-# Add the web package to path so we can import backend.app
+# Add the web package to path so we can import cloudwright_web.app
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 try:
@@ -23,7 +23,7 @@ skip_no_llm = pytest.mark.skipif(not HAS_LLM, reason="No LLM API key available")
 
 @pytest.fixture
 def client():
-    from backend.app import app
+    from cloudwright_web.app import app
     from fastapi.testclient import TestClient
 
     return TestClient(app)

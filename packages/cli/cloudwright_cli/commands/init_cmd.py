@@ -14,7 +14,12 @@ from cloudwright_cli.utils import handle_error
 
 console = Console()
 
-_TEMPLATES_DIR = Path(__file__).resolve().parents[4] / "catalog" / "templates"
+try:
+    from importlib.resources import files as _pkg_files
+
+    _TEMPLATES_DIR = Path(str(_pkg_files("cloudwright") / "data" / "templates"))
+except Exception:
+    _TEMPLATES_DIR = Path(__file__).resolve().parents[4] / "catalog" / "templates"
 
 
 def init(

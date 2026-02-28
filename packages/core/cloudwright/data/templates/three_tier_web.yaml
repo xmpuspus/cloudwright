@@ -1,0 +1,59 @@
+name: 3-Tier Web Application
+version: 1
+provider: aws
+region: us-east-1
+components:
+  - id: cdn
+    service: cloudfront
+    provider: aws
+    label: CloudFront CDN
+    description: Content delivery network for static assets
+    tier: 0
+    config:
+      estimated_gb: 500
+  - id: alb
+    service: alb
+    provider: aws
+    label: Application Load Balancer
+    description: Layer 7 load balancer distributing traffic to web tier
+    tier: 1
+  - id: web
+    service: ec2
+    provider: aws
+    label: Web Servers
+    description: Auto-scaled EC2 instances running the application
+    tier: 2
+    config:
+      instance_type: m5.large
+      count: 2
+      auto_scaling: true
+  - id: db
+    service: rds
+    provider: aws
+    label: PostgreSQL Database
+    description: Multi-AZ RDS PostgreSQL for persistent storage
+    tier: 3
+    config:
+      engine: postgres
+      instance_class: db.r5.large
+      multi_az: true
+      storage_gb: 100
+      encryption: true
+connections:
+  - source: cdn
+    target: alb
+    label: HTTPS
+    protocol: HTTPS
+    port: 443
+  - source: alb
+    target: web
+    label: HTTP
+    protocol: HTTP
+    port: 80
+  - source: web
+    target: db
+    label: PostgreSQL
+    protocol: TCP
+    port: 5432
+constraints:
+  availability: 99.9

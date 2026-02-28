@@ -117,6 +117,10 @@ class TestCostAPI:
         assert data["estimate"]["monthly_total"] > 0
         assert len(data["estimate"]["breakdown"]) == 2
 
+    @pytest.mark.skipif(
+        not os.environ.get("ANTHROPIC_API_KEY") and not os.environ.get("OPENAI_API_KEY"),
+        reason="compare_providers requires an LLM API key",
+    )
     def test_cost_with_comparison(self, client, sample_spec):
         resp = client.post("/api/cost", json={"spec": sample_spec, "compare_providers": ["gcp"]})
         assert resp.status_code == 200

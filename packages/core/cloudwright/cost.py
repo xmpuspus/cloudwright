@@ -184,8 +184,9 @@ class CostEngine:
                 merged_config = dict(svc_def.default_config)
                 merged_config.update(config)
                 base = formula_fn(merged_config)
-                multiplier = _PRICING_MULTIPLIERS.get(pricing_tier, 1.0)
-                return round(base * multiplier, 2)
+                if base is not None and base > 0:
+                    multiplier = _PRICING_MULTIPLIERS.get(pricing_tier, 1.0)
+                    return round(base * multiplier, 2)
 
         # Tier 3: static fallback table
         base = default_managed_price(comp.service, config)

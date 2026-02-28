@@ -5,9 +5,11 @@ from __future__ import annotations
 from typing import Any
 
 
-def per_hour(config: dict[str, Any], base_rate: float = 0.0) -> float:
-    """Hourly rate * 730 hours/month * count."""
-    rate = base_rate or config.get("price_per_hour", 0)
+def per_hour(config: dict[str, Any], base_rate: float = 0.0) -> float | None:
+    """Hourly rate * 730 hours/month * count. Returns None when no rate available."""
+    rate = base_rate or config.get("price_per_hour")
+    if not rate:
+        return None
     count = config.get("count", 1)
     return round(rate * 730 * count, 2)
 
@@ -148,7 +150,7 @@ _FALLBACK_PRICES: dict[str, float] = {
     "dataflow": 20.0,
     "event_grid": 10.0,
     "redshift": 180.0,
-    "bigquery": 0.0,
+    "bigquery": 7.0,
     "synapse": 200.0,
     "sagemaker": 50.0,
     "vertex_ai": 50.0,
@@ -157,14 +159,14 @@ _FALLBACK_PRICES: dict[str, float] = {
     "workflows": 2.0,
     "logic_apps": 5.0,
     "eventbridge": 1.0,
-    "ecs": 0.0,
+    "ecs": 73.0,
     "eks": 73.0,
     "gke": 73.0,
-    "aks": 0.0,
+    "aks": 73.0,
     "fargate": 35.0,
-    "cloud_run": 0.0,
-    "container_apps": 0.0,
-    "app_engine": 0.0,
+    "cloud_run": 15.0,
+    "container_apps": 15.0,
+    "app_engine": 25.0,
     "app_service": 13.0,
     "spanner": 65.70,
     # Virtual/meta components (no billing)
@@ -177,7 +179,7 @@ _FALLBACK_PRICES: dict[str, float] = {
     # Common services the LLM might name
     "cloudwatch": 3.0,
     "cloud_logging": 0.50,
-    "cloud_monitoring": 0.0,
+    "cloud_monitoring": 3.0,
     "azure_monitor": 2.30,
     "kms": 1.0,
     "cloud_kms": 1.0,
@@ -216,4 +218,21 @@ _FALLBACK_PRICES: dict[str, float] = {
 
 def default_managed_price(service: str, config: dict) -> float:
     """Fallback pricing when catalog doesn't have specific data."""
-    return _FALLBACK_PRICES.get(service, 10.0)
+    base = _FALLBACK_PRICES.get(service, 10.0)
+    # Multiplier from various count-like config keys
+    count = config.get("count", config.get("instance_count", config.get("desired_count",
+            config.get("min_tasks", config.get("min_instances", 1)))))
+    if isinstance(count, str):
+        try:
+            count = int(count)
+        except ValueError:
+            count = 1
+    if count > 1:
+        base = base * count
+    storage_gb = config.get("storage_gb", 0)
+    if storage_gb > 0:
+        base += storage_gb * 0.10
+    node_count = config.get("node_count", config.get("num_nodes", 0))
+    if node_count > 1:
+        base = base * node_count
+    return round(base, 2)

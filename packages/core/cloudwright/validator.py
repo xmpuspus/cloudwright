@@ -199,7 +199,7 @@ def _stores_encrypted(spec: ArchSpec) -> list[str]:
     unencrypted = []
     for c in spec.components:
         if c.service in (_DATA_STORE_SERVICES | _STORAGE_SERVICES):
-            if not c.config.get("encryption"):
+            if not (c.config.get("encryption") or c.config.get("encryption_at_rest")):
                 unencrypted.append(c.id)
     return unencrypted
 
@@ -418,6 +418,23 @@ def _check_soc2(spec: ArchSpec) -> ValidationResult:
             severity="high",
             detail="Auth/IAM component present" if has_auth else "No auth service found",
             recommendation="Add IAM, Cognito, Firebase Auth, or Azure AD.",
+        )
+    )
+
+    # Encryption at rest on data stores
+    unencrypted = _stores_encrypted(spec)
+    checks.append(
+        ValidationCheck(
+            name="encryption_at_rest",
+            category="data_protection",
+            passed=len(unencrypted) == 0,
+            severity="high",
+            detail=(
+                "All data stores have encryption enabled"
+                if not unencrypted
+                else f"Missing encryption on: {', '.join(unencrypted)}"
+            ),
+            recommendation="Set encryption=true in config for all database and storage components.",
         )
     )
 

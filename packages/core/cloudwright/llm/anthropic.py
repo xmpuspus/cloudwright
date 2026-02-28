@@ -9,7 +9,7 @@ import anthropic
 
 from cloudwright.llm.base import BaseLLM
 
-GENERATE_MODEL = "claude-sonnet-4-20250514"
+GENERATE_MODEL = "claude-sonnet-4-6"
 _MAX_RETRIES = 3
 
 

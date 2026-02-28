@@ -1,0 +1,28 @@
+id: "54"
+name: "GDPR Cross-Border Data Processing Platform"
+tier: 1
+category: "compliance"
+prompt: >
+  Design a GDPR-compliant cross-border data processing platform on AWS for a multinational
+  e-commerce company with customers in the EU and operations in the US. The platform must
+  enforce data transfer controls so EU personal data is only replicated to non-EU regions
+  under Standard Contractual Clauses (SCCs). Use Lambda for stateless order processing
+  functions that apply data minimization principles. Use SQS to decouple the EU-originating
+  event stream from downstream fulfillment workers, with a policy that keeps EU personal data
+  payloads encrypted via KMS before cross-region transit. Store the EU master dataset in RDS
+  PostgreSQL in eu-west-1 and use DynamoDB with TTL for transient session data subject to
+  shorter retention periods. Maintain an S3 data lake for anonymized analytics, with bucket
+  policies restricting writes from non-anonymization Lambda functions. Enable CloudTrail across
+  all regions for audit trails supporting GDPR Article 30 accountability obligations. Budget
+  is $10,000/month.
+constraints:
+  provider: aws
+  budget_monthly: 10000
+  compliance: ["gdpr"]
+  regions: ["eu-west-1", "us-east-1"]
+expected:
+  min_components: 8
+  required_services: ["ec2", "rds", "s3", "lambda", "sqs", "kms", "cloudtrail", "dynamodb"]
+  required_connections: 7
+  max_monthly_cost: 10000
+tags: ["aws", "gdpr", "cross-border", "data-transfer", "compliance", "scc", "e-commerce"]

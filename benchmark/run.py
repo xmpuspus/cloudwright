@@ -21,7 +21,7 @@ USE_CASES_DIR = BENCHMARK_DIR / "use_cases"
 RESULTS_DIR = BENCHMARK_DIR / "results"
 
 # Model to use for raw Claude comparison
-CLAUDE_MODEL = "claude-sonnet-4-20250514"
+CLAUDE_MODEL = "claude-sonnet-4-6"
 
 
 def discover_use_cases() -> list[dict]:

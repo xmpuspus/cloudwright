@@ -43,13 +43,28 @@ def evaluate_structural_validity(result: dict) -> dict:
     if not text:
         return {"score": 0, "pass": False, "reason": "no output"}
 
-    # YAML code block
+    # YAML code block (handle both closed and unclosed fences)
     m = re.search(r"```ya?ml\n(.*?)```", text, re.DOTALL)
+    if not m:
+        # Claude often hits max_tokens and leaves the fence unclosed
+        m = re.search(r"```ya?ml\n(.*)", text, re.DOTALL)
     if m:
         try:
             parsed = yaml.safe_load(m.group(1))
-            if isinstance(parsed, dict) and ("components" in parsed or "services" in parsed or "resources" in parsed):
-                return {"score": 80, "pass": True, "reason": "yaml block with components/services"}
+            if isinstance(parsed, dict):
+                # Check top-level or one level nested for components/services
+                has_structure = any(
+                    k in parsed for k in ("components", "services", "resources")
+                )
+                if not has_structure:
+                    for v in parsed.values():
+                        if isinstance(v, dict) and any(
+                            k in v for k in ("components", "services", "resources")
+                        ):
+                            has_structure = True
+                            break
+                if has_structure:
+                    return {"score": 80, "pass": True, "reason": "yaml block with components/services"}
             return {"score": 40, "pass": False, "reason": "yaml block but no components structure"}
         except Exception:
             return {"score": 20, "pass": False, "reason": "yaml block present but invalid yaml"}
@@ -98,15 +113,10 @@ def evaluate_cost_accuracy(result: dict) -> dict:
             return {"score": 0, "estimated": 0, "reason": "no cost estimate produced"}
         if budget == 0:
             # No budget to compare against — give partial credit for producing any estimate
-            return {"score": 60, "estimated": total, "reason": "estimate produced, no budget to validate against"}
+            return {"score": 50, "estimated": total, "reason": "estimate produced, no budget to validate against"}
 
-        if total <= budget:
-            # Under budget is good. Only penalize if suspiciously far under (< 5% of budget)
-            ratio = total / budget
-            score = 100 if ratio >= 0.05 else max(60, ratio * 800)
-        else:
-            overshoot = (total - budget) / budget
-            score = max(0, 100 - overshoot * 200)
+        # Penalize both over- and under-estimation equally
+        score = max(0, 100 - abs(total - budget) / budget * 100)
         return {"score": round(score, 1), "estimated": total, "budget": budget}
 
     # Claude raw — extract cost mentions from prose
@@ -123,7 +133,7 @@ def evaluate_cost_accuracy(result: dict) -> dict:
         return {"score": 0, "reason": "could not parse cost figure"}
 
     if budget == 0:
-        return {"score": 30, "estimated": estimated, "reason": "estimate found, no budget constraint"}
+        return {"score": 50, "estimated": estimated, "reason": "estimate found, no budget constraint"}
 
     deviation = abs(estimated - budget) / budget
     score = max(0, 100 - deviation * 100)

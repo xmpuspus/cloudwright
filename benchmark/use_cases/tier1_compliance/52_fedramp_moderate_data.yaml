@@ -1,0 +1,26 @@
+id: "52"
+name: "FedRAMP Moderate Data Processing Pipeline"
+tier: 1
+category: "compliance"
+prompt: >
+  Design a FedRAMP Moderate data processing pipeline on AWS for a federal health statistics agency.
+  The pipeline ingests survey data from 50 state partners, processes it through a multi-stage ETL
+  workflow, and produces aggregate statistical reports. Use SQS for durable message queuing between
+  pipeline stages, Lambda for stateless transformation functions, and EC2 for compute-intensive
+  aggregation jobs. Store raw ingested data in S3 with versioning and object lock. Persist final
+  datasets in RDS PostgreSQL with point-in-time recovery. All encryption must use KMS with
+  customer-managed keys and FIPS 140-2 validated endpoints. Enable CloudTrail data events on S3
+  and Lambda for full API-level auditability. Deploy GuardDuty for threat detection and Config
+  with conformance packs for continuous NIST 800-53 compliance posture reporting. All resources
+  must reside in a dedicated VPC with private subnets only. Budget is $12,000/month.
+constraints:
+  provider: aws
+  budget_monthly: 12000
+  compliance: ["fedramp"]
+  regions: ["us-east-1"]
+expected:
+  min_components: 9
+  required_services: ["ec2", "rds", "s3", "lambda", "sqs", "kms", "cloudtrail", "guardduty", "config", "vpc"]
+  required_connections: 8
+  max_monthly_cost: 12000
+tags: ["aws", "fedramp", "government", "data-pipeline", "etl", "compliance", "nist"]

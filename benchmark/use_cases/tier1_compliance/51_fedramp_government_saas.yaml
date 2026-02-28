@@ -1,0 +1,26 @@
+id: "51"
+name: "FedRAMP Moderate Government SaaS Platform"
+tier: 1
+category: "compliance"
+prompt: >
+  Design a FedRAMP Moderate authorized SaaS platform on AWS for a US federal government agency.
+  The platform hosts sensitive but unclassified (SBU) government data and serves 5,000 agency
+  users. Implement FIPS 140-2 validated encryption at rest and in transit across all data stores.
+  Use EC2 with a hardened AMI for the application tier behind an Application Load Balancer with
+  WAF for OWASP protection and Shield for DDoS mitigation. Store data in RDS with automated
+  snapshots retained for 1 year per NIST 800-53 requirements. Use S3 with server-side encryption
+  and object lock for audit log immutability. Deploy GuardDuty, Config, and CloudTrail across
+  all regions for continuous monitoring and incident response. Use KMS with customer-managed keys
+  for all encryption. The entire environment must run within a dedicated VPC with no internet
+  egress except through approved NAT gateways. Budget is $8,000/month.
+constraints:
+  provider: aws
+  budget_monthly: 8000
+  compliance: ["fedramp"]
+  regions: ["us-east-1"]
+expected:
+  min_components: 10
+  required_services: ["ec2", "rds", "s3", "alb", "waf", "kms", "cloudtrail", "guardduty", "config", "vpc", "shield"]
+  required_connections: 8
+  max_monthly_cost: 8000
+tags: ["aws", "fedramp", "government", "compliance", "nist", "fips", "saas"]

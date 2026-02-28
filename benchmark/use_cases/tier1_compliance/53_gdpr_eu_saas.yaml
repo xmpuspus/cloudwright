@@ -1,0 +1,26 @@
+id: "53"
+name: "GDPR-Compliant EU SaaS Platform"
+tier: 1
+category: "compliance"
+prompt: >
+  Design a GDPR-compliant SaaS platform on AWS hosted entirely in the EU (eu-west-1) for a
+  European HR software company serving 500 SME customers. The platform processes employee
+  personal data as a data processor under GDPR Article 28. Implement data residency controls
+  to prevent EU personal data from leaving eu-west-1. Use Cognito with MFA for identity and
+  access management, including a self-service consent management portal for data subjects to
+  exercise Article 17 right-to-erasure requests. Store customer data in RDS PostgreSQL with
+  field-level encryption via KMS for personally identifiable fields. Use CloudFront with an
+  EU-only origin to serve the web application, and ALB for backend routing. Enable CloudTrail
+  to satisfy Article 30 records of processing activities. Use S3 with lifecycle policies to
+  enforce data retention limits per customer DPA agreements. Budget is $5,000/month.
+constraints:
+  provider: aws
+  budget_monthly: 5000
+  compliance: ["gdpr"]
+  regions: ["eu-west-1"]
+expected:
+  min_components: 7
+  required_services: ["ec2", "rds", "s3", "alb", "cloudfront", "cognito", "kms", "cloudtrail"]
+  required_connections: 6
+  max_monthly_cost: 5000
+tags: ["aws", "gdpr", "eu", "saas", "compliance", "data-residency", "hr"]

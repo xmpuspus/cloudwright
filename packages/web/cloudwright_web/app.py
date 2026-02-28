@@ -285,6 +285,35 @@ def catalog_compare(req: CatalogCompareRequest):
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
+@app.post("/api/diagram")
+async def render_diagram(request: Request):
+    data = await request.json()
+    spec = ArchSpec.model_validate(data["spec"])
+    fmt = data.get("format", "svg")
+    from cloudwright.exporter.renderer import DiagramRenderer
+
+    renderer = DiagramRenderer()
+    if fmt == "png":
+        png_data = renderer.render_png(spec)
+        return Response(content=png_data, media_type="image/png")
+    svg = renderer.render_svg(spec)
+    return Response(content=svg, media_type="image/svg+xml")
+
+
+@app.get("/api/icons/{provider}/{service}.svg")
+def get_icon(provider: str, service: str):
+    import cloudwright
+
+    icons_dir = Path(cloudwright.__file__).parent / "data" / "icons"
+    icon_path = icons_dir / provider / f"{service}.svg"
+    if not icon_path.exists():
+        raise HTTPException(status_code=404, detail=f"Icon not found: {provider}/{service}")
+    # Security: ensure path doesn't escape icons dir
+    if not icon_path.resolve().is_relative_to(icons_dir.resolve()):
+        raise HTTPException(status_code=404, detail="Invalid path")
+    return FileResponse(str(icon_path), media_type="image/svg+xml")
+
+
 @app.post("/api/chat")
 def chat(req: ChatRequest):
     try:

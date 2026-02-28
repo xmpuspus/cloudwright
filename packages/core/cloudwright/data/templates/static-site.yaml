@@ -1,0 +1,92 @@
+name: Static Site with API
+version: 1
+provider: aws
+region: us-east-1
+components:
+  - id: route53
+    service: route53
+    provider: aws
+    label: Route 53
+    description: DNS routing to CloudFront distribution
+    tier: 0
+  - id: cloudfront
+    service: cloudfront
+    provider: aws
+    label: CloudFront CDN
+    description: Global CDN serving static assets and routing API requests
+    tier: 0
+    config:
+      estimated_gb: 200
+      price_class: PriceClass_100
+  - id: s3_assets
+    service: s3
+    provider: aws
+    label: Static Assets Bucket
+    description: S3 origin hosting HTML, CSS, JS, and media files
+    tier: 1
+    config:
+      storage_gb: 10
+      website_hosting: true
+  - id: lambda_edge
+    service: lambda
+    provider: aws
+    label: Lambda@Edge
+    description: Edge functions for auth, redirects, and request manipulation
+    tier: 2
+    config:
+      runtime: nodejs20.x
+      memory_mb: 128
+      monthly_requests: 1000000
+      avg_duration_ms: 5
+  - id: api_gw
+    service: api_gateway
+    provider: aws
+    label: API Gateway
+    description: REST API backing dynamic site functionality
+    tier: 0
+    config:
+      type: rest
+  - id: lambda_backend
+    service: lambda
+    provider: aws
+    label: API Lambda
+    description: Serverless backend handling API requests
+    tier: 2
+    config:
+      runtime: python3.12
+      memory_mb: 256
+      monthly_requests: 500000
+      avg_duration_ms: 200
+  - id: dynamodb
+    service: dynamodb
+    provider: aws
+    label: DynamoDB
+    description: NoSQL data store for application state
+    tier: 3
+    config:
+      billing_mode: on_demand
+connections:
+  - source: route53
+    target: cloudfront
+    label: DNS
+  - source: cloudfront
+    target: s3_assets
+    label: Serve static
+    protocol: HTTPS
+  - source: cloudfront
+    target: lambda_edge
+    label: Viewer request
+  - source: cloudfront
+    target: api_gw
+    label: API path forward
+    protocol: HTTPS
+    port: 443
+  - source: api_gw
+    target: lambda_backend
+    label: Invoke
+    protocol: HTTPS
+  - source: lambda_backend
+    target: dynamodb
+    label: Read/Write
+constraints:
+  availability: 99.95

@@ -4,15 +4,30 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cloudwright-web"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Web UI for Cloudwright architecture intelligence"
 requires-python = ">=3.12"
 license = "MIT"
+authors = [{name = "Xavier Puspus"}]
+readme = "README.md"
+keywords = ["cloud", "web", "architecture", "fastapi"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+]
 dependencies = [
-    "cloudwright==0.1.0",
-    "fastapi==0.116.1",
-    "uvicorn[standard]==0.35.0",
+    "cloudwright>=0.1.0,<1",
+    "fastapi>=0.116,<1",
+    "uvicorn[standard]>=0.35,<1",
 ]
 
+[project.urls]
+Homepage = "https://github.com/xmpuspus/cloudwright"
+Repository = "https://github.com/xmpuspus/cloudwright"
+
+[tool.hatch.version]
+path = "cloudwright_web/__init__.py"
+
 [tool.hatch.build.targets.wheel]
-packages = ["backend"]
+packages = ["cloudwright_web"]

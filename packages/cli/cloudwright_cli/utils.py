@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import re
+from pathlib import Path
 
 import typer
 from rich.console import Console
@@ -35,3 +37,13 @@ def handle_error(ctx: typer.Context, e: Exception) -> None:
         _err_console.print_exception()
 
     raise typer.Exit(1)
+
+
+def auto_save_spec(spec, explicit_output: Path | None = None) -> Path:
+    if explicit_output:
+        explicit_output.write_text(spec.to_yaml())
+        return explicit_output
+    slug = re.sub(r"[^a-z0-9]+", "-", spec.name.lower()).strip("-")
+    path = Path(f"{slug}.yaml")
+    path.write_text(spec.to_yaml())
+    return path

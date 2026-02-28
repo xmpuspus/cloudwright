@@ -263,6 +263,45 @@ class TestJsonOutput:
         assert "comparison" in data
 
 
+class TestRenderNextSteps:
+    def test_render_next_steps_content(self):
+        from cloudwright.ascii_diagram import render_next_steps
+
+        result = render_next_steps()
+        assert "cloudwright cost" in result
+        assert "cloudwright validate" in result
+
+    def test_render_next_steps_returns_string(self):
+        from cloudwright.ascii_diagram import render_next_steps
+
+        result = render_next_steps()
+        assert isinstance(result, str)
+        assert len(result) > 0
+
+
+class TestAutoSaveSpec:
+    def test_auto_save_explicit_output(self, tmp_path: Path):
+        from cloudwright import ArchSpec
+        from cloudwright_cli.utils import auto_save_spec
+
+        spec = ArchSpec.from_yaml(_SPEC_YAML)
+        out = tmp_path / "out.yaml"
+        result = auto_save_spec(spec, out)
+        assert result == out
+        assert out.exists()
+
+    def test_auto_save_slug_path(self, tmp_path: Path, monkeypatch):
+        from cloudwright import ArchSpec
+        from cloudwright_cli.utils import auto_save_spec
+
+        monkeypatch.chdir(tmp_path)
+        spec = ArchSpec.from_yaml(_SPEC_YAML)
+        result = auto_save_spec(spec)
+        assert result.exists()
+        assert result.suffix == ".yaml"
+        assert "test" in result.stem
+
+
 class TestErrorHandling:
     def test_error_handling_invalid_yaml(self, tmp_path: Path):
         bad_yaml = tmp_path / "bad.yaml"

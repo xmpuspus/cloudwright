@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import ArchitectureDiagram from "./components/ArchitectureDiagram";
 import CostTable from "./components/CostTable";
+import SummaryBar from "./components/SummaryBar";
 
 interface ArchSpec {
   name: string;
@@ -50,12 +51,13 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [currentSpec, setCurrentSpec] = useState<ArchSpec | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "chat" | "diagram" | "cost" | "yaml" | "validate" | "export" | "modify"
-  >("chat");
+    "diagram" | "cost" | "validate" | "export" | "spec" | "modify"
+  >("diagram");
   const [validateResult, setValidateResult] = useState<unknown>(null);
   const [exportResult, setExportResult] = useState<string>("");
   const [exportFormat, setExportFormat] = useState("terraform");
   const [modifyInput, setModifyInput] = useState("");
+  const [validationSummary, setValidationSummary] = useState<{ passed: number; total: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -78,7 +80,45 @@ function App() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Request failed");
-      const spec = data.spec as ArchSpec;
+      let spec = data.spec as ArchSpec;
+
+      // Auto-populate cost after design
+      if (!spec.cost_estimate) {
+        try {
+          const costRes = await fetch(`${API_BASE}/cost`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ spec }),
+          });
+          if (costRes.ok) {
+            const costData = await costRes.json();
+            spec = { ...spec, cost_estimate: costData.estimate };
+          }
+        } catch {
+          // cost is best-effort
+        }
+      }
+
+      // Auto-validate (Well-Architected, best-effort)
+      try {
+        const valRes = await fetch(`${API_BASE}/validate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ spec, compliance: [], well_architected: true }),
+        });
+        if (valRes.ok) {
+          const valData = await valRes.json();
+          const results = valData.results || [];
+          if (results.length > 0) {
+            const checks = results[0].checks || [];
+            const passed = checks.filter((c: { passed: boolean }) => c.passed).length;
+            setValidationSummary({ passed, total: checks.length });
+          }
+        }
+      } catch {
+        // validation is best-effort
+      }
+
       setCurrentSpec(spec);
       const assistantMsg: Message = {
         role: "assistant",
@@ -97,6 +137,30 @@ function App() {
     } finally {
       setLoading(false);
       inputRef.current?.focus();
+    }
+  };
+
+  const handleDownload = async (format: string) => {
+    if (!currentSpec) return;
+    try {
+      const res = await fetch(`${API_BASE}/download`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ spec: currentSpec, format }),
+      });
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition") || "";
+      const match = disposition.match(/filename=([^\s;]+)/);
+      const filename = match ? match[1] : `architecture.${format === "terraform" ? "tf" : "yaml"}`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // download is best-effort
     }
   };
 
@@ -190,7 +254,7 @@ function App() {
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {/* Tabs */}
         <div style={{ display: "flex", borderBottom: "1px solid #1e293b", background: "#0f172a" }}>
-          {(["chat", "diagram", "cost", "yaml", "validate", "export", "modify"] as const).map((tab) => (
+          {(["diagram", "cost", "validate", "export", "spec", "modify"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -212,47 +276,16 @@ function App() {
         </div>
 
         {/* Tab content */}
-        <div style={{ flex: 1, overflow: "auto" }}>
-          {activeTab === "chat" && (
-            <div style={{ padding: 32, maxWidth: 800 }}>
-              <h2 style={{ fontSize: 18, marginBottom: 16 }}>Welcome to Cloudwright</h2>
-              <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>
-                Describe your cloud architecture in natural language. Cloudwright will design it,
-                estimate costs, validate compliance, and export to Terraform.
-              </p>
-              <div style={{ marginTop: 24 }}>
-                <h3 style={{ fontSize: 14, color: "#64748b", marginBottom: 12 }}>Try these:</h3>
-                {[
-                  "3-tier web app on AWS with CloudFront, ALB, EC2, and RDS",
-                  "Serverless API with API Gateway, Lambda, and DynamoDB",
-                  "ML pipeline with S3, SageMaker, and Redshift",
-                ].map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    onClick={() => {
-                      setInput(suggestion);
-                      inputRef.current?.focus();
-                    }}
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      textAlign: "left",
-                      padding: "12px 16px",
-                      marginBottom: 8,
-                      borderRadius: 8,
-                      border: "1px solid #1e293b",
-                      background: "#1e293b",
-                      color: "#cbd5e1",
-                      cursor: "pointer",
-                      fontSize: 13,
-                    }}
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+        <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: "0.5rem 1rem" }}>
+            <SummaryBar
+              spec={currentSpec}
+              onDownloadTerraform={currentSpec ? () => handleDownload("terraform") : undefined}
+              onDownloadYaml={currentSpec ? () => handleDownload("yaml") : undefined}
+              validationSummary={validationSummary}
+            />
+          </div>
+          <div style={{ flex: 1, overflow: "auto" }}>
 
           {activeTab === "diagram" && currentSpec && (
             <ArchitectureDiagram spec={currentSpec} />
@@ -268,7 +301,7 @@ function App() {
             <div style={{ padding: 32, color: "#64748b" }}>No cost estimate available.</div>
           )}
 
-          {activeTab === "yaml" && currentSpec && (
+          {activeTab === "spec" && currentSpec && (
             <div style={{ padding: 32 }}>
               <pre
                 style={{
@@ -284,6 +317,9 @@ function App() {
                 {messages.findLast((m) => m.yaml)?.yaml || "No YAML available"}
               </pre>
             </div>
+          )}
+          {activeTab === "spec" && !currentSpec && (
+            <div style={{ padding: 32, color: "#64748b" }}>Design an architecture first.</div>
           )}
 
           {activeTab === "validate" && currentSpec && (
@@ -437,6 +473,7 @@ function App() {
           {activeTab === "modify" && !currentSpec && (
             <div style={{ padding: 32, color: "#64748b" }}>Design an architecture first.</div>
           )}
+          </div>
         </div>
       </div>
     </div>

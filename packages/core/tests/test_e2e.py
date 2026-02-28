@@ -225,8 +225,7 @@ class TestTemplates:
             assert restored.name == spec.name
             assert len(restored.components) == len(spec.components)
 
-
-# Catalog Tests class TestCatalog:
+    # Catalog Tests class TestCatalog:
     def test_search_aws_compute(self, catalog):
         results = catalog.search(provider="aws", vcpus=4)
         assert len(results) > 0
@@ -452,8 +451,7 @@ class TestCostEngine:
         estimate = cost_engine.estimate(spec)
         assert estimate.monthly_total > 0
 
-
-# Validator Tests class TestValidator:
+    # Validator Tests class TestValidator:
     def test_hipaa_full_check(self, validator, three_tier):
         results = validator.validate(three_tier, compliance=["hipaa"])
         assert len(results) == 1
@@ -542,8 +540,7 @@ class TestCostEngine:
                 f"Invalid severity: {check.severity}"
             )
 
-
-# Differ Tests class TestDiffer:
+    # Differ Tests class TestDiffer:
     def test_added_component(self, differ):
         spec1 = ArchSpec(
             name="V1",
@@ -630,8 +627,7 @@ class TestCostEngine:
             diff = differ.diff(a, b)
             assert diff.summary, f"No summary for diff {a.name} -> {b.name}"
 
-
-# Exporter Tests class TestExporters:
+    # Exporter Tests class TestExporters:
     def test_terraform_all_templates(self, three_tier, serverless, ml_pipeline):
         for spec in [three_tier, serverless, ml_pipeline]:
             hcl = spec.export("terraform")

@@ -13,9 +13,9 @@ from cloudwright.cost import CostEngine
 from cloudwright.differ import Differ
 from cloudwright.exporter import FORMATS, export_spec
 from cloudwright.validator import Validator
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -142,6 +142,11 @@ def design(req: DesignRequest):
                 compliance=req.compliance,
             )
         spec = architect.design(req.description, constraints=constraints)
+        try:
+            cost_estimate = get_cost_engine().estimate(spec)
+            spec = spec.model_copy(update={"cost_estimate": cost_estimate})
+        except Exception:
+            pass  # cost is best-effort
         return {"spec": spec.model_dump(exclude_none=True), "yaml": spec.to_yaml()}
     except Exception as e:
         log.exception("Design endpoint failed")
@@ -210,6 +215,34 @@ def export(req: ExportRequest):
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
+@app.post("/api/download")
+async def download(request: Request):
+    try:
+        data = await request.json()
+        spec = ArchSpec.model_validate(data["spec"])
+        fmt = data.get("format", "terraform")
+        if fmt == "yaml":
+            content = spec.to_yaml()
+            filename = f"{spec.name.lower().replace(' ', '-')}.yaml"
+        elif fmt not in FORMATS:
+            raise HTTPException(status_code=400, detail=f"Unknown format: {fmt}. Supported: yaml, {', '.join(FORMATS)}")
+        else:
+            content = export_spec(spec, fmt)
+            ext_map = {"terraform": "tf", "cloudformation": "yaml", "mermaid": "mmd", "d2": "d2"}
+            ext = ext_map.get(fmt, "txt")
+            filename = f"{spec.name.lower().replace(' ', '-')}.{ext}"
+        return Response(
+            content=content,
+            media_type="text/plain",
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.exception("Download endpoint failed")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
+
+
 @app.post("/api/diff")
 def diff(req: DiffRequest):
     try:
@@ -250,6 +283,35 @@ def catalog_compare(req: CatalogCompareRequest):
     except Exception as e:
         log.exception("Catalog compare endpoint failed")
         raise HTTPException(status_code=500, detail="Internal server error") from e
+
+
+@app.post("/api/diagram")
+async def render_diagram(request: Request):
+    data = await request.json()
+    spec = ArchSpec.model_validate(data["spec"])
+    fmt = data.get("format", "svg")
+    from cloudwright.exporter.renderer import DiagramRenderer
+
+    renderer = DiagramRenderer()
+    if fmt == "png":
+        png_data = renderer.render_png(spec)
+        return Response(content=png_data, media_type="image/png")
+    svg = renderer.render_svg(spec)
+    return Response(content=svg, media_type="image/svg+xml")
+
+
+@app.get("/api/icons/{provider}/{service}.svg")
+def get_icon(provider: str, service: str):
+    import cloudwright
+
+    icons_dir = Path(cloudwright.__file__).parent / "data" / "icons"
+    icon_path = icons_dir / provider / f"{service}.svg"
+    if not icon_path.exists():
+        raise HTTPException(status_code=404, detail=f"Icon not found: {provider}/{service}")
+    # Security: ensure path doesn't escape icons dir
+    if not icon_path.resolve().is_relative_to(icons_dir.resolve()):
+        raise HTTPException(status_code=404, detail="Invalid path")
+    return FileResponse(str(icon_path), media_type="image/svg+xml")
 
 
 @app.post("/api/chat")

@@ -6,6 +6,7 @@ import pytest
 from cloudwright.spec import (
     Alternative,
     ArchSpec,
+    Boundary,
     Component,
     ComponentCost,
     Connection,
@@ -200,3 +201,60 @@ def test_export_unknown_format():
     spec = _sample_spec()
     with pytest.raises(ValueError, match="Unknown export format"):
         spec.export("unknown_format")
+
+
+def test_boundary_model():
+    b = Boundary(id="vpc_main", kind="vpc", label="Main VPC", component_ids=["web", "db"])
+    assert b.id == "vpc_main"
+    assert b.kind == "vpc"
+    assert len(b.component_ids) == 2
+    assert b.parent is None
+    assert b.config == {}
+
+
+def test_boundary_id_validation():
+    with pytest.raises(ValueError, match="not IaC-safe"):
+        Boundary(id="bad id!", kind="vpc")
+
+
+def test_spec_with_boundaries_yaml_roundtrip():
+    spec = ArchSpec(
+        name="Bounded App",
+        components=[
+            Component(id="web", service="ec2", provider="aws", label="Web", tier=2),
+            Component(id="db", service="rds", provider="aws", label="DB", tier=3),
+        ],
+        connections=[Connection(source="web", target="db")],
+        boundaries=[
+            Boundary(id="vpc_main", kind="vpc", label="Main VPC", component_ids=["web", "db"]),
+            Boundary(id="subnet_pub", kind="subnet", label="Public Subnet", parent="vpc_main", component_ids=["web"]),
+        ],
+    )
+    yaml_str = spec.to_yaml()
+    assert "boundaries" in yaml_str
+    assert "vpc_main" in yaml_str
+
+    restored = ArchSpec.from_yaml(yaml_str)
+    assert len(restored.boundaries) == 2
+    assert restored.boundaries[0].id == "vpc_main"
+    assert restored.boundaries[1].parent == "vpc_main"
+
+
+def test_spec_without_boundaries_backward_compat():
+    yaml_str = """\
+name: Old Spec
+provider: aws
+region: us-east-1
+components:
+  - id: web
+    service: ec2
+    provider: aws
+    label: Web
+    tier: 2
+connections: []
+"""
+    spec = ArchSpec.from_yaml(yaml_str)
+    assert spec.boundaries == []
+    # Re-serialize and confirm boundaries is not emitted (clean_empty strips it)
+    output = spec.to_yaml()
+    assert "boundaries" not in output

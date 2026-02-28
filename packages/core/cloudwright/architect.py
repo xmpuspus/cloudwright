@@ -149,7 +149,11 @@ Given a natural language description, produce a JSON object with this exact stru
       "protocol": "HTTPS",
       "port": 443
     }}
-  ]
+  ],
+  "rationale": [
+    {{"decision": "Short description of a key design decision", "reason": "Why this choice was made"}}
+  ],
+  "suggestions": ["add a Redis cache for session management", "swap RDS for Aurora Serverless", "add CloudWatch monitoring"]
 }}
 
 TIER RULES (vertical positioning, top to bottom):
@@ -169,6 +173,8 @@ RULES:
 - For production workloads, enable multi_az and encryption in config by default
 - Match the provider to the user's description; default to aws if unspecified
 - Respond with ONLY the JSON object — no markdown, no explanation text
+- Include 2-4 "rationale" entries explaining key design decisions
+- Include 3 "suggestions" for modifications the user might want to make next
 
 For ALL architectures, ensure component configs include:
 - encryption: true on all data stores and caches
@@ -194,6 +200,10 @@ Respond with ONLY the JSON object — no markdown, no explanation."""
 _CHAT_SYSTEM = f"""You are a cloud architecture assistant. You help design and refine architectures through conversation.
 
 When the user asks you to generate or modify an architecture, respond with a JSON object using the same schema as a design prompt (name, provider, region, components, connections).
+
+When generating architecture JSON, also include:
+- "rationale": key design decisions with reasons
+- "suggestions": 3 concrete modifications the user could request next
 
 When the user asks questions or wants to discuss trade-offs, respond conversationally — no JSON needed.
 
@@ -550,6 +560,12 @@ def _parse_arch_spec(data: dict, constraints: Constraints | None) -> ArchSpec:
         for conn in data.get("connections", [])
     ]
 
+    metadata = {}
+    if "rationale" in data:
+        metadata["rationale"] = data["rationale"]
+    if "suggestions" in data:
+        metadata["suggestions"] = data["suggestions"]
+
     spec = ArchSpec(
         name=data.get("name", "Architecture"),
         provider=data.get("provider", "aws"),
@@ -557,6 +573,7 @@ def _parse_arch_spec(data: dict, constraints: Constraints | None) -> ArchSpec:
         constraints=constraints,
         components=components,
         connections=connections,
+        metadata=metadata,
     )
     return _post_validate(spec, constraints)
 

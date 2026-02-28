@@ -1,0 +1,60 @@
+name: Serverless REST API
+version: 1
+provider: aws
+region: us-east-1
+components:
+  - id: api_gw
+    service: api_gateway
+    provider: aws
+    label: API Gateway
+    description: REST API endpoint with throttling
+    tier: 0
+    config:
+      type: rest
+  - id: auth
+    service: cognito
+    provider: aws
+    label: Cognito Auth
+    description: User authentication and authorization
+    tier: 0
+  - id: handler
+    service: lambda
+    provider: aws
+    label: Lambda Handlers
+    description: Serverless functions processing API requests
+    tier: 2
+    config:
+      runtime: python3.12
+      memory_mb: 256
+      monthly_requests: 1000000
+      avg_duration_ms: 200
+  - id: db
+    service: dynamodb
+    provider: aws
+    label: DynamoDB Table
+    description: NoSQL data store with on-demand capacity
+    tier: 3
+    config:
+      billing_mode: on_demand
+  - id: storage
+    service: s3
+    provider: aws
+    label: S3 Bucket
+    description: Object storage for uploads and assets
+    tier: 4
+    config:
+      storage_gb: 50
+connections:
+  - source: api_gw
+    target: auth
+    label: Authorize
+  - source: api_gw
+    target: handler
+    label: Invoke
+    protocol: HTTPS
+  - source: handler
+    target: db
+    label: Read/Write
+  - source: handler
+    target: storage
+    label: File I/O

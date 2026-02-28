@@ -1,0 +1,103 @@
+name: Batch Processing Pipeline
+version: 1
+provider: aws
+region: us-east-1
+components:
+  - id: step_functions
+    service: step_functions
+    provider: aws
+    label: Step Functions
+    description: Orchestrates the batch pipeline with retry and error handling
+    tier: 1
+    config:
+      type: standard
+  - id: sns
+    service: sns
+    provider: aws
+    label: SNS Notifications
+    description: Pipeline completion and failure alerts
+    tier: 1
+  - id: sqs_dlq
+    service: sqs
+    provider: aws
+    label: Dead Letter Queue
+    description: Captures failed Lambda invocations for reprocessing
+    tier: 2
+    config:
+      message_retention_seconds: 1209600
+  - id: lambda_validator
+    service: lambda
+    provider: aws
+    label: Validator
+    description: Validates and schema-checks incoming records
+    tier: 2
+    config:
+      runtime: python3.12
+      memory_mb: 256
+      avg_duration_ms: 1000
+  - id: lambda_transformer
+    service: lambda
+    provider: aws
+    label: Transformer
+    description: Transforms and enriches validated records
+    tier: 2
+    config:
+      runtime: python3.12
+      memory_mb: 512
+      avg_duration_ms: 3000
+  - id: lambda_loader
+    service: lambda
+    provider: aws
+    label: Loader
+    description: Loads transformed records into the output destination
+    tier: 2
+    config:
+      runtime: python3.12
+      memory_mb: 256
+      avg_duration_ms: 2000
+  - id: s3_input
+    service: s3
+    provider: aws
+    label: Input Bucket
+    description: Source bucket where raw batch files are deposited
+    tier: 3
+    config:
+      storage_gb: 500
+  - id: s3_output
+    service: s3
+    provider: aws
+    label: Output Bucket
+    description: Destination bucket for processed, validated records
+    tier: 3
+    config:
+      storage_gb: 500
+connections:
+  - source: s3_input
+    target: step_functions
+    label: Trigger pipeline
+  - source: step_functions
+    target: lambda_validator
+    label: Start validation
+  - source: lambda_validator
+    target: lambda_transformer
+    label: Pass valid records
+  - source: lambda_transformer
+    target: lambda_loader
+    label: Pass transformed
+  - source: lambda_loader
+    target: s3_output
+    label: Write results
+  - source: lambda_loader
+    target: sns
+    label: Notify completion
+  - source: lambda_validator
+    target: sqs_dlq
+    label: Failed records
+  - source: lambda_transformer
+    target: sqs_dlq
+    label: Failed records
+  - source: lambda_loader
+    target: sqs_dlq
+    label: Failed records
+constraints:
+  availability: 99.5

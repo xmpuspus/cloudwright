@@ -1,0 +1,90 @@
+name: GKE Microservices (GCP)
+version: 1
+provider: gcp
+region: us-central1
+constraints:
+  availability: 99.95
+components:
+  - id: lb
+    service: cloud_load_balancing
+    provider: gcp
+    label: Cloud Load Balancer
+    tier: 1
+    config:
+      type: external_https
+  - id: gke
+    service: gke
+    provider: gcp
+    label: GKE Cluster
+    tier: 2
+    config:
+      machine_type: e2-standard-4
+      node_count: 3
+      auto_scaling: true
+      min_nodes: 2
+      max_nodes: 6
+  - id: cache
+    service: memorystore
+    provider: gcp
+    label: Memorystore Redis
+    tier: 2
+    config:
+      tier: STANDARD_HA
+      memory_size_gb: 4
+  - id: db
+    service: cloud_sql
+    provider: gcp
+    label: Cloud SQL PostgreSQL
+    tier: 3
+    config:
+      engine: postgresql
+      tier: db-custom-4-16384
+      high_availability: true
+      storage_gb: 100
+      encryption: true
+  - id: pubsub
+    service: pubsub
+    provider: gcp
+    label: Cloud Pub/Sub
+    tier: 2
+    config:
+      message_retention: 7d
+  - id: logging
+    service: cloud_logging
+    provider: gcp
+    label: Cloud Logging
+    tier: 3
+    config:
+      retention_days: 30
+  - id: monitoring
+    service: cloud_monitoring
+    provider: gcp
+    label: Cloud Monitoring
+    tier: 3
+    config:
+      alerting: true
+connections:
+  - source: lb
+    target: gke
+    label: Ingress
+    protocol: HTTPS
+    port: 443
+  - source: gke
+    target: cache
+    label: Cache access
+    protocol: TCP
+    port: 6379
+  - source: gke
+    target: db
+    label: Database
+    protocol: TCP
+    port: 5432
+  - source: gke
+    target: pubsub
+    label: Event publishing
+  - source: gke
+    target: logging
+    label: Log shipping
+  - source: gke
+    target: monitoring
+    label: Metrics

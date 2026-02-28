@@ -4,20 +4,44 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cloudwright"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Architecture intelligence for cloud engineers — design, cost, compare, export"
 requires-python = ">=3.12"
 license = "MIT"
+authors = [{name = "Xavier Puspus"}]
+readme = "README.md"
+keywords = ["cloud", "architecture", "terraform", "aws", "gcp", "azure", "infrastructure", "iac"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: System :: Systems Administration",
+]
 dependencies = [
-    "pydantic==2.11.7",
-    "pyyaml==6.0.2",
-    "anthropic==0.58.2",
-    "openai==1.95.1",
+    "pydantic>=2.11,<3",
+    "pyyaml>=6.0,<7",
+    "anthropic>=0.58,<1",
+    "openai>=1.50,<3",
 ]
 
 [project.optional-dependencies]
 cli = ["cloudwright-cli"]
 web = ["cloudwright-web"]
+pdf = ["weasyprint", "markdown2"]
+
+[project.urls]
+Homepage = "https://github.com/xmpuspus/cloudwright"
+Repository = "https://github.com/xmpuspus/cloudwright"
+Issues = "https://github.com/xmpuspus/cloudwright/issues"
+
+[tool.hatch.version]
+path = "cloudwright/__init__.py"
+
+[tool.hatch.build]
+artifacts = ["cloudwright/data/catalog.db"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["cloudwright"]

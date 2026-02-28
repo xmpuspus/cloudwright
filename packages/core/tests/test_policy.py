@@ -128,3 +128,11 @@ class TestPolicyEngine:
         assert result.passed
         assert len(result.results) == 3
         assert all(r.passed for r in result.results)
+
+    def test_budget_fails_when_no_cost_estimate(self, engine, sample_spec):
+        rules = [PolicyRule(name="budget", check="budget_monthly", value=5000, severity="deny")]
+        result = engine.evaluate(sample_spec, rules, cost_estimate=None)
+        assert not result.passed
+        assert result.deny_count == 1
+        failing = [r for r in result.results if not r.passed]
+        assert "No cost estimate" in failing[0].message

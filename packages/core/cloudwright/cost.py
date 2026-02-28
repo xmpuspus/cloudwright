@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import date
 
 from cloudwright.catalog import _PRICING_MULTIPLIERS, Catalog
@@ -9,6 +10,10 @@ from cloudwright.catalog.formula import PRICING_FORMULAS, default_managed_price
 from cloudwright.providers import get_equivalent
 from cloudwright.registry import ServiceRegistry, get_registry
 from cloudwright.spec import Alternative, ArchSpec, Component, ComponentCost, CostEstimate
+
+log = logging.getLogger(__name__)
+
+_CONTAINER_ORCHESTRATION = {"eks", "gke", "aks", "ecs"}
 
 # Per-provider internet egress rates ($/GB) by transfer type
 _EGRESS_RATES = {
@@ -159,39 +164,56 @@ class CostEngine:
                         del new_config[instance_key]
                     new_config[target_key] = equiv_name
                     return new_config
-        except Exception:
-            pass
+        except (KeyError, TypeError, AttributeError) as exc:
+            log.debug("Instance config mapping failed for %s->%s: %s", from_provider, to_provider, exc)
 
         return config
 
     def _price_component(
         self, comp: Component, default_provider: str, region: str, pricing_tier: str = "on_demand"
     ) -> float:
-        """Get monthly cost for a single component using 3-tier resolution."""
+        """Get monthly cost for a single component using 3-tier resolution + multipliers."""
         provider = comp.provider or default_provider
         config = comp.config or {}
+        base: float | None = None
+        from_catalog = False
 
         # Tier 1: catalog DB (has instance-level pricing and pricing_tier support)
-        price = self.catalog.get_service_pricing(comp.service, provider, config, pricing_tier=pricing_tier)
-        if price is not None:
-            return round(price, 2)
+        base = self.catalog.get_service_pricing(comp.service, provider, config, pricing_tier=pricing_tier)
+        if base is not None:
+            from_catalog = True
 
-        # Tier 2: registry formula dispatch
-        svc_def = self.registry.get(provider, comp.service)
-        if svc_def:
-            formula_fn = PRICING_FORMULAS.get(svc_def.pricing_formula)
-            if formula_fn:
-                merged_config = dict(svc_def.default_config)
-                merged_config.update(config)
-                base = formula_fn(merged_config)
-                if base is not None and base > 0:
-                    multiplier = _PRICING_MULTIPLIERS.get(pricing_tier, 1.0)
-                    return round(base * multiplier, 2)
+        if base is None:
+            # Tier 2: registry formula dispatch
+            svc_def = self.registry.get(provider, comp.service)
+            if svc_def:
+                formula_fn = PRICING_FORMULAS.get(svc_def.pricing_formula)
+                if formula_fn:
+                    merged_config = dict(svc_def.default_config)
+                    merged_config.update(config)
+                    result = formula_fn(merged_config)
+                    if result is not None and result > 0:
+                        multiplier = _PRICING_MULTIPLIERS.get(pricing_tier, 1.0)
+                        base = result * multiplier
 
-        # Tier 3: static fallback table
-        base = default_managed_price(comp.service, config)
-        multiplier = _PRICING_MULTIPLIERS.get(pricing_tier, 1.0)
-        return round(base * multiplier, 2)
+        if base is None:
+            # Tier 3: static fallback table
+            base = default_managed_price(comp.service, config)
+            multiplier = _PRICING_MULTIPLIERS.get(pricing_tier, 1.0)
+            base = base * multiplier
+
+        # Post-resolution multipliers (only for non-catalog tiers — catalog handles these internally)
+        if not from_catalog and config.get("multi_az"):
+            base *= 2.0
+
+        if comp.service in _CONTAINER_ORCHESTRATION:
+            has_explicit_count = (
+                config.get("count", 1) > 1 or config.get("node_count", 0) > 1 or config.get("desired_count", 0) > 1
+            )
+            if not has_explicit_count:
+                base *= 3
+
+        return round(base, 2)
 
     def _estimate_data_transfer(self, spec: ArchSpec) -> float:
         """Estimate monthly data transfer (egress) costs from connections."""

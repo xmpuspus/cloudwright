@@ -112,9 +112,7 @@ def sep(title):
     print("=" * 60)
 
 
-# ---------------------------------------------------------------------------
-# 1. Load ArchSpec from YAML
-# ---------------------------------------------------------------------------
+# Load ArchSpec from YAML
 
 sep("1. ArchSpec from YAML")
 
@@ -129,9 +127,7 @@ print("Components:")
 for c in spec.components:
     print(f"  {c.id:8s}  {c.service:15s}  {c.label}")
 
-# ---------------------------------------------------------------------------
-# 2. Cost estimation
-# ---------------------------------------------------------------------------
+# Cost estimation
 
 sep("2. Monthly Cost Breakdown")
 
@@ -150,9 +146,7 @@ print(f"{'TOTAL':<10}  {'':15}  ${est.monthly_total:>9,.2f}/mo")
 # Keep the priced spec for diffing later
 spec = priced
 
-# ---------------------------------------------------------------------------
-# 3. HIPAA validation
-# ---------------------------------------------------------------------------
+# HIPAA validation
 
 sep("3. HIPAA Compliance Check")
 
@@ -172,9 +166,7 @@ for check in hipaa.checks:
     if not check.passed:
         print(f"           Fix: {check.recommendation}")
 
-# ---------------------------------------------------------------------------
-# 4. Terraform export
-# ---------------------------------------------------------------------------
+# Terraform export
 
 sep("4. Terraform HCL Export")
 
@@ -186,18 +178,14 @@ print("\n".join(preview_lines))
 if len(lines) > 50:
     print(f"\n... ({len(lines) - 50} more lines)")
 
-# ---------------------------------------------------------------------------
-# 5. Mermaid diagram
-# ---------------------------------------------------------------------------
+# Mermaid diagram
 
 sep("5. Mermaid Architecture Diagram")
 
 mermaid = export_spec(spec, "mermaid")
 print(mermaid)
 
-# ---------------------------------------------------------------------------
-# 6. Cross-provider comparison
-# ---------------------------------------------------------------------------
+# Cross-provider comparison
 
 sep("6. Cross-Provider Cost Comparison")
 
@@ -214,9 +202,7 @@ for alt in alternatives:
     for diff_note in alt.key_differences[:3]:
         print(f"           - {diff_note}")
 
-# ---------------------------------------------------------------------------
-# 7. Diff v1 -> v2 (add S3 audit log bucket)
-# ---------------------------------------------------------------------------
+# Diff v1 -> v2 (add S3 audit log bucket)
 
 sep("7. Spec Diff: v1 -> v2 (add audit log storage)")
 
@@ -276,9 +262,7 @@ if diff.compliance_impact:
 else:
     print("\nNo adverse compliance impact detected.")
 
-# ---------------------------------------------------------------------------
 # Summary
-# ---------------------------------------------------------------------------
 
 sep("Summary")
 

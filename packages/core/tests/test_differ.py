@@ -177,3 +177,75 @@ class TestConnectionDiff:
         )
         diff = Differ().diff(old, new)
         assert "connection" in diff.summary.lower()
+
+
+class TestServiceBasedMatching:
+    """Service-based fallback matching when IDs differ but service+provider match."""
+
+    def test_renamed_component_matched_by_service(self):
+        from cloudwright.differ import Differ
+
+        old = ArchSpec(
+            name="v1",
+            provider="aws",
+            region="us-east-1",
+            components=[
+                Component(
+                    id="my-database", service="rds", provider="aws", label="DB", tier=3, config={"engine": "postgres"}
+                ),
+            ],
+            connections=[],
+        )
+        new = ArchSpec(
+            name="v2",
+            provider="aws",
+            region="us-east-1",
+            components=[
+                Component(
+                    id="primary-db",
+                    service="rds",
+                    provider="aws",
+                    label="Primary DB",
+                    tier=3,
+                    config={"engine": "postgres", "multi_az": True},
+                ),
+            ],
+            connections=[],
+        )
+        diff = Differ().diff(old, new)
+        # Should NOT appear as added+removed, should appear as changed
+        assert len(diff.added) == 0
+        assert len(diff.removed) == 0
+        assert len(diff.changed) > 0
+        # The changed entry should reference both IDs
+        changed_ids = [c.component_id for c in diff.changed]
+        assert any("my-database" in cid and "primary-db" in cid for cid in changed_ids)
+
+    def test_no_false_match_when_multiple_same_service(self):
+        from cloudwright.differ import Differ
+
+        old = ArchSpec(
+            name="v1",
+            provider="aws",
+            region="us-east-1",
+            components=[
+                Component(id="db-read", service="rds", provider="aws", label="Read Replica", tier=3),
+                Component(id="db-write", service="rds", provider="aws", label="Writer", tier=3),
+            ],
+            connections=[],
+        )
+        new = ArchSpec(
+            name="v2",
+            provider="aws",
+            region="us-east-1",
+            components=[
+                Component(id="replica", service="rds", provider="aws", label="Read Replica", tier=3),
+                Component(id="primary", service="rds", provider="aws", label="Writer", tier=3),
+            ],
+            connections=[],
+        )
+        diff = Differ().diff(old, new)
+        # Multiple RDS instances: service-based match should NOT match (ambiguous)
+        # So they should show up as added+removed
+        assert len(diff.added) == 2
+        assert len(diff.removed) == 2

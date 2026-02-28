@@ -1,4 +1,4 @@
-"""Comprehensive end-to-end tests for Cloudwright.
+"""End-to-end tests for Cloudwright.
 
 Tests every module, edge case, integration point, and CLI flow.
 Non-LLM tests run fast; LLM tests require ANTHROPIC_API_KEY.
@@ -36,9 +36,7 @@ skip_no_llm = pytest.mark.skipif(not HAS_LLM, reason="No LLM API key available")
 TEMPLATES_DIR = Path(__file__).resolve().parents[3] / "catalog" / "templates"
 
 
-# ---------------------------------------------------------------------------
 # Fixtures
-# ---------------------------------------------------------------------------
 
 
 @pytest.fixture
@@ -76,9 +74,7 @@ def differ():
     return Differ()
 
 
-# ---------------------------------------------------------------------------
-# 1. ArchSpec Model Tests — edge cases
-# ---------------------------------------------------------------------------
+# ArchSpec Model Tests — edge cases
 
 
 class TestArchSpecEdgeCases:
@@ -198,9 +194,7 @@ class TestArchSpecEdgeCases:
         assert len(tiers) >= 2  # at minimum edge + data tiers
 
 
-# ---------------------------------------------------------------------------
-# 2. Template Loading Tests
-# ---------------------------------------------------------------------------
+# Template Loading Tests
 
 
 class TestTemplates:
@@ -232,12 +226,7 @@ class TestTemplates:
             assert len(restored.components) == len(spec.components)
 
 
-# ---------------------------------------------------------------------------
-# 3. Catalog Tests — comprehensive
-# ---------------------------------------------------------------------------
-
-
-class TestCatalogComprehensive:
+# Catalog Tests class TestCatalog:
     def test_search_aws_compute(self, catalog):
         results = catalog.search(provider="aws", vcpus=4)
         assert len(results) > 0
@@ -331,12 +320,10 @@ class TestCatalogComprehensive:
         assert result["vcpus"] == 4
 
 
-# ---------------------------------------------------------------------------
-# 4. Cost Engine Tests — comprehensive
-# ---------------------------------------------------------------------------
+# Cost Engine Tests
 
 
-class TestCostEngineComprehensive:
+class TestCostEngine:
     def test_three_tier_pricing(self, cost_engine, three_tier):
         estimate = cost_engine.estimate(three_tier)
         assert estimate.monthly_total > 0
@@ -466,12 +453,7 @@ class TestCostEngineComprehensive:
         assert estimate.monthly_total > 0
 
 
-# ---------------------------------------------------------------------------
-# 5. Validator Tests — comprehensive
-# ---------------------------------------------------------------------------
-
-
-class TestValidatorComprehensive:
+# Validator Tests class TestValidator:
     def test_hipaa_full_check(self, validator, three_tier):
         results = validator.validate(three_tier, compliance=["hipaa"])
         assert len(results) == 1
@@ -561,12 +543,7 @@ class TestValidatorComprehensive:
             )
 
 
-# ---------------------------------------------------------------------------
-# 6. Differ Tests — comprehensive
-# ---------------------------------------------------------------------------
-
-
-class TestDifferComprehensive:
+# Differ Tests class TestDiffer:
     def test_added_component(self, differ):
         spec1 = ArchSpec(
             name="V1",
@@ -654,12 +631,7 @@ class TestDifferComprehensive:
             assert diff.summary, f"No summary for diff {a.name} -> {b.name}"
 
 
-# ---------------------------------------------------------------------------
-# 7. Exporter Tests — comprehensive
-# ---------------------------------------------------------------------------
-
-
-class TestExportersComprehensive:
+# Exporter Tests class TestExporters:
     def test_terraform_all_templates(self, three_tier, serverless, ml_pipeline):
         for spec in [three_tier, serverless, ml_pipeline]:
             hcl = spec.export("terraform")
@@ -773,9 +745,7 @@ class TestExportersComprehensive:
             three_tier.export("banana")
 
 
-# ---------------------------------------------------------------------------
-# 8. Integration Tests — cross-module flows
-# ---------------------------------------------------------------------------
+# Integration Tests — cross-module flows
 
 
 class TestIntegrationFlows:
@@ -868,13 +838,11 @@ class TestIntegrationFlows:
         assert diff.added[0].id == "cache"
 
 
-# ---------------------------------------------------------------------------
-# 9. LLM Architect Tests — comprehensive (requires API key)
-# ---------------------------------------------------------------------------
+# LLM Architect Tests (requires API key)
 
 
 @skip_no_llm
-class TestLLMComprehensive:
+class TestLLM:
     @pytest.mark.timeout(60)
     def test_design_aws_three_tier(self):
         from cloudwright.architect import Architect
@@ -977,9 +945,7 @@ class TestLLMComprehensive:
             assert alt.monthly_total > 0
 
 
-# ---------------------------------------------------------------------------
-# 10. Provider Equivalences Tests
-# ---------------------------------------------------------------------------
+# Provider Equivalences Tests
 
 
 class TestProviderEquivalences:
@@ -1057,9 +1023,7 @@ class TestProviderEquivalences:
         assert equiv == "ec2"
 
 
-# ---------------------------------------------------------------------------
-# 11. CLI Module Import Tests
-# ---------------------------------------------------------------------------
+# CLI Module Import Tests
 
 
 class TestCLIImports:

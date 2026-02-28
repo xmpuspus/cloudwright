@@ -102,95 +102,7 @@ _COMPLIANCE_CONTROLS: dict[str, str] = {
     ),
 }
 
-_DESIGN_SYSTEM = """You generate cloud architectures as structured JSON.
-
-Given a natural language description, produce a JSON object with this exact structure:
-{
-  "name": "Short descriptive name for the architecture",
-  "provider": "aws|gcp|azure",
-  "region": "primary region (e.g. us-east-1, us-central1, eastus)",
-  "components": [
-    {
-      "id": "unique_snake_case_id",
-      "service": "<service_key>",
-      "provider": "aws|gcp|azure",
-      "label": "Human-readable label",
-      "description": "Brief purpose note (instance type, config)",
-      "tier": <integer 0-4>,
-      "config": {
-        "instance_type": "optional",
-        "multi_az": true,
-        "encryption": true,
-        "auto_scaling": true
-      }
-    }
-  ],
-  "connections": [
-    {
-      "source": "component_id",
-      "target": "component_id",
-      "label": "HTTPS/443",
-      "protocol": "HTTPS",
-      "port": 443
-    }
-  ]
-}
-
-TIER RULES (vertical positioning, top to bottom):
-- Tier 0: Internet-facing entry points (CDN, DNS, API gateway, WAF, users)
-- Tier 1: Load balancing and ingress
-- Tier 2: Compute (VMs, containers, serverless functions)
-- Tier 3: Data layer (databases, caches, message queues)
-- Tier 4: Storage, backup, analytics, ML, monitoring
-
-VALID SERVICE KEYS — use exactly these strings:
-AWS: cloudfront, route53, api_gateway, waf, alb, nlb, ec2, ecs, eks, lambda, fargate,
-     rds, aurora, dynamodb, elasticache, sqs, sns, s3, kinesis, redshift, emr, sagemaker,
-     cognito, iam, step_functions, eventbridge, cloudwatch, cloudtrail, dms, migration_hub,
-     direct_connect, vpn, codepipeline, codecommit, codebuild, ecr, config, guardduty,
-     inspector, kms, shield, security_hub, glue, athena, fsx, efs, ebs
-GCP: cloud_cdn, cloud_dns, cloud_load_balancing, cloud_armor, compute_engine, gke,
-     cloud_run, cloud_functions, app_engine, cloud_sql, firestore, spanner, memorystore,
-     pub_sub, cloud_storage, bigquery, dataflow, vertex_ai, firebase_auth, cloud_logging,
-     cloud_build, artifact_registry, cloud_composer, dataproc, cloud_interconnect
-Azure: azure_cdn, azure_dns, app_gateway, azure_waf, azure_lb, virtual_machines, aks,
-       container_apps, azure_functions, app_service, azure_sql, cosmos_db, azure_cache,
-       service_bus, event_hubs, blob_storage, synapse, azure_ml, azure_ad, logic_apps,
-       azure_monitor, azure_devops, azure_migrate, expressroute, azure_firewall,
-       azure_sentinel, azure_policy, data_factory
-
-RULES:
-- Use 4-12 components to keep architectures clear and practical
-- Every component must connect to at least one other component
-- Connections flow logically from entry points down to data layer
-- Include meaningful labels on connections (protocols, ports, or data type)
-- For production workloads, enable multi_az and encryption in config by default
-- Match the provider to the user's description; default to aws if unspecified
-- Respond with ONLY the JSON object — no markdown, no explanation text
-
-For ALL architectures, ensure component configs include:
-- encryption: true on all data stores and caches
-- multi_az: true on all databases (for production workloads)
-- backup: true on all databases
-- auto_scaling: true on all compute services
-- security_groups: true on all VPC-connected resources"""
-
-_MODIFY_SYSTEM = """You modify an existing cloud architecture based on user instructions.
-
-You will receive the current architecture JSON and a modification instruction.
-Return the COMPLETE updated architecture JSON in the same format — never return partial updates.
-Preserve all existing component IDs unless explicitly removing or renaming them.
-Apply the requested change precisely without unnecessary restructuring.
-Respond with ONLY the JSON object — no markdown, no explanation."""
-
-
-_CHAT_SYSTEM = """You are a cloud architecture assistant. You help design and refine architectures through conversation.
-
-When the user asks you to generate or modify an architecture, respond with a JSON object using the same schema as a design prompt (name, provider, region, components, connections).
-
-When the user asks questions or wants to discuss trade-offs, respond conversationally — no JSON needed.
-
-VALID SERVICE KEYS — use exactly these strings:
+_SERVICE_KEYS = """VALID SERVICE KEYS — use exactly these strings:
 AWS: cloudfront, route53, api_gateway, waf, alb, nlb, ec2, ecs, eks, lambda, fargate,
      rds, aurora, dynamodb, elasticache, sqs, sns, s3, kinesis, redshift, emr, sagemaker,
      cognito, iam, step_functions, eventbridge, cloudwatch, cloudtrail, dms, migration_hub,
@@ -206,6 +118,134 @@ Azure: azure_cdn, azure_dns, app_gateway, azure_waf, azure_lb, virtual_machines,
        azure_monitor, azure_devops, azure_migrate, expressroute, azure_firewall,
        azure_sentinel, azure_policy, data_factory"""
 
+_DESIGN_SYSTEM = f"""You generate cloud architectures as structured JSON.
+
+Given a natural language description, produce a JSON object with this exact structure:
+{{
+  "name": "Short descriptive name for the architecture",
+  "provider": "aws|gcp|azure",
+  "region": "primary region (e.g. us-east-1, us-central1, eastus)",
+  "components": [
+    {{
+      "id": "unique_snake_case_id",
+      "service": "<service_key>",
+      "provider": "aws|gcp|azure",
+      "label": "Human-readable label",
+      "description": "Brief purpose note (instance type, config)",
+      "tier": <integer 0-4>,
+      "config": {{
+        "instance_type": "optional",
+        "multi_az": true,
+        "encryption": true,
+        "auto_scaling": true
+      }}
+    }}
+  ],
+  "connections": [
+    {{
+      "source": "component_id",
+      "target": "component_id",
+      "label": "HTTPS/443",
+      "protocol": "HTTPS",
+      "port": 443
+    }}
+  ]
+}}
+
+TIER RULES (vertical positioning, top to bottom):
+- Tier 0: Internet-facing entry points (CDN, DNS, API gateway, WAF, users)
+- Tier 1: Load balancing and ingress
+- Tier 2: Compute (VMs, containers, serverless functions)
+- Tier 3: Data layer (databases, caches, message queues)
+- Tier 4: Storage, backup, analytics, ML, monitoring
+
+{_SERVICE_KEYS}
+
+RULES:
+- Use 4-12 components to keep architectures clear and practical
+- Every component must connect to at least one other component
+- Connections flow logically from entry points down to data layer
+- Include meaningful labels on connections (protocols, ports, or data type)
+- For production workloads, enable multi_az and encryption in config by default
+- Match the provider to the user's description; default to aws if unspecified
+- Respond with ONLY the JSON object — no markdown, no explanation text
+
+For ALL architectures, ensure component configs include:
+- encryption: true on all data stores and caches
+- multi_az: true on all databases (for production workloads)
+- backup: true on all databases
+- auto_scaling: true on all compute services
+- security_groups: true on all VPC-connected resources
+- ALWAYS include instance_type in config for EC2/compute_engine/virtual_machines (e.g. m5.large, n2-standard-4, Standard_D4s_v3)
+- ALWAYS include instance_class in config for RDS/Aurora/Cloud SQL/Azure SQL (e.g. db.r5.large, db-n1-standard-4)
+- ALWAYS include node_type in config for ElastiCache/Memorystore (e.g. cache.r5.large)
+- Include storage_gb on all database and storage components
+- Include count on compute components when multiple instances needed"""
+
+_MODIFY_SYSTEM = """You modify an existing cloud architecture based on user instructions.
+
+You will receive the current architecture JSON and a modification instruction.
+Return the COMPLETE updated architecture JSON in the same format — never return partial updates.
+Preserve all existing component IDs unless explicitly removing or renaming them.
+Apply the requested change precisely without unnecessary restructuring.
+Respond with ONLY the JSON object — no markdown, no explanation."""
+
+
+_CHAT_SYSTEM = f"""You are a cloud architecture assistant. You help design and refine architectures through conversation.
+
+When the user asks you to generate or modify an architecture, respond with a JSON object using the same schema as a design prompt (name, provider, region, components, connections).
+
+When the user asks questions or wants to discuss trade-offs, respond conversationally — no JSON needed.
+
+{_SERVICE_KEYS}"""
+
+_IMPORT_SYSTEM = f"""You parse infrastructure descriptions or state into structured JSON architecture specs.
+
+Given a description of existing infrastructure, produce a JSON object using the same schema as a design prompt
+(name, provider, region, components, connections).
+Focus on mapping existing resources to the correct service keys, preserving the actual topology,
+and including real configuration values (instance types, storage sizes, etc.).
+
+Respond with ONLY the JSON object — no markdown, no explanation.
+
+{_SERVICE_KEYS}
+
+RULES:
+- Map every resource to its closest service key
+- Preserve actual instance types and configurations
+- Include all connections between resources
+- Respond with ONLY the JSON object"""
+
+_MIGRATION_SYSTEM = f"""You design target cloud architectures for migration scenarios.
+
+Given a source architecture and migration requirements, produce a JSON object representing the target architecture.
+Focus on service equivalence across cloud providers, preserving functionality while modernizing where appropriate,
+and including realistic instance types for the target provider.
+
+Respond with ONLY the JSON object — no markdown, no explanation.
+
+{_SERVICE_KEYS}
+
+RULES:
+- Map each source service to its target provider equivalent
+- Preserve capacity (instance sizes, storage, redundancy)
+- Include instance_type/instance_class in all compute/database configs
+- Respond with ONLY the JSON object"""
+
+_COMPARISON_SYSTEM = f"""You generate a representative cloud architecture that can be compared across providers.
+
+Given a workload description, produce a JSON object representing a single canonical architecture.
+This architecture will be re-priced across multiple cloud providers for comparison.
+
+Respond with ONLY the JSON object — no markdown, no explanation.
+
+{_SERVICE_KEYS}
+
+RULES:
+- Design a single provider-agnostic architecture using the primary provider's service keys
+- Include realistic instance types and configurations for accurate pricing
+- Respond with ONLY the JSON object"""
+
 
 class ConversationSession:
     """Multi-turn architecture design conversation with history tracking."""
@@ -219,7 +259,7 @@ class ConversationSession:
     def send(self, message: str) -> tuple[str, ArchSpec | None]:
         """Send a user message and get response + optionally updated spec."""
         self.history.append({"role": "user", "content": message})
-        text, _usage = self.llm.generate(self.history, _CHAT_SYSTEM, max_tokens=4000)
+        text, _usage = self.llm.generate(self.history, _CHAT_SYSTEM, max_tokens=8000)
         self.history.append({"role": "assistant", "content": text})
 
         spec = self._try_parse_spec(text)
@@ -239,7 +279,7 @@ class ConversationSession:
         prompt = f"Current architecture:\n{current_json}\n\nModification: {instruction}"
 
         self.history.append({"role": "user", "content": prompt})
-        text, _usage = self.llm.generate(self.history, _MODIFY_SYSTEM, max_tokens=4000)
+        text, _usage = self.llm.generate(self.history, _MODIFY_SYSTEM, max_tokens=8000)
         self.history.append({"role": "assistant", "content": text})
 
         data = _extract_json(text)
@@ -267,20 +307,66 @@ class Architect:
         self.llm = llm or get_llm()
 
     def design(self, description: str, constraints: Constraints | None = None) -> ArchSpec:
-        system = _DESIGN_SYSTEM
+        system = self._select_system_prompt(description)
         if constraints:
             system += _build_constraint_prompt(constraints)
 
+        max_tokens = 8000 if len(description) > 200 or self._is_complex_use_case(description) else 4000
         messages = [{"role": "user", "content": description}]
-        text, _usage = self.llm.generate(messages, system, max_tokens=4000)
-        data = _extract_json(text)
+
+        try:
+            text, _usage = self.llm.generate(messages, system, max_tokens=max_tokens)
+            data = _extract_json(text)
+        except (ValueError, json.JSONDecodeError) as first_err:
+            log.warning("First design attempt failed: %s — retrying", first_err)
+            messages.append({"role": "assistant", "content": "I apologize, let me provide the JSON."})
+            messages.append(
+                {
+                    "role": "user",
+                    "content": "You must respond with ONLY a valid JSON object. No markdown, no explanation.",
+                }
+            )
+            text, _usage = self.llm.generate(messages, system, max_tokens=max_tokens)
+            data = _extract_json(text)
+
         return _parse_arch_spec(data, constraints)
+
+    @staticmethod
+    def _select_system_prompt(description: str) -> str:
+        desc_lower = description.lower()
+        import_keywords = {
+            "import",
+            "terraform state",
+            "cloudformation template",
+            "existing infrastructure",
+            "current setup",
+        }
+        migrate_keywords = {"migrate", "re-architect", "modernize", "move to", "transition to"}
+        # Use word-boundary regex for short keywords to avoid substring false positives
+        compare_phrases = {"compare", "versus", "cost comparison"}
+        compare_word_patterns = {r"\bvs\b", r"\btco\b"}
+
+        if any(kw in desc_lower for kw in import_keywords):
+            return _IMPORT_SYSTEM
+        if any(kw in desc_lower for kw in migrate_keywords):
+            return _MIGRATION_SYSTEM
+        if any(kw in desc_lower for kw in compare_phrases):
+            return _COMPARISON_SYSTEM
+        if any(re.search(pat, desc_lower) for pat in compare_word_patterns):
+            return _COMPARISON_SYSTEM
+        return _DESIGN_SYSTEM
+
+    @staticmethod
+    def _is_complex_use_case(description: str) -> bool:
+        desc_lower = description.lower()
+        complex_keywords = {"import", "migrate", "re-architect", "compare", "versus", "modernize"}
+        return any(kw in desc_lower for kw in complex_keywords)
 
     def modify(self, spec: ArchSpec, instruction: str) -> ArchSpec:
         current = spec.model_dump_json(indent=2, exclude_none=True)
         prompt = f"Current architecture:\n{current}\n\nModification: {instruction}"
         messages = [{"role": "user", "content": prompt}]
-        text, _usage = self.llm.generate(messages, _MODIFY_SYSTEM, max_tokens=4000)
+        text, _usage = self.llm.generate(messages, _MODIFY_SYSTEM, max_tokens=8000)
         data = _extract_json(text)
         updated = _parse_arch_spec(data, spec.constraints)
         # Preserve cost estimate and alternatives from original if LLM didn't regenerate them
@@ -398,11 +484,45 @@ def _post_validate(spec: ArchSpec, constraints: Constraints | None) -> ArchSpec:
 
 
 def _extract_json(text: str) -> dict:
-    # Strip markdown code fences if present
-    match = re.search(r"\{[\s\S]*\}", text)
-    if not match:
+    """Extract the first complete JSON object from text using brace counting."""
+    text = re.sub(r"```(?:json)?\s*", "", text)
+    text = text.replace("```", "")
+
+    start = text.find("{")
+    if start == -1:
         raise ValueError(f"No JSON object found in LLM response: {text[:300]}")
-    return json.loads(match.group())
+
+    depth = 0
+    in_string = False
+    escape = False
+
+    for i in range(start, len(text)):
+        ch = text[i]
+
+        if escape:
+            escape = False
+            continue
+
+        if ch == "\\":
+            if in_string:
+                escape = True
+            continue
+
+        if ch == '"':
+            in_string = not in_string
+            continue
+
+        if in_string:
+            continue
+
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return json.loads(text[start : i + 1])
+
+    raise ValueError(f"Unterminated JSON object in LLM response: {text[:300]}")
 
 
 def _parse_arch_spec(data: dict, constraints: Constraints | None) -> ArchSpec:

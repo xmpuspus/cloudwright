@@ -30,12 +30,13 @@ class ImporterPlugin(ABC):
         ...
 
 
-def import_spec(path: str, fmt: str = "auto") -> ArchSpec:
+def import_spec(path: str, fmt: str = "auto", design_spec: "ArchSpec | None" = None) -> ArchSpec:
     """Import an ArchSpec from an infrastructure state file.
 
     Args:
         path: Path to the state file (.tfstate, etc.).
         fmt: Format hint — 'terraform' or 'auto' (default) to detect by extension.
+        design_spec: Optional design ArchSpec for ID alignment during drift detection.
     """
     p = Path(path)
 
@@ -45,12 +46,12 @@ def import_spec(path: str, fmt: str = "auto") -> ArchSpec:
     if fmt == "terraform":
         from cloudwright.importer.terraform_state import TerraformStateImporter
 
-        return TerraformStateImporter().do_import(path)
+        return TerraformStateImporter().do_import(path, design_spec=design_spec)
 
     if fmt in ("cloudformation", "cfn"):
         from cloudwright.importer.cloudformation import CloudFormationImporter
 
-        return CloudFormationImporter().do_import(path)
+        return CloudFormationImporter().do_import(path, design_spec=design_spec)
 
     raise ValueError(f"Unknown import format: {fmt!r}. Supported: terraform, cloudformation")
 

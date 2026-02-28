@@ -70,9 +70,7 @@ class AzurePricingAdapter(PricingAdapter):
     def __init__(self, timeout: int = _TIMEOUT):
         self._timeout = timeout
 
-    # ------------------------------------------------------------------
     # Public interface
-    # ------------------------------------------------------------------
 
     def fetch_instance_pricing(self, region: str = "eastus") -> Iterator[InstancePrice]:
         """Yield on-demand Linux VM prices for the given Azure region."""
@@ -96,9 +94,7 @@ class AzurePricingAdapter(PricingAdapter):
     def supported_managed_services(self) -> list[str]:
         return ["azure_functions", "blob_storage", "azure_sql", "cosmos_db"]
 
-    # ------------------------------------------------------------------
     # Instance pricing (VM)
-    # ------------------------------------------------------------------
 
     def _paginate_instances(self, odata_filter: str, region: str) -> Iterator[InstancePrice]:
         """Follow nextPageLink pagination for the Azure retail prices API."""
@@ -133,9 +129,7 @@ class AzurePricingAdapter(PricingAdapter):
                 )
             url = data.get("NextPageLink") or ""
 
-    # ------------------------------------------------------------------
     # Managed service parsers
-    # ------------------------------------------------------------------
 
     def _parse_functions(self, region: str) -> list[ManagedServicePrice]:
         arm_region = _REGION_TO_ARM.get(region, region)
@@ -254,9 +248,7 @@ class AzurePricingAdapter(PricingAdapter):
                 )
         return prices
 
-    # ------------------------------------------------------------------
     # HTTP + pagination helpers
-    # ------------------------------------------------------------------
 
     def _build_url(self, odata_filter: str) -> str:
         params = urllib.parse.urlencode(

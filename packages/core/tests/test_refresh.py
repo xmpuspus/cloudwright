@@ -16,9 +16,7 @@ from cloudwright.catalog.refresh import (
     refresh_catalog,
 )
 
-# ---------------------------------------------------------------------------
 # Fixture helpers
-# ---------------------------------------------------------------------------
 
 
 def _fake_instances(provider: str, count: int = 3) -> list[InstancePrice]:
@@ -59,9 +57,7 @@ def _mock_adapter(provider: str, instance_count: int = 3, service_count: int = 2
     return adapter
 
 
-# ---------------------------------------------------------------------------
 # RefreshResult / RefreshSummary unit tests
-# ---------------------------------------------------------------------------
 
 
 class TestRefreshDataclasses:
@@ -96,9 +92,7 @@ class TestRefreshDataclasses:
         assert s.total_errors == 0
 
 
-# ---------------------------------------------------------------------------
 # _load_adapter
-# ---------------------------------------------------------------------------
 
 
 class TestLoadAdapter:
@@ -125,9 +119,7 @@ class TestLoadAdapter:
             _load_adapter("alibaba")
 
 
-# ---------------------------------------------------------------------------
 # refresh_catalog — dry run (no DB writes)
-# ---------------------------------------------------------------------------
 
 
 class TestRefreshDryRun:
@@ -182,9 +174,7 @@ class TestRefreshDryRun:
         assert r.managed_services_fetched == 0
 
 
-# ---------------------------------------------------------------------------
 # refresh_catalog — error handling
-# ---------------------------------------------------------------------------
 
 
 class TestRefreshErrorHandling:
@@ -249,9 +239,7 @@ class TestRefreshErrorHandling:
         assert aws_result.instances_fetched == 3
 
 
-# ---------------------------------------------------------------------------
 # refresh_catalog — DB writes (non-dry-run with temp DB)
-# ---------------------------------------------------------------------------
 
 
 class TestRefreshWritesToDB:

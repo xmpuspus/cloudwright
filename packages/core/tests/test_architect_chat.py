@@ -35,9 +35,7 @@ def _mock_llm(responses: list[str]) -> MagicMock:
     return llm
 
 
-# ---------------------------------------------------------------------------
 # History tracking
-# ---------------------------------------------------------------------------
 
 
 class TestHistoryTracking:
@@ -78,9 +76,7 @@ class TestHistoryTracking:
         assert "Turn two" in contents
 
 
-# ---------------------------------------------------------------------------
 # Spec extraction from send()
-# ---------------------------------------------------------------------------
 
 
 class TestSendSpecExtraction:
@@ -132,9 +128,7 @@ class TestSendSpecExtraction:
         assert session.current_spec.name == "Second"
 
 
-# ---------------------------------------------------------------------------
 # modify()
-# ---------------------------------------------------------------------------
 
 
 class TestModify:
@@ -218,9 +212,7 @@ class TestModify:
         assert result.cost_estimate.monthly_total == 500.0
 
 
-# ---------------------------------------------------------------------------
 # Constraints propagation
-# ---------------------------------------------------------------------------
 
 
 class TestConstraints:
@@ -240,3 +232,98 @@ class TestConstraints:
         assert spec is not None
         assert spec.constraints is not None
         assert spec.constraints.budget_monthly == 100.0
+
+
+# Use-case routing
+
+
+class TestUseCaseRouting:
+    def test_import_keywords_select_import_prompt(self):
+        from cloudwright.architect import Architect
+
+        result = Architect._select_system_prompt("import our terraform state into cloudwright")
+        assert result != ""
+        # Import prompt should differ from default design prompt
+        result2 = Architect._select_system_prompt("build a 3-tier web app on AWS")
+        assert result != result2
+
+    def test_migration_keywords_select_migration_prompt(self):
+        from cloudwright.architect import Architect
+
+        result = Architect._select_system_prompt("migrate our monolith to microservices")
+        default = Architect._select_system_prompt("design a simple web app")
+        assert result != default
+
+    def test_comparison_keywords_select_comparison_prompt(self):
+        from cloudwright.architect import Architect
+
+        result = Architect._select_system_prompt("compare AWS vs GCP for our workload")
+        default = Architect._select_system_prompt("design a web app")
+        assert result != default
+
+    def test_default_prompt_for_standard_design(self):
+        from cloudwright.architect import _DESIGN_SYSTEM, Architect
+
+        result = Architect._select_system_prompt("build a 3-tier web app on AWS")
+        assert result == _DESIGN_SYSTEM
+
+    def test_complex_use_case_detection(self):
+        from cloudwright.architect import Architect
+
+        assert Architect._is_complex_use_case("migrate to kubernetes")
+        assert Architect._is_complex_use_case("compare AWS versus GCP")
+        assert Architect._is_complex_use_case("import existing infrastructure")
+        assert not Architect._is_complex_use_case("build a simple web app")
+
+
+# JSON extraction (brace-counting parser)
+
+
+class TestExtractJson:
+    def test_plain_json(self):
+        from cloudwright.architect import _extract_json
+
+        result = _extract_json('{"name": "test", "value": 42}')
+        assert result["name"] == "test"
+        assert result["value"] == 42
+
+    def test_json_in_markdown_fence(self):
+        from cloudwright.architect import _extract_json
+
+        text = 'Here is the architecture:\n```json\n{"name": "app"}\n```\nLet me know.'
+        result = _extract_json(text)
+        assert result["name"] == "app"
+
+    def test_nested_braces(self):
+        from cloudwright.architect import _extract_json
+
+        text = '{"config": {"nested": {"deep": true}}, "list": [1, 2]}'
+        result = _extract_json(text)
+        assert result["config"]["nested"]["deep"] is True
+
+    def test_braces_in_strings(self):
+        from cloudwright.architect import _extract_json
+
+        text = '{"description": "Use {curly} braces", "ok": true}'
+        result = _extract_json(text)
+        assert result["ok"] is True
+        assert "{curly}" in result["description"]
+
+    def test_escaped_quotes_in_strings(self):
+        from cloudwright.architect import _extract_json
+
+        text = r'{"msg": "He said \"hello\"", "n": 1}'
+        result = _extract_json(text)
+        assert result["n"] == 1
+
+    def test_no_json_raises(self):
+        from cloudwright.architect import _extract_json
+
+        with pytest.raises(ValueError, match="No JSON"):
+            _extract_json("No JSON here, just text.")
+
+    def test_unterminated_json_raises(self):
+        from cloudwright.architect import _extract_json
+
+        with pytest.raises(ValueError, match="Unterminated"):
+            _extract_json('{"name": "test"')

@@ -13,9 +13,7 @@ from pathlib import Path
 
 import yaml
 
-# ---------------------------------------------------------------------------
 # Metric 1 — Structural Validity
-# ---------------------------------------------------------------------------
 
 
 def evaluate_structural_validity(result: dict) -> dict:
@@ -90,9 +88,7 @@ def evaluate_structural_validity(result: dict) -> dict:
     return {"score": 0, "pass": False, "reason": "no parseable structured output"}
 
 
-# ---------------------------------------------------------------------------
 # Metric 2 — Cost Accuracy
-# ---------------------------------------------------------------------------
 
 
 def evaluate_cost_accuracy(result: dict) -> dict:
@@ -140,9 +136,7 @@ def evaluate_cost_accuracy(result: dict) -> dict:
     return {"score": round(score, 1), "estimated": estimated, "budget": budget}
 
 
-# ---------------------------------------------------------------------------
 # Metric 3 — Service Correctness
-# ---------------------------------------------------------------------------
 
 
 _SERVICE_ALIASES: dict[str, set[str]] = {
@@ -206,9 +200,7 @@ def evaluate_service_correctness(result: dict) -> dict:
     return {"score": score, "found": sorted(found), "missing": sorted(required - found)}
 
 
-# ---------------------------------------------------------------------------
 # Metric 4 — Compliance Completeness
-# ---------------------------------------------------------------------------
 
 _COMPLIANCE_TERMS = [
     "encryption at rest",
@@ -247,9 +239,7 @@ def evaluate_compliance(result: dict) -> dict:
     return {"score": score, "terms_found": found, "terms_checked": len(_COMPLIANCE_TERMS)}
 
 
-# ---------------------------------------------------------------------------
 # Metric 5 — Export Quality
-# ---------------------------------------------------------------------------
 
 
 def evaluate_export_quality(result: dict) -> dict:
@@ -274,9 +264,7 @@ def evaluate_export_quality(result: dict) -> dict:
     return {"score": 0, "pass": False, "reason": "no IaC output found"}
 
 
-# ---------------------------------------------------------------------------
 # Metric 6 — Diff Capability
-# ---------------------------------------------------------------------------
 
 
 def evaluate_diff_capability(result: dict) -> dict:
@@ -294,9 +282,7 @@ def evaluate_diff_capability(result: dict) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
 # Metric 7 — Reproducibility
-# ---------------------------------------------------------------------------
 
 
 def evaluate_reproducibility(result: dict) -> dict:
@@ -315,9 +301,7 @@ def evaluate_reproducibility(result: dict) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
 # Metric 8 — Time to IaC
-# ---------------------------------------------------------------------------
 
 # Estimated manual time (seconds) to go from Claude raw output to deployable Terraform:
 # extract code -> fix imports -> add provider block -> fix resource references -> terraform init
@@ -347,9 +331,7 @@ def evaluate_time_to_iac(result: dict) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
 # Orchestration
-# ---------------------------------------------------------------------------
 
 EVALUATORS = {
     "structural_validity": evaluate_structural_validity,

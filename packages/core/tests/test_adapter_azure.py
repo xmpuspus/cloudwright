@@ -12,9 +12,7 @@ import pytest
 from cloudwright.adapters import InstancePrice, PricingAdapter
 from cloudwright.adapters.azure import AzurePricingAdapter, _safe_float
 
-# ---------------------------------------------------------------------------
 # Fixture helpers
-# ---------------------------------------------------------------------------
 
 
 def _azure_item(
@@ -82,9 +80,7 @@ def _mock_adapter(items: list[dict]) -> AzurePricingAdapter:
     return adapter
 
 
-# ---------------------------------------------------------------------------
 # Unit tests: helpers
-# ---------------------------------------------------------------------------
 
 
 class TestHelpers:
@@ -101,9 +97,7 @@ class TestHelpers:
         assert _safe_float(None) == 0.0
 
 
-# ---------------------------------------------------------------------------
 # ABC conformance
-# ---------------------------------------------------------------------------
 
 
 class TestPricingAdapterABC:
@@ -120,9 +114,7 @@ class TestPricingAdapterABC:
         assert set(svcs) == {"azure_functions", "blob_storage", "azure_sql", "cosmos_db"}
 
 
-# ---------------------------------------------------------------------------
 # VM instance pricing
-# ---------------------------------------------------------------------------
 
 
 class TestVMParsing:
@@ -161,9 +153,7 @@ class TestVMParsing:
         assert results == []
 
 
-# ---------------------------------------------------------------------------
 # Pagination
-# ---------------------------------------------------------------------------
 
 
 class TestPagination:
@@ -187,9 +177,7 @@ class TestPagination:
         assert len(results) == 2
 
 
-# ---------------------------------------------------------------------------
 # Azure Functions
-# ---------------------------------------------------------------------------
 
 
 class TestFunctionsParsing:
@@ -206,9 +194,7 @@ class TestFunctionsParsing:
         assert all(r.service == "azure_functions" for r in results)
 
 
-# ---------------------------------------------------------------------------
 # Blob Storage
-# ---------------------------------------------------------------------------
 
 
 class TestBlobParsing:
@@ -225,9 +211,7 @@ class TestBlobParsing:
         assert lrs.service == "blob_storage"
 
 
-# ---------------------------------------------------------------------------
 # Azure SQL
-# ---------------------------------------------------------------------------
 
 
 class TestSQLParsing:
@@ -244,9 +228,7 @@ class TestSQLParsing:
                 assert r.price_per_month == pytest.approx(r.price_per_hour * 730, rel=1e-3)
 
 
-# ---------------------------------------------------------------------------
 # Cosmos DB
-# ---------------------------------------------------------------------------
 
 
 class TestCosmosParsing:
@@ -263,9 +245,7 @@ class TestCosmosParsing:
         assert all(r.service == "cosmos_db" for r in results)
 
 
-# ---------------------------------------------------------------------------
 # Unsupported service
-# ---------------------------------------------------------------------------
 
 
 class TestUnsupportedService:

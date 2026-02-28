@@ -3,7 +3,7 @@
 Requires: ANTHROPIC_API_KEY or OPENAI_API_KEY set in environment.
 """
 
-from cloudwright import Architect, ArchSpec
+from cloudwright import Architect
 
 # Design from natural language
 arch = Architect()

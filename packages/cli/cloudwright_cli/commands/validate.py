@@ -22,6 +22,7 @@ def validate(
     report: Annotated[
         Path | None, typer.Option("--report", help="Write a markdown compliance report to this path")
     ] = None,
+    pdf_report: Annotated[Path | None, typer.Option("--pdf", help="Write a PDF compliance report to this path")] = None,
 ) -> None:
     """Validate an architecture spec against compliance frameworks or well-architected principles."""
     if not compliance and not well_architected:
@@ -49,6 +50,17 @@ def validate(
         report_text = "\n\n---\n\n".join(render_report(spec, r) for r in results)
         report.write_text(report_text)
         console.print(f"[green]Compliance report written to {report}[/green]")
+
+    if pdf_report and results:
+        from cloudwright.exporter.compliance_report import render_pdf
+
+        for r in results:
+            if len(results) > 1:
+                out_path = pdf_report.parent / f"{pdf_report.stem}_{r.framework}{pdf_report.suffix}"
+            else:
+                out_path = pdf_report
+            render_pdf(spec, r, str(out_path))
+            console.print(f"[green]PDF compliance report written to {out_path}[/green]")
 
     if ctx.obj and ctx.obj.get("json"):
         import json

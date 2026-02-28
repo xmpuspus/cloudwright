@@ -55,7 +55,7 @@ def _build_properties(c: "Component") -> dict[str, Any]:
             "Engine": cfg.get("engine", "mysql"),
             "AllocatedStorage": str(cfg.get("allocated_storage", 20)),
             "MasterUsername": "admin",
-            "MasterUserPassword": "changeme",
+            "MasterUserPassword": {"Ref": "DBPassword"},
             "Tags": tags,
         }
 
@@ -97,7 +97,7 @@ def _build_properties(c: "Component") -> dict[str, Any]:
             "FunctionName": c.id,
             "Runtime": cfg.get("runtime", "python3.11"),
             "Handler": "index.handler",
-            "Role": "arn:aws:iam::ACCOUNT_ID:role/lambda-role",
+            "Role": {"Fn::Sub": "arn:aws:iam::${AWS::AccountId}:role/lambda-role"},
             "Code": {"ZipFile": "def handler(event, context): pass"},
             "Tags": tags,
         }
@@ -165,7 +165,7 @@ def _build_properties(c: "Component") -> dict[str, Any]:
     if svc == "eks":
         return {
             "Name": c.id.replace("_", "-"),
-            "RoleArn": "arn:aws:iam::ACCOUNT_ID:role/eks-role",
+            "RoleArn": {"Fn::Sub": "arn:aws:iam::${AWS::AccountId}:role/eks-role"},
             "ResourcesVpcConfig": {"SubnetIds": [], "SecurityGroupIds": []},
             "Tags": tags,
         }
@@ -200,7 +200,12 @@ def render(spec: "ArchSpec") -> str:
             "Environment": {
                 "Type": "String",
                 "Default": "production",
-            }
+            },
+            "DBPassword": {
+                "Type": "String",
+                "NoEcho": True,
+                "Description": "Database master password",
+            },
         },
         "Resources": resources,
         "Outputs": {

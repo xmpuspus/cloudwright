@@ -1,4 +1,4 @@
-"""Comprehensive backend API tests for Cloudwright FastAPI app."""
+"""Backend API tests for Cloudwright FastAPI app."""
 
 import json
 import os
@@ -89,9 +89,7 @@ def serverless_spec():
     }
 
 
-# ---------------------------------------------------------------------------
 # Health
-# ---------------------------------------------------------------------------
 
 
 class TestHealth:
@@ -107,9 +105,7 @@ class TestHealth:
         assert "catalog_loaded" in data
 
 
-# ---------------------------------------------------------------------------
 # Cost
-# ---------------------------------------------------------------------------
 
 
 class TestCostAPI:
@@ -174,9 +170,7 @@ class TestCostAPI:
             assert alt["monthly_total"] > 0
 
 
-# ---------------------------------------------------------------------------
 # Validate
-# ---------------------------------------------------------------------------
 
 
 class TestValidateAPI:
@@ -213,9 +207,7 @@ class TestValidateAPI:
         assert resp.status_code == 200
 
 
-# ---------------------------------------------------------------------------
 # Export
-# ---------------------------------------------------------------------------
 
 
 class TestExportAPI:
@@ -258,9 +250,7 @@ class TestExportAPI:
             assert resp.json()["content"], f"Empty content for {fmt}"
 
 
-# ---------------------------------------------------------------------------
 # Diff
-# ---------------------------------------------------------------------------
 
 
 class TestDiffAPI:
@@ -297,9 +287,7 @@ class TestDiffAPI:
         assert total > 0
 
 
-# ---------------------------------------------------------------------------
 # Catalog
-# ---------------------------------------------------------------------------
 
 
 class TestCatalogAPI:
@@ -345,9 +333,7 @@ class TestCatalogAPI:
         assert len(data["comparison"]) == 2
 
 
-# ---------------------------------------------------------------------------
 # Design (LLM-dependent)
-# ---------------------------------------------------------------------------
 
 
 @skip_no_llm
@@ -423,16 +409,14 @@ class TestDesignAPI:
         assert "spec" in data
 
 
-# ---------------------------------------------------------------------------
 # Integration: Design -> Cost -> Validate -> Export
-# ---------------------------------------------------------------------------
 
 
 @skip_no_llm
 class TestFullPipelineAPI:
     @pytest.mark.timeout(120)
     def test_design_cost_validate_export(self, client):
-        # 1. Design
+        # Design
         resp = client.post(
             "/api/design",
             json={
@@ -442,12 +426,12 @@ class TestFullPipelineAPI:
         assert resp.status_code == 200
         spec = resp.json()["spec"]
 
-        # 2. Cost
+        # Cost
         resp = client.post("/api/cost", json={"spec": spec})
         assert resp.status_code == 200
         assert resp.json()["estimate"]["monthly_total"] > 0
 
-        # 3. Validate
+        # Validate
         resp = client.post(
             "/api/validate",
             json={
@@ -459,7 +443,7 @@ class TestFullPipelineAPI:
         assert resp.status_code == 200
         assert len(resp.json()["results"]) >= 2
 
-        # 4. Export all formats
+        # Export all formats
         for fmt in ["terraform", "cloudformation", "mermaid", "sbom", "aibom"]:
             resp = client.post("/api/export", json={"spec": spec, "format": fmt})
             assert resp.status_code == 200, f"Export {fmt} failed"

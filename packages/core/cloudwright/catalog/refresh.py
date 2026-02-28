@@ -86,7 +86,7 @@ def _refresh_provider(
             if not dry_run and instances:
                 catalog = Catalog(_db_path)
                 with catalog._connect() as conn:
-                    # Ensure provider + region exist
+                    # Upsert provider + region
                     conn.execute(
                         "INSERT OR IGNORE INTO providers (id, name) VALUES (?, ?)",
                         (provider, provider.upper()),

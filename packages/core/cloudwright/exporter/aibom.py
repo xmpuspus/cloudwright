@@ -6,7 +6,22 @@ import json
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
-from cloudwright.llm.anthropic import GENERATE_MODEL as _ANTHROPIC_GENERATE_MODEL
+
+def _get_model_name() -> str:
+    """Detect the active LLM provider and return its model name."""
+    import os
+
+    provider = os.environ.get("CLOUDWRIGHT_LLM_PROVIDER", "").lower()
+    if provider == "openai" or (
+        not provider and os.environ.get("OPENAI_API_KEY") and not os.environ.get("ANTHROPIC_API_KEY")
+    ):
+        from cloudwright.llm.openai import GENERATE_MODEL
+
+        return GENERATE_MODEL
+    from cloudwright.llm.anthropic import GENERATE_MODEL
+
+    return GENERATE_MODEL
+
 
 if TYPE_CHECKING:
     from cloudwright.spec import ArchSpec
@@ -39,12 +54,13 @@ _AI_SERVICE_PROVIDERS: dict[str, str] = {
 def render(spec: "ArchSpec") -> str:
     now = datetime.now(timezone.utc).isoformat()
 
+    model_name = _get_model_name()
     ai_components: list[dict[str, Any]] = [
         {
             "name": "Cloudwright Architecture AI",
             "type": "llm",
-            "provider": "Anthropic",
-            "model": _ANTHROPIC_GENERATE_MODEL,
+            "provider": "OpenAI" if "gpt" in model_name.lower() else "Anthropic",
+            "model": model_name,
             "use_case": "Architecture design and natural language understanding",
             "data_handling": "User architecture descriptions processed via API. No data stored by the model.",
             "risks": [

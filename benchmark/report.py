@@ -103,7 +103,7 @@ def build_report(evaluated: list[dict]) -> str:
         cw_s = avg_score(cw_all, m)
         raw_s = avg_score(raw_all, m)
         delta = cw_s - raw_s
-        winner = " ✓" if cw_s > raw_s else ("" if cw_s == raw_s else " ✗")
+        winner = " [W]" if cw_s > raw_s else ("" if cw_s == raw_s else " [L]")
         lines.append(
             f"| {METRIC_LABELS[m]} | {format_score(cw_s)}{winner} | {format_score(raw_s)} | {format_delta(delta)} |"
         )

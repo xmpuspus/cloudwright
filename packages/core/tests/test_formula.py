@@ -71,8 +71,8 @@ class TestPricingFormulas:
             assert callable(fn)
 
     def test_default_managed_price_known(self):
-        assert default_managed_price("rds", {}) == 50.0
-        assert default_managed_price("lambda", {}) == 5.0
+        assert default_managed_price("rds", {}) == 200.0
+        assert default_managed_price("lambda", {}) == 15.0
 
     def test_default_managed_price_unknown(self):
         assert default_managed_price("nonexistent", {}) == 10.0

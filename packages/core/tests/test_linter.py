@@ -22,9 +22,7 @@ def _rule_ids(warnings: list[LintWarning]) -> set[str]:
     return {w.rule for w in warnings}
 
 
-# ---------------------------------------------------------------------------
 # no_encryption
-# ---------------------------------------------------------------------------
 
 
 class TestNoEncryption:
@@ -55,9 +53,7 @@ class TestNoEncryption:
         assert warnings[0].severity == "error"
 
 
-# ---------------------------------------------------------------------------
 # single_az
-# ---------------------------------------------------------------------------
 
 
 class TestSingleAz:
@@ -97,9 +93,7 @@ class TestSingleAz:
         assert all(w.severity == "error" for w in warnings)
 
 
-# ---------------------------------------------------------------------------
 # oversized_instances
-# ---------------------------------------------------------------------------
 
 
 class TestOversizedInstances:
@@ -129,9 +123,7 @@ class TestOversizedInstances:
         assert all(w.severity == "warning" for w in warnings)
 
 
-# ---------------------------------------------------------------------------
 # no_load_balancer
-# ---------------------------------------------------------------------------
 
 
 class TestNoLoadBalancer:
@@ -178,9 +170,7 @@ class TestNoLoadBalancer:
         assert all(w.severity == "error" for w in warnings)
 
 
-# ---------------------------------------------------------------------------
 # public_database
-# ---------------------------------------------------------------------------
 
 
 class TestPublicDatabase:
@@ -205,9 +195,7 @@ class TestPublicDatabase:
         assert all(w.severity == "error" for w in warnings)
 
 
-# ---------------------------------------------------------------------------
 # no_waf
-# ---------------------------------------------------------------------------
 
 
 class TestNoWaf:
@@ -242,9 +230,7 @@ class TestNoWaf:
         assert all(w.severity == "warning" for w in warnings)
 
 
-# ---------------------------------------------------------------------------
 # no_monitoring
-# ---------------------------------------------------------------------------
 
 
 class TestNoMonitoring:
@@ -284,9 +270,7 @@ class TestNoMonitoring:
         assert all(w.severity == "warning" for w in warnings)
 
 
-# ---------------------------------------------------------------------------
 # single_point_of_failure
-# ---------------------------------------------------------------------------
 
 
 class TestSinglePointOfFailure:
@@ -317,9 +301,7 @@ class TestSinglePointOfFailure:
         assert all(w.severity == "error" for w in warnings)
 
 
-# ---------------------------------------------------------------------------
 # no_backup
-# ---------------------------------------------------------------------------
 
 
 class TestNoBackup:
@@ -349,9 +331,7 @@ class TestNoBackup:
         assert all(w.severity == "warning" for w in warnings)
 
 
-# ---------------------------------------------------------------------------
 # no_auth
-# ---------------------------------------------------------------------------
 
 
 class TestNoAuth:
@@ -396,9 +376,7 @@ class TestNoAuth:
         assert all(w.severity == "warning" for w in warnings)
 
 
-# ---------------------------------------------------------------------------
 # Integration: clean spec
-# ---------------------------------------------------------------------------
 
 
 class TestCleanSpec:

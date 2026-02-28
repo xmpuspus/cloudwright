@@ -25,10 +25,27 @@ interface Connection {
   port?: number;
 }
 
+interface Boundary {
+  id: string;
+  kind: string;
+  label?: string;
+  parent?: string;
+  component_ids: string[];
+  config?: Record<string, unknown>;
+}
+
+interface CostEstimate {
+  monthly_total: number;
+  breakdown: { component_id: string; service: string; monthly: number; notes: string }[];
+  currency: string;
+}
+
 interface ArchSpec {
   name: string;
   components: Component[];
   connections: Connection[];
+  boundaries?: Boundary[];
+  cost_estimate?: CostEstimate;
 }
 
 const TIER_COLORS: Record<number, string> = {

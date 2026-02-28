@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import {
   ReactFlow,
   Background,
@@ -10,6 +10,7 @@ import "@xyflow/react/dist/style.css";
 import CloudServiceNode from "./CloudServiceNode";
 import DiagramLegend from "./DiagramLegend";
 import DiagramControls from "./DiagramControls";
+import NodeSidePanel from "./NodeSidePanel";
 
 interface Component {
   id: string;
@@ -189,6 +190,7 @@ function buildNodes(
 
 function ArchitectureDiagram({ spec }: { spec: ArchSpec }) {
   const [showBoundaries, setShowBoundaries] = useState(true);
+  const [selectedNode, setSelectedNode] = useState<string | null>(null);
 
   const costMap = useMemo<Record<string, number>>(() => {
     const m: Record<string, number> = {};
@@ -197,6 +199,30 @@ function ArchitectureDiagram({ spec }: { spec: ArchSpec }) {
     }
     return m;
   }, [spec.cost_estimate]);
+
+  const selectedComponent = useMemo(
+    () => (selectedNode ? spec.components.find((c) => c.id === selectedNode) ?? null : null),
+    [selectedNode, spec.components]
+  );
+
+  const selectedCost = useMemo(
+    () =>
+      selectedNode
+        ? (spec.cost_estimate?.breakdown.find((b) => b.component_id === selectedNode) ?? null)
+        : null,
+    [selectedNode, spec.cost_estimate]
+  );
+
+  const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
+    // Only open panel for component nodes, not boundary groups
+    if (!node.id.startsWith("boundary-")) {
+      setSelectedNode(node.id);
+    }
+  }, []);
+
+  const onPaneClick = useCallback(() => {
+    setSelectedNode(null);
+  }, []);
 
   const { nodes, edges } = useMemo(() => {
     const n = buildNodes(spec, showBoundaries, costMap);
@@ -229,6 +255,8 @@ function ArchitectureDiagram({ spec }: { spec: ArchSpec }) {
         fitView
         proOptions={{ hideAttribution: true }}
         style={{ background: "#0f172a" }}
+        onNodeClick={onNodeClick}
+        onPaneClick={onPaneClick}
       >
         <Background color="#1e293b" gap={20} />
         <Controls
@@ -239,6 +267,11 @@ function ArchitectureDiagram({ spec }: { spec: ArchSpec }) {
       <DiagramControls
         showBoundaries={showBoundaries}
         onToggleBoundaries={() => setShowBoundaries((v) => !v)}
+      />
+      <NodeSidePanel
+        component={selectedComponent ?? null}
+        cost={selectedCost}
+        onClose={() => setSelectedNode(null)}
       />
     </div>
   );

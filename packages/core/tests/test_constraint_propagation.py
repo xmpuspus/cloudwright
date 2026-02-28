@@ -110,7 +110,7 @@ class TestPostValidate:
         constraints = Constraints(compliance=["hipaa"])
         result = _post_validate(spec, constraints)
         db = next(c for c in result.components if c.id == "db")
-        assert db.config.get("encryption_at_rest") is True
+        assert db.config.get("encryption") is True
 
     def test_hipaa_adds_encryption_to_s3(self):
         comp = Component(id="store", service="s3", provider="aws", label="Storage", config={})
@@ -118,7 +118,7 @@ class TestPostValidate:
         constraints = Constraints(compliance=["hipaa"])
         result = _post_validate(spec, constraints)
         store = next(c for c in result.components if c.id == "store")
-        assert store.config.get("encryption_at_rest") is True
+        assert store.config.get("encryption") is True
 
     def test_hipaa_skips_already_encrypted(self):
         comp = Component(id="db", service="rds", provider="aws", label="DB", config={"encryption": True})
@@ -126,8 +126,7 @@ class TestPostValidate:
         constraints = Constraints(compliance=["hipaa"])
         result = _post_validate(spec, constraints)
         db = next(c for c in result.components if c.id == "db")
-        # Should not overwrite existing encryption flag
-        assert "encryption_at_rest" not in db.config or db.config.get("encryption") is True
+        assert db.config.get("encryption") is True
 
     def test_hipaa_does_not_touch_non_data_stores(self):
         comp = Component(id="api", service="api_gateway", provider="aws", label="API GW", config={})
@@ -135,14 +134,16 @@ class TestPostValidate:
         constraints = Constraints(compliance=["hipaa"])
         result = _post_validate(spec, constraints)
         api = next(c for c in result.components if c.id == "api")
-        assert "encryption_at_rest" not in api.config
+        assert "encryption" not in api.config
 
     def test_no_constraints_returns_spec_unchanged(self):
+        # _post_validate now always applies safe defaults regardless of constraints,
+        # so data stores will always get encryption=True
         comp = Component(id="db", service="rds", provider="aws", label="DB", config={})
         spec = _make_spec([comp])
         result = _post_validate(spec, None)
         db = next(c for c in result.components if c.id == "db")
-        assert "encryption_at_rest" not in db.config
+        assert db.config.get("encryption") is True
 
     def test_budget_warning_when_over_limit(self, caplog):
         comp = Component(id="db", service="rds", provider="aws", label="DB", config={})
@@ -180,4 +181,4 @@ class TestPostValidate:
         constraints = Constraints(compliance=["hipaa"])
         result = _post_validate(spec, constraints)
         for comp in result.components:
-            assert comp.config.get("encryption_at_rest") is True, f"{comp.id} missing encryption"
+            assert comp.config.get("encryption") is True, f"{comp.id} missing encryption"

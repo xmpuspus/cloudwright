@@ -107,7 +107,7 @@ function App() {
         }}
       >
         <div style={{ padding: "16px 20px", borderBottom: "1px solid #1e293b" }}>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: "#f8fafc" }}>Silmaril</h1>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: "#f8fafc" }}>Cloudwright</h1>
           <p style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>Architecture Intelligence</p>
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
@@ -209,9 +209,9 @@ function App() {
         <div style={{ flex: 1, overflow: "auto" }}>
           {activeTab === "chat" && (
             <div style={{ padding: 32, maxWidth: 800 }}>
-              <h2 style={{ fontSize: 18, marginBottom: 16 }}>Welcome to Silmaril</h2>
+              <h2 style={{ fontSize: 18, marginBottom: 16 }}>Welcome to Cloudwright</h2>
               <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>
-                Describe your cloud architecture in natural language. Silmaril will design it,
+                Describe your cloud architecture in natural language. Cloudwright will design it,
                 estimate costs, validate compliance, and export to Terraform.
               </p>
               <div style={{ marginTop: 24 }}>

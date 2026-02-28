@@ -5,7 +5,7 @@ dist/
 build/
 .env
 *.db
-!packages/core/silmaril/data/catalog.db
+!packages/core/cloudwright/data/catalog.db
 node_modules/
 .vite/
 .ruff_cache/

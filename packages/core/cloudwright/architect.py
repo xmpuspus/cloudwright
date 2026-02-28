@@ -19,7 +19,7 @@ from cloudwright.spec import (
 
 log = logging.getLogger(__name__)
 
-# Services that are data stores — need encryption enforcement for HIPAA
+# Services that are data stores — encryption and backup defaults applied
 _DATA_STORE_SERVICES = {
     "rds",
     "aurora",
@@ -38,6 +38,37 @@ _DATA_STORE_SERVICES = {
     "azure_cache",
     "blob_storage",
     "synapse",
+}
+
+# Databases that support multi-AZ / replication
+_DATABASE_SERVICES = {
+    "rds",
+    "aurora",
+    "cloud_sql",
+    "azure_sql",
+    "cosmos_db",
+    "spanner",
+    "synapse",
+    "redshift",
+    "bigquery",
+}
+
+_COMPUTE_SERVICES = {
+    "ec2",
+    "ecs",
+    "eks",
+    "lambda",
+    "compute_engine",
+    "gke",
+    "cloud_run",
+    "cloud_functions",
+    "virtual_machines",
+    "aks",
+    "azure_functions",
+    "app_service",
+    "container_apps",
+    "app_engine",
+    "fargate",
 }
 
 # HIPAA required service types (by service key or category)
@@ -115,14 +146,18 @@ TIER RULES (vertical positioning, top to bottom):
 VALID SERVICE KEYS — use exactly these strings:
 AWS: cloudfront, route53, api_gateway, waf, alb, nlb, ec2, ecs, eks, lambda, fargate,
      rds, aurora, dynamodb, elasticache, sqs, sns, s3, kinesis, redshift, emr, sagemaker,
-     cognito, iam, step_functions, eventbridge, cloudwatch, cloudtrail
+     cognito, iam, step_functions, eventbridge, cloudwatch, cloudtrail, dms, migration_hub,
+     direct_connect, vpn, codepipeline, codecommit, codebuild, ecr, config, guardduty,
+     inspector, kms, shield, security_hub, glue, athena, fsx, efs, ebs
 GCP: cloud_cdn, cloud_dns, cloud_load_balancing, cloud_armor, compute_engine, gke,
      cloud_run, cloud_functions, app_engine, cloud_sql, firestore, spanner, memorystore,
-     pub_sub, cloud_storage, bigquery, dataflow, vertex_ai, firebase_auth, cloud_logging
+     pub_sub, cloud_storage, bigquery, dataflow, vertex_ai, firebase_auth, cloud_logging,
+     cloud_build, artifact_registry, cloud_composer, dataproc, cloud_interconnect
 Azure: azure_cdn, azure_dns, app_gateway, azure_waf, azure_lb, virtual_machines, aks,
        container_apps, azure_functions, app_service, azure_sql, cosmos_db, azure_cache,
        service_bus, event_hubs, blob_storage, synapse, azure_ml, azure_ad, logic_apps,
-       azure_monitor
+       azure_monitor, azure_devops, azure_migrate, expressroute, azure_firewall,
+       azure_sentinel, azure_policy, data_factory
 
 RULES:
 - Use 4-12 components to keep architectures clear and practical
@@ -131,7 +166,14 @@ RULES:
 - Include meaningful labels on connections (protocols, ports, or data type)
 - For production workloads, enable multi_az and encryption in config by default
 - Match the provider to the user's description; default to aws if unspecified
-- Respond with ONLY the JSON object — no markdown, no explanation text"""
+- Respond with ONLY the JSON object — no markdown, no explanation text
+
+For ALL architectures, ensure component configs include:
+- encryption: true on all data stores and caches
+- multi_az: true on all databases (for production workloads)
+- backup: true on all databases
+- auto_scaling: true on all compute services
+- security_groups: true on all VPC-connected resources"""
 
 _MODIFY_SYSTEM = """You modify an existing cloud architecture based on user instructions.
 
@@ -151,14 +193,18 @@ When the user asks questions or wants to discuss trade-offs, respond conversatio
 VALID SERVICE KEYS — use exactly these strings:
 AWS: cloudfront, route53, api_gateway, waf, alb, nlb, ec2, ecs, eks, lambda, fargate,
      rds, aurora, dynamodb, elasticache, sqs, sns, s3, kinesis, redshift, emr, sagemaker,
-     cognito, iam, step_functions, eventbridge, cloudwatch, cloudtrail
+     cognito, iam, step_functions, eventbridge, cloudwatch, cloudtrail, dms, migration_hub,
+     direct_connect, vpn, codepipeline, codecommit, codebuild, ecr, config, guardduty,
+     inspector, kms, shield, security_hub, glue, athena, fsx, efs, ebs
 GCP: cloud_cdn, cloud_dns, cloud_load_balancing, cloud_armor, compute_engine, gke,
      cloud_run, cloud_functions, app_engine, cloud_sql, firestore, spanner, memorystore,
-     pub_sub, cloud_storage, bigquery, dataflow, vertex_ai, firebase_auth, cloud_logging
+     pub_sub, cloud_storage, bigquery, dataflow, vertex_ai, firebase_auth, cloud_logging,
+     cloud_build, artifact_registry, cloud_composer, dataproc, cloud_interconnect
 Azure: azure_cdn, azure_dns, app_gateway, azure_waf, azure_lb, virtual_machines, aks,
        container_apps, azure_functions, app_service, azure_sql, cosmos_db, azure_cache,
        service_bus, event_hubs, blob_storage, synapse, azure_ml, azure_ad, logic_apps,
-       azure_monitor"""
+       azure_monitor, azure_devops, azure_migrate, expressroute, azure_firewall,
+       azure_sentinel, azure_policy, data_factory"""
 
 
 class ConversationSession:
@@ -300,33 +346,50 @@ def _build_constraint_prompt(constraints: Constraints) -> str:
 
 
 def _post_validate(spec: ArchSpec, constraints: Constraints | None) -> ArchSpec:
-    """Check LLM output against constraints and apply automatic corrections."""
-    if not constraints:
-        return spec
-
+    """Apply safe defaults to all architectures and enforce constraint-specific controls."""
     components = [c.model_copy(deep=True) for c in spec.components]
     changed = False
+    multi_component = len(components) > 3
 
-    # Budget check — estimate from existing cost_estimate if available
-    if constraints.budget_monthly and spec.cost_estimate:
-        total = spec.cost_estimate.monthly_total
-        if total > constraints.budget_monthly:
-            log.warning(
-                "Architecture cost $%.2f/mo exceeds budget limit of $%.2f/mo",
-                total,
-                constraints.budget_monthly,
-            )
+    for i, comp in enumerate(components):
+        cfg = dict(comp.config)
+        updated = False
 
-    # HIPAA: enforce encryption on data stores
-    if "hipaa" in [c.lower() for c in constraints.compliance]:
-        for i, comp in enumerate(components):
-            if comp.service in _DATA_STORE_SERVICES:
-                cfg = dict(comp.config)
-                if not cfg.get("encryption") and not cfg.get("encryption_at_rest"):
-                    cfg["encryption_at_rest"] = True
-                    components[i] = comp.model_copy(update={"config": cfg})
-                    log.debug("Auto-added encryption_at_rest to %s (%s) for HIPAA", comp.id, comp.service)
-                    changed = True
+        # Encryption and backup on all data stores
+        if comp.service in _DATA_STORE_SERVICES:
+            if not cfg.get("encryption"):
+                cfg["encryption"] = True
+                updated = True
+            if not cfg.get("backup"):
+                cfg["backup"] = True
+                updated = True
+
+        # multi_az on databases when there are enough components to warrant it
+        if comp.service in _DATABASE_SERVICES and multi_component:
+            if not cfg.get("multi_az"):
+                cfg["multi_az"] = True
+                updated = True
+
+        # auto_scaling on all compute
+        if comp.service in _COMPUTE_SERVICES:
+            if not cfg.get("auto_scaling"):
+                cfg["auto_scaling"] = True
+                updated = True
+
+        if updated:
+            components[i] = comp.model_copy(update={"config": cfg})
+            changed = True
+
+    if constraints:
+        # Budget check — warn when over limit
+        if constraints.budget_monthly and spec.cost_estimate:
+            total = spec.cost_estimate.monthly_total
+            if total > constraints.budget_monthly:
+                log.warning(
+                    "Architecture cost $%.2f/mo exceeds budget limit of $%.2f/mo",
+                    total,
+                    constraints.budget_monthly,
+                )
 
     if not changed:
         return spec
@@ -350,7 +413,7 @@ def _parse_arch_spec(data: dict, constraints: Constraints | None) -> ArchSpec:
             provider=c.get("provider", data.get("provider", "aws")),
             label=c.get("label", c["id"]),
             description=c.get("description", ""),
-            tier=c.get("tier", 2),
+            tier=int(c.get("tier", 2)),
             config=c.get("config", {}),
         )
         for c in data.get("components", [])

@@ -588,8 +588,8 @@ class Catalog:
                     return round(wcu * 0.00065 * 730 + rcu * 0.00013 * 730, 2)
                 return 25.0  # on-demand base
 
-            # Fallback
-            return _default_managed_price(service, config)
+            # Return None so cost.py Tier 2 (registry formulas) can fire
+            return None
 
     def sync_from_registry(
         self, registry: ServiceRegistry | None = None, *, _conn: sqlite3.Connection | None = None

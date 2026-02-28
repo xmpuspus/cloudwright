@@ -107,7 +107,7 @@ def _render_aws_resource(c: "Component") -> str:
             f'  instance_class    = "{instance_class}"',
             f"  allocated_storage = {cfg.get('allocated_storage', 20)}",
             '  username          = "admin"',
-            '  password          = "changeme"',
+            "  password          = var.db_password",
             "  skip_final_snapshot = true",
             "  tags = {",
             f'    Name = "{c.label}"',
@@ -174,7 +174,7 @@ def _render_aws_resource(c: "Component") -> str:
         lines += [
             f'resource "aws_lambda_function" "{c.id}" {{',
             f'  function_name = "{c.id}"',
-            '  role          = "arn:aws:iam::ACCOUNT_ID:role/lambda-role"',
+            "  role          = var.lambda_role_arn",
             '  handler       = "index.handler"',
             f'  runtime       = "{runtime}"',
             '  filename      = "lambda.zip"',
@@ -288,6 +288,7 @@ def _render_aws_resource(c: "Component") -> str:
             f"  cluster         = aws_ecs_cluster.{c.id}.id",
             f"  desired_count   = {cfg.get('desired_count', 1)}",
             f'  launch_type     = "{launch_type}"',
+            "  task_definition = var.task_definition_arn",
         ]
         if launch_type == "FARGATE":
             svc_lines += [
@@ -302,7 +303,7 @@ def _render_aws_resource(c: "Component") -> str:
         lines += [
             f'resource "aws_eks_cluster" "{c.id}" {{',
             f'  name     = "{c.id.replace("_", "-")}"',
-            '  role_arn = "arn:aws:iam::ACCOUNT_ID:role/eks-role"',
+            "  role_arn = var.eks_role_arn",
             "  vpc_config {",
             "    subnet_ids = data.aws_subnets.default.ids",
             "  }",
@@ -320,6 +321,87 @@ def _render_aws_resource(c: "Component") -> str:
             f'    Name = "{c.label}"',
             "  }",
             "}",
+        ]
+
+    elif svc == "kms":
+        lines += [
+            f'resource "aws_kms_key" "{c.id}" {{',
+            f'  description             = "{c.label}"',
+            "  enable_key_rotation     = true",
+            "  tags = {",
+            f'    Name = "{c.label}"',
+            "  }",
+            "}",
+        ]
+
+    elif svc == "cloudtrail":
+        lines += [
+            f'resource "aws_cloudtrail" "{c.id}" {{',
+            f'  name                  = "{c.id.replace("_", "-")}"',
+            "  s3_bucket_name        = var.trail_bucket",
+            "  is_multi_region_trail = true",
+            "  tags = {",
+            f'    Name = "{c.label}"',
+            "  }",
+            "}",
+        ]
+
+    elif svc == "guardduty":
+        lines += [
+            f'resource "aws_guardduty_detector" "{c.id}" {{',
+            "  enable = true",
+            "}",
+        ]
+
+    elif svc == "kinesis":
+        lines += [
+            f'resource "aws_kinesis_stream" "{c.id}" {{',
+            f'  name        = "{c.id.replace("_", "-")}"',
+            f"  shard_count = {cfg.get('shard_count', 2)}",
+            "  tags = {",
+            f'    Name = "{c.label}"',
+            "  }",
+            "}",
+        ]
+
+    elif svc == "ecr":
+        lines += [
+            f'resource "aws_ecr_repository" "{c.id}" {{',
+            f'  name                 = "{c.id.replace("_", "-")}"',
+            '  image_tag_mutability = "MUTABLE"',
+            "  tags = {",
+            f'    Name = "{c.label}"',
+            "  }",
+            "}",
+        ]
+
+    elif svc == "cloudwatch":
+        lines += [
+            f'resource "aws_cloudwatch_log_group" "{c.id}" {{',
+            f'  name              = "/cloudwright/{c.id}"',
+            "  retention_in_days = 30",
+            "  tags = {",
+            f'    Name = "{c.label}"',
+            "  }",
+            "}",
+        ]
+
+    elif svc == "ebs":
+        lines += [
+            f'resource "aws_ebs_volume" "{c.id}" {{',
+            "  availability_zone = data.aws_subnets.default.ids[0]",
+            f"  size              = {cfg.get('size', 100)}",
+            '  type              = "gp3"',
+            "  tags = {",
+            f'    Name = "{c.label}"',
+            "  }",
+            "}",
+        ]
+
+    elif svc == "codepipeline":
+        lines += [
+            "# aws_codepipeline requires complex stage config — define in pipeline module",
+            f"# component: {c.id} ({c.label})",
         ]
 
     else:
@@ -483,6 +565,20 @@ def _render_azure_resource(c: "Component") -> str:
     lines: list[str] = []
 
     if svc == "virtual_machines":
+        nic_lines = [
+            f'resource "azurerm_network_interface" "{c.id}_nic" {{',
+            f'  name                = "{c.id.replace("_", "-")}-nic"',
+            f"  location            = {location}",
+            f"  resource_group_name = {rg}",
+            "  ip_configuration {",
+            '    name                          = "internal"',
+            "    subnet_id                     = azurerm_subnet.main.id",
+            '    private_ip_address_allocation = "Dynamic"',
+            "  }",
+            "}",
+            "",
+        ]
+        lines += nic_lines
         lines += [
             f'resource "azurerm_linux_virtual_machine" "{c.id}" {{',
             f'  name                = "{c.id.replace("_", "-")}"',
@@ -490,7 +586,7 @@ def _render_azure_resource(c: "Component") -> str:
             f"  location            = {location}",
             f'  size                = "{cfg.get("size", "Standard_B2s")}"',
             '  admin_username      = "adminuser"',
-            "  network_interface_ids = []",
+            f"  network_interface_ids = [azurerm_network_interface.{c.id}_nic.id]",
             "  os_disk {",
             '    caching              = "ReadWrite"',
             '    storage_account_type = "Standard_LRS"',
@@ -515,7 +611,7 @@ def _render_azure_resource(c: "Component") -> str:
             f"  location                     = {location}",
             '  version                      = "12.0"',
             '  administrator_login          = "sqladmin"',
-            '  administrator_login_password = "changeme1!"',
+            "  administrator_login_password = var.db_password",
             "  tags = {",
             f'    Name = "{c.label}"',
             "  }",
@@ -569,9 +665,9 @@ def _render_azure_resource(c: "Component") -> str:
             f'  name                = "{c.id.replace("_", "-")}"',
             f"  resource_group_name = {rg}",
             f"  location            = {location}",
-            '  storage_account_name       = "storageaccount"',
-            '  storage_account_access_key = "accesskey"',
-            '  service_plan_id            = "service_plan_id"',
+            f"  storage_account_name       = azurerm_storage_account.{c.id}_storage.name",
+            f"  storage_account_access_key = azurerm_storage_account.{c.id}_storage.primary_access_key",
+            f"  service_plan_id            = azurerm_service_plan.{c.id}_plan.id",
             "  site_config {}",
             "  tags = {",
             f'    Name = "{c.label}"',
@@ -628,7 +724,7 @@ def _render_azure_resource(c: "Component") -> str:
             "  }",
             "  gateway_ip_configuration {",
             '    name      = "gateway-ip-config"',
-            '    subnet_id = "subnet_id"',
+            "    subnet_id = azurerm_subnet.main.id",
             "  }",
             "  frontend_port {",
             '    name = "frontend-port"',
@@ -760,10 +856,49 @@ def render(spec: "ArchSpec") -> str:
         parts.append('  location = "East US"')
         parts.append("}")
         parts.append("")
+        parts.append('resource "azurerm_virtual_network" "main" {')
+        parts.append('  name                = "vnet-cloudwright"')
+        parts.append('  address_space       = ["10.0.0.0/16"]')
+        parts.append("  location            = azurerm_resource_group.main.location")
+        parts.append("  resource_group_name = azurerm_resource_group.main.name")
+        parts.append("}")
+        parts.append("")
+        parts.append('resource "azurerm_subnet" "main" {')
+        parts.append('  name                 = "subnet-cloudwright"')
+        parts.append("  resource_group_name  = azurerm_resource_group.main.name")
+        parts.append("  virtual_network_name = azurerm_virtual_network.main.name")
+        parts.append('  address_prefixes     = ["10.0.1.0/24"]')
+        parts.append("}")
+        parts.append("")
 
     # variables
     parts.append('variable "environment" {')
     parts.append('  default = "production"')
+    parts.append("}")
+    parts.append("")
+    parts.append('variable "db_password" {')
+    parts.append('  description = "Database password"')
+    parts.append("  sensitive   = true")
+    parts.append("}")
+    parts.append("")
+    parts.append('variable "account_id" {')
+    parts.append('  description = "AWS account ID"')
+    parts.append('  default     = "123456789012"')
+    parts.append("}")
+    parts.append("")
+    parts.append('variable "lambda_role_arn" {')
+    parts.append('  description = "IAM role ARN for Lambda functions"')
+    parts.append('  default     = "arn:aws:iam::123456789012:role/lambda-role"')
+    parts.append("}")
+    parts.append("")
+    parts.append('variable "eks_role_arn" {')
+    parts.append('  description = "IAM role ARN for EKS cluster"')
+    parts.append('  default     = "arn:aws:iam::123456789012:role/eks-role"')
+    parts.append("}")
+    parts.append("")
+    parts.append('variable "task_definition_arn" {')
+    parts.append('  description = "ECS task definition ARN"')
+    parts.append('  default     = ""')
     parts.append("}")
     parts.append("")
 

@@ -39,9 +39,9 @@ ruff format packages/
 
 ```
 packages/
-  core/     cloudwright         Core library (models, architect, catalog, exporters)
-  cli/      cloudwright-cli     Typer CLI with Rich formatting
-  web/      cloudwright-web     FastAPI backend + React frontend
+  core/     cloudwright-ai          Core library (models, architect, catalog, exporters)
+  cli/      cloudwright-ai-cli     Typer CLI with Rich formatting
+  web/      cloudwright-ai-web     FastAPI backend + React frontend
 catalog/                     Service catalog JSON source data
 ```
 

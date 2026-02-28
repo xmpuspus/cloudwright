@@ -1,11 +1,11 @@
-# cloudwright-cli
+# cloudwright-ai-cli
 
 Command-line interface for [Cloudwright](https://github.com/xmpuspus/cloudwright) architecture intelligence.
 
 ## Install
 
 ```bash
-pip install cloudwright[cli]
+pip install cloudwright-ai[cli]
 ```
 
 ## Usage

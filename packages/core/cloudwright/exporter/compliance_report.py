@@ -85,7 +85,7 @@ def render(spec: "ArchSpec", validation: "ValidationResult") -> str:
 
 
 def render_pdf(spec: "ArchSpec", validation: "ValidationResult", output_path: str) -> None:
-    """Generate a PDF compliance report. Requires weasyprint: pip install cloudwright[pdf]."""
+    """Generate a PDF compliance report. Requires weasyprint: pip install cloudwright-ai[pdf]."""
     md_content = render(spec, validation)
 
     try:
@@ -106,7 +106,7 @@ th {{ background-color: #f4f4f4; }}
         HTML(string=styled).write_pdf(output_path)
     except ImportError as exc:
         raise ImportError(
-            "PDF export requires weasyprint and markdown2. Install with: pip install cloudwright[pdf]"
+            "PDF export requires weasyprint and markdown2. Install with: pip install cloudwright-ai[pdf]"
         ) from exc
 
 

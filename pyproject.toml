@@ -12,8 +12,8 @@ license = "MIT"
 [tool.hatch.envs.default]
 dependencies = [
     "cloudwright @ {root:uri}/packages/core",
-    "cloudwright-cli @ {root:uri}/packages/cli",
-    "cloudwright-web @ {root:uri}/packages/web",
+    "cloudwright-ai-cli @ {root:uri}/packages/cli",
+    "cloudwright-ai-web @ {root:uri}/packages/web",
 ]
 
 [tool.ruff]

@@ -4,9 +4,9 @@ Architecture intelligence tool for cloud engineers. Python monorepo with core li
 
 ## Project Structure
 
-- `packages/core/` — `pip install cloudwright` — ArchSpec models, LLM-powered architect, catalog, cost engine, exporters
-- `packages/cli/` — `pip install cloudwright[cli]` — Typer CLI with Rich formatting
-- `packages/web/` — `pip install cloudwright[web]` — FastAPI + React web UI
+- `packages/core/` — `pip install cloudwright-ai` — ArchSpec models, LLM-powered architect, catalog, cost engine, exporters
+- `packages/cli/` — `pip install cloudwright-ai[cli]` — Typer CLI with Rich formatting
+- `packages/web/` — `pip install cloudwright-ai[web]` — FastAPI + React web UI
 - `catalog/` — Service catalog JSON data (compute, database, storage, networking per provider)
 
 ## Core Concepts

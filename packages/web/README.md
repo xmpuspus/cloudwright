@@ -1,11 +1,11 @@
-# cloudwright-web
+# cloudwright-ai-web
 
 Web UI for [Cloudwright](https://github.com/xmpuspus/cloudwright) architecture intelligence. FastAPI backend with React frontend.
 
 ## Install
 
 ```bash
-pip install cloudwright[web]
+pip install cloudwright-ai[web]
 ```
 
 ## Usage

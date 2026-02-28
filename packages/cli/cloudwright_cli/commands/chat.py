@@ -41,7 +41,7 @@ def _launch_web() -> None:
         uvicorn.run(cloudwright_web.app, host="127.0.0.1", port=8000)
     except ImportError:
         console.print(
-            "[red]Error:[/red] cloudwright-web is not installed.\nInstall it with: pip install cloudwright-web"
+            "[red]Error:[/red] cloudwright-web is not installed.\nInstall it with: pip install cloudwright-ai-web"
         )
         raise typer.Exit(1)
 

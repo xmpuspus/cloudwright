@@ -10,7 +10,7 @@ requires-python = ">=3.12"
 license = "MIT"
 dependencies = [
     "pydantic==2.11.7",
-    "pyyaml==6.0.2",
+    "pyyaml==6.0.3",
     "anthropic==0.58.2",
     "openai==1.95.1",
 ]

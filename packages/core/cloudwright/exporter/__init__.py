@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from cloudwright.spec import ArchSpec
 
-FORMATS = ("terraform", "cloudformation", "mermaid", "d2", "sbom", "aibom", "compliance")
+FORMATS = ("terraform", "cloudformation", "mermaid", "d2", "svg", "png", "c4", "sbom", "aibom", "compliance")
 
 
 class ExporterPlugin(ABC):
@@ -74,6 +74,14 @@ def export_spec(spec: ArchSpec, fmt: str, output: str | None = None, output_dir:
             Path(output).write_text(content)
         return content
 
+    if fmt == "c4":
+        from cloudwright.exporter.c4 import render
+
+        content = render(spec)
+        if output:
+            Path(output).write_text(content)
+        return content
+
     if fmt == "sbom":
         from cloudwright.exporter.sbom import render
 
@@ -89,6 +97,22 @@ def export_spec(spec: ArchSpec, fmt: str, output: str | None = None, output_dir:
         if output:
             Path(output).write_text(content)
         return content
+
+    if fmt == "svg":
+        from cloudwright.exporter.renderer import DiagramRenderer
+
+        content = DiagramRenderer().render_svg(spec)
+        if output:
+            Path(output).write_text(content)
+        return content
+
+    if fmt == "png":
+        from cloudwright.exporter.renderer import DiagramRenderer
+
+        data = DiagramRenderer().render_png(spec)
+        if output:
+            Path(output).write_bytes(data)
+        return f"<PNG binary: {len(data)} bytes>"
 
     if fmt == "compliance":
         raise ValueError(

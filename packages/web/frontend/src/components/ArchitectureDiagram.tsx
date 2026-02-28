@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -7,6 +7,9 @@ import {
   type Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import CloudServiceNode from "./CloudServiceNode";
+import DiagramLegend from "./DiagramLegend";
+import DiagramControls from "./DiagramControls";
 
 interface Component {
   id: string;
@@ -15,6 +18,7 @@ interface Component {
   label: string;
   description: string;
   tier: number;
+  config?: Record<string, unknown>;
 }
 
 interface Connection {
@@ -48,79 +52,154 @@ interface ArchSpec {
   cost_estimate?: CostEstimate;
 }
 
-const TIER_COLORS: Record<number, string> = {
-  0: "#f59e0b",
-  1: "#3b82f6",
-  2: "#10b981",
-  3: "#8b5cf6",
-  4: "#6366f1",
-};
+const NODE_WIDTH = 200;
+const NODE_HEIGHT = 90;
+const H_GAP = 220;
+const V_GAP = 180;
+const BOUNDARY_PADDING = 32;
 
-const TIER_LABELS: Record<number, string> = {
-  0: "Edge",
-  1: "Ingress",
-  2: "Compute",
-  3: "Data",
-  4: "Storage",
-};
+// Custom node type registry — must be stable (defined outside component)
+const nodeTypes = { cloudService: CloudServiceNode };
 
-function ArchitectureDiagram({ spec }: { spec: ArchSpec }) {
-  const { nodes, edges } = useMemo(() => {
-    const tierGroups: Record<number, Component[]> = {};
-    for (const comp of spec.components) {
-      const tier = comp.tier ?? 2;
-      if (!tierGroups[tier]) tierGroups[tier] = [];
-      tierGroups[tier].push(comp);
-    }
+function buildNodes(
+  spec: ArchSpec,
+  showBoundaries: boolean,
+  costMap: Record<string, number>
+): Node[] {
+  const nodes: Node[] = [];
+  const boundaries = spec.boundaries || [];
 
-    const n: Node[] = [];
-    const sortedTiers = Object.keys(tierGroups)
-      .map(Number)
-      .sort();
-
-    for (const tier of sortedTiers) {
-      const comps = tierGroups[tier];
-      const y = tier * 180 + 40;
-      const totalWidth = comps.length * 220;
-      const startX = (800 - totalWidth) / 2;
-
-      for (let i = 0; i < comps.length; i++) {
-        const comp = comps[i];
-        n.push({
-          id: comp.id,
-          position: { x: startX + i * 220, y },
-          data: {
-            label: (
-              <div style={{ textAlign: "center" }}>
-                <div
-                  style={{
-                    fontSize: 10,
-                    color: TIER_COLORS[tier] || "#94a3b8",
-                    textTransform: "uppercase",
-                    letterSpacing: 1,
-                    marginBottom: 4,
-                  }}
-                >
-                  {TIER_LABELS[tier] || `Tier ${tier}`}
-                </div>
-                <div style={{ fontWeight: 600, fontSize: 13 }}>{comp.label}</div>
-                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
-                  {comp.service} ({comp.provider})
-                </div>
-              </div>
-            ),
-          },
-          style: {
-            background: "#1e293b",
-            border: `2px solid ${TIER_COLORS[tier] || "#334155"}`,
-            borderRadius: 8,
-            padding: "12px 16px",
-            color: "#f8fafc",
-            width: 200,
-          },
-        });
+  // Map component_id -> boundary id (first boundary that contains it)
+  const compBoundary: Record<string, string> = {};
+  if (showBoundaries) {
+    for (const b of boundaries) {
+      for (const cid of b.component_ids) {
+        if (!compBoundary[cid]) compBoundary[cid] = b.id;
       }
     }
+  }
+
+  // Group components by tier
+  const tierGroups: Record<number, Component[]> = {};
+  for (const comp of spec.components) {
+    const tier = comp.tier ?? 2;
+    if (!tierGroups[tier]) tierGroups[tier] = [];
+    tierGroups[tier].push(comp);
+  }
+
+  const sortedTiers = Object.keys(tierGroups).map(Number).sort();
+
+  // Position components without boundaries first to get absolute coords
+  const compPositions: Record<string, { x: number; y: number }> = {};
+  for (const tier of sortedTiers) {
+    const comps = tierGroups[tier];
+    const y = tier * V_GAP + 40;
+    const totalWidth = comps.length * H_GAP;
+    const startX = (800 - totalWidth) / 2;
+    for (let i = 0; i < comps.length; i++) {
+      compPositions[comps[i].id] = { x: startX + i * H_GAP, y };
+    }
+  }
+
+  // Build boundary group nodes
+  if (showBoundaries && boundaries.length > 0) {
+    for (const b of boundaries) {
+      if (b.component_ids.length === 0) continue;
+
+      // Compute bounding box from contained components
+      const xs = b.component_ids.map((cid) => compPositions[cid]?.x ?? 0);
+      const ys = b.component_ids.map((cid) => compPositions[cid]?.y ?? 0);
+      const minX = Math.min(...xs) - BOUNDARY_PADDING;
+      const minY = Math.min(...ys) - BOUNDARY_PADDING - 24; // room for label
+      const maxX = Math.max(...xs) + NODE_WIDTH + BOUNDARY_PADDING;
+      const maxY = Math.max(...ys) + NODE_HEIGHT + BOUNDARY_PADDING;
+
+      const borderStyle =
+        b.kind === "vpc"
+          ? "2px dashed #334155"
+          : b.kind === "subnet"
+          ? "2px solid #334155"
+          : "2px dotted #334155";
+
+      nodes.push({
+        id: `boundary-${b.id}`,
+        type: "group",
+        position: { x: minX, y: minY },
+        data: { label: b.label || b.id },
+        style: {
+          background: "transparent",
+          border: borderStyle,
+          borderRadius: 12,
+          padding: BOUNDARY_PADDING,
+          width: maxX - minX,
+          height: maxY - minY,
+          fontSize: 11,
+          color: "#475569",
+          fontWeight: 600,
+        },
+        // groups render behind their children
+        zIndex: -1,
+      });
+    }
+  }
+
+  // Build component nodes
+  for (const tier of sortedTiers) {
+    const comps = tierGroups[tier];
+    const totalWidth = comps.length * H_GAP;
+    const startX = (800 - totalWidth) / 2;
+    const y = tier * V_GAP + 40;
+
+    for (let i = 0; i < comps.length; i++) {
+      const comp = comps[i];
+      const boundaryId = compBoundary[comp.id];
+      const boundaryNode = showBoundaries && boundaryId
+        ? nodes.find((n) => n.id === `boundary-${boundaryId}`)
+        : undefined;
+
+      // If parented to a boundary, position is relative to boundary's top-left
+      let posX = startX + i * H_GAP;
+      let posY = y;
+      if (boundaryNode) {
+        posX -= boundaryNode.position.x;
+        posY -= boundaryNode.position.y;
+      }
+
+      nodes.push({
+        id: comp.id,
+        type: "cloudService",
+        position: { x: posX, y: posY },
+        data: {
+          label: comp.label,
+          service: comp.service,
+          provider: comp.provider,
+          description: comp.description,
+          tier: comp.tier,
+          config: comp.config || {},
+          monthlyCost: costMap[comp.id],
+        },
+        parentId: boundaryNode ? `boundary-${boundaryId}` : undefined,
+        extent: boundaryNode ? "parent" : undefined,
+      });
+    }
+  }
+
+  return nodes;
+}
+
+function ArchitectureDiagram({ spec }: { spec: ArchSpec }) {
+  const [showBoundaries, setShowBoundaries] = useState(true);
+
+  const costMap = useMemo<Record<string, number>>(() => {
+    const m: Record<string, number> = {};
+    for (const item of spec.cost_estimate?.breakdown ?? []) {
+      m[item.component_id] = item.monthly;
+    }
+    return m;
+  }, [spec.cost_estimate]);
+
+  const { nodes, edges } = useMemo(() => {
+    const n = buildNodes(spec, showBoundaries, costMap);
 
     const e: Edge[] = spec.connections.map((conn, i) => {
       let edgeLabel = conn.label || "";
@@ -139,13 +218,14 @@ function ArchitectureDiagram({ spec }: { spec: ArchSpec }) {
     });
 
     return { nodes: n, edges: e };
-  }, [spec]);
+  }, [spec, showBoundaries, costMap]);
 
   return (
-    <div style={{ width: "100%", height: "100%" }}>
+    <div style={{ width: "100%", height: "100%", position: "relative" }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
+        nodeTypes={nodeTypes}
         fitView
         proOptions={{ hideAttribution: true }}
         style={{ background: "#0f172a" }}
@@ -155,6 +235,11 @@ function ArchitectureDiagram({ spec }: { spec: ArchSpec }) {
           style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 8 }}
         />
       </ReactFlow>
+      <DiagramLegend />
+      <DiagramControls
+        showBoundaries={showBoundaries}
+        onToggleBoundaries={() => setShowBoundaries((v) => !v)}
+      />
     </div>
   );
 }

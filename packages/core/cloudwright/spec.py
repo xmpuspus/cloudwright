@@ -54,6 +54,24 @@ class Connection(BaseModel):
     estimated_monthly_gb: float | None = None
 
 
+class Boundary(BaseModel):
+    """Grouping boundary (VPC, subnet, AZ, security group, region, account)."""
+
+    id: str
+    kind: str  # vpc, subnet, availability_zone, security_group, region, account
+    label: str = ""
+    parent: str | None = None
+    component_ids: list[str] = Field(default_factory=list)
+    config: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("id")
+    @classmethod
+    def validate_id(cls, v: str) -> str:
+        if not _ID_PATTERN.match(v):
+            raise ValueError(f"Boundary id {v!r} is not IaC-safe (must match [a-zA-Z_][a-zA-Z0-9_-]*)")
+        return v
+
+
 class ComponentCost(BaseModel):
     component_id: str
     service: str
@@ -140,6 +158,7 @@ class ArchSpec(BaseModel):
     constraints: Constraints | None = None
     components: list[Component] = Field(default_factory=list)
     connections: list[Connection] = Field(default_factory=list)
+    boundaries: list[Boundary] = Field(default_factory=list)
     cost_estimate: CostEstimate | None = None
     alternatives: list[Alternative] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)

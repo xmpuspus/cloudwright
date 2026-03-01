@@ -218,7 +218,10 @@ Respond with ONLY the JSON object — no markdown, no explanation.
 
 _CHAT_SYSTEM = f"""You are a cloud architecture assistant. You help design and refine architectures through conversation.
 
-When the user asks you to generate or modify an architecture, respond with a JSON object using the same schema as a design prompt (name, provider, region, components, connections).
+When the user asks you to generate or modify an architecture, respond with a JSON object using this schema:
+- Top level: name, provider, region, components (array), connections (array)
+- Each component: id (string), service (string — use one of the service keys below), provider, label, description, tier (int), config (object)
+- Each connection: source (component id), target (component id), label, protocol, port
 
 When generating architecture JSON, also include:
 - "rationale": key design decisions with reasons
@@ -911,6 +914,11 @@ _SERVICE_NORMALIZATION: dict[str, str] = {
     "azure_logic_apps": "logic_apps",
     "azure_cosmos_db": "cosmos_db",
     "azure_sentinel": "azure_sentinel",
+    # GCP Redis variants
+    "memorystore_redis": "memorystore",
+    "gcp_memorystore": "memorystore",
+    "cloud_memorystore": "memorystore",
+    "redis_memorystore": "memorystore",
     # Additional LLM mistakes
     "cloud_function": "cloud_functions",
     "pubsub": "pub_sub",
@@ -1021,7 +1029,7 @@ def _parse_arch_spec(data: dict, constraints: Constraints | None) -> ArchSpec:
     components = [
         Component(
             id=c["id"],
-            service=c["service"],
+            service=c.get("service") or c.get("type") or c["service_key"],
             provider=c.get("provider", data.get("provider", "aws")),
             label=c.get("label", c["id"]),
             description=c.get("description", ""),

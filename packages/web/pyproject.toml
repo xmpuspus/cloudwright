@@ -29,5 +29,8 @@ Repository = "https://github.com/xmpuspus/cloudwright"
 [tool.hatch.version]
 path = "cloudwright_web/__init__.py"
 
+[tool.hatch.build]
+artifacts = ["cloudwright_web/static/**"]
+
 [tool.hatch.build.targets.wheel]
 packages = ["cloudwright_web"]

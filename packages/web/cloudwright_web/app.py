@@ -342,7 +342,7 @@ def chat(req: ChatRequest):
 
 
 # Serve frontend static files if they exist
-_frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
+_frontend_dist = Path(__file__).parent / "static"
 if _frontend_dist.exists():
     app.mount("/assets", StaticFiles(directory=str(_frontend_dist / "assets")), name="assets")
 

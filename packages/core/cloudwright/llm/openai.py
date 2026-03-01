@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import os
 import time
+from collections.abc import Iterator
 
 import openai
 
 from cloudwright.llm.base import BaseLLM
 
 GENERATE_MODEL = "gpt-5.2"
+FAST_MODEL = "gpt-5-mini"
 _MAX_RETRIES = 3
 
 
@@ -20,6 +22,23 @@ class OpenAILLM(BaseLLM):
     def generate(self, messages: list[dict], system: str, max_tokens: int = 2000) -> tuple[str, dict]:
         full_messages = [{"role": "system", "content": system}] + messages
         return self._call(GENERATE_MODEL, full_messages, max_tokens)
+
+    def generate_fast(self, messages: list[dict], system: str, max_tokens: int = 2000) -> tuple[str, dict]:
+        full_messages = [{"role": "system", "content": system}] + messages
+        return self._call(FAST_MODEL, full_messages, max_tokens)
+
+    def generate_stream(self, messages: list[dict], system: str, max_tokens: int = 2000) -> Iterator[str]:
+        full_messages = [{"role": "system", "content": system}] + messages
+        stream = self.client.chat.completions.create(
+            model=GENERATE_MODEL,
+            max_tokens=max_tokens,
+            messages=full_messages,
+            stream=True,
+        )
+        for chunk in stream:
+            content = chunk.choices[0].delta.content
+            if content:
+                yield content
 
     def _call(self, model: str, messages: list[dict], max_tokens: int) -> tuple[str, dict]:
         delay = 1.0

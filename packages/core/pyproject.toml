@@ -29,7 +29,8 @@ dependencies = [
 
 [project.optional-dependencies]
 cli = ["cloudwright-ai-cli"]
-web = ["cloudwright-ai-web"]
+web = ["cloudwright-ai-cli", "cloudwright-ai-web"]
+all = ["cloudwright-ai-cli", "cloudwright-ai-web"]
 pdf = ["weasyprint", "markdown2"]
 
 [project.urls]

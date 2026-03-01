@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
+
+log = logging.getLogger(__name__)
 
 
 def per_hour(config: dict[str, Any], base_rate: float = 0.0) -> float | None:
@@ -110,10 +113,10 @@ _FALLBACK_PRICES: dict[str, float] = {
     "ec2": 150.0,
     "compute_engine": 150.0,
     "virtual_machines": 150.0,
-    "ecs": 400.0,
-    "eks": 400.0,
-    "gke": 400.0,
-    "aks": 400.0,
+    "ecs": 150.0,
+    "eks": 250.0,
+    "gke": 200.0,
+    "aks": 200.0,
     "fargate": 120.0,
     "cloud_run": 50.0,
     "container_apps": 50.0,
@@ -234,6 +237,10 @@ _FALLBACK_PRICES: dict[str, float] = {
 def default_managed_price(service: str, config: dict) -> float:
     """Fallback pricing when catalog doesn't have specific data."""
     base = _FALLBACK_PRICES.get(service, 10.0)
+    if service not in _FALLBACK_PRICES:
+        log.debug("No fallback price for service '%s', using default $10.00", service)
+    else:
+        log.debug("Using fallback price for '%s': $%.2f", service, base)
     # Multiplier from various count-like config keys
     count = config.get(
         "count",

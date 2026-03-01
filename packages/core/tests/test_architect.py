@@ -40,6 +40,7 @@ class TestArchitect:
         assert isinstance(spec, ArchSpec)
         assert spec.constraints is not None
 
+    @pytest.mark.slow
     def test_modify(self):
         from cloudwright.architect import Architect
 

@@ -43,8 +43,7 @@ def _launch_web() -> None:
         import uvicorn
     except ImportError:
         console.print(
-            "[red]Error:[/red] cloudwright-web is not installed.\n"
-            "Install it with: pip install 'cloudwright-ai[web]'"
+            "[red]Error:[/red] cloudwright-web is not installed.\nInstall it with: pip install 'cloudwright-ai[web]'"
         )
         raise typer.Exit(1)
 

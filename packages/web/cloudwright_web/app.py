@@ -15,13 +15,25 @@ from cloudwright.exporter import FORMATS, export_spec
 from cloudwright.validator import Validator
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from starlette.middleware.base import BaseHTTPMiddleware
 
 log = logging.getLogger(__name__)
 
 app = FastAPI(title="Cloudwright", version="0.1.0", description="Architecture intelligence for cloud engineers")
+
+
+class PathTraversalMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        raw_path = request.scope.get("path", "") or request.url.path
+        if ".." in raw_path:
+            return JSONResponse(status_code=404, content={"detail": "Not found"})
+        return await call_next(request)
+
+
+app.add_middleware(PathTraversalMiddleware)
 
 app.add_middleware(
     CORSMiddleware,

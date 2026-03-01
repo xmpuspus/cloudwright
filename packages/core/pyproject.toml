@@ -45,6 +45,3 @@ artifacts = ["cloudwright/data/catalog.db", "cloudwright/data/icons/**/*.svg"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["cloudwright"]
-
-[tool.hatch.build.targets.wheel.force-include]
-"cloudwright/data" = "cloudwright/data"

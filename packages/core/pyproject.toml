@@ -28,9 +28,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-cli = ["cloudwright-ai-cli==0.2.15"]
-web = ["cloudwright-ai-cli==0.2.15", "cloudwright-ai-web==0.2.15"]
-all = ["cloudwright-ai-cli==0.2.15", "cloudwright-ai-web==0.2.15"]
+cli = ["cloudwright-ai-cli==0.2.16"]
+web = ["cloudwright-ai-cli==0.2.16", "cloudwright-ai-web==0.2.16"]
+all = ["cloudwright-ai-cli==0.2.16", "cloudwright-ai-web==0.2.16"]
 pdf = ["weasyprint", "markdown2"]
 
 [project.urls]

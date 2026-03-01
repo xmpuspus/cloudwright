@@ -463,10 +463,26 @@ class ConversationSession:
 
         self.history.append({"role": "user", "content": prompt})
         system = self._build_system_with_hints(_MODIFY_SYSTEM)
-        text, _usage = self.llm.generate(self.history, system, max_tokens=3000)
-        self.history.append({"role": "assistant", "content": text})
 
-        data = _extract_json(text)
+        max_tokens = 3000 if len(self.current_spec.components) <= 8 else 4000
+
+        try:
+            text, _usage = self.llm.generate(self.history, system, max_tokens=max_tokens)
+            self.history.append({"role": "assistant", "content": text})
+            data = _extract_json(text)
+        except (ValueError, json.JSONDecodeError) as first_err:
+            log.warning("First modify attempt failed: %s — retrying", first_err)
+            self.history.append({"role": "assistant", "content": "I apologize, let me provide the JSON."})
+            self.history.append(
+                {
+                    "role": "user",
+                    "content": "You must respond with ONLY a valid JSON object. No markdown, no explanation.",
+                }
+            )
+            text, _usage = self.llm.generate(self.history, system, max_tokens=max_tokens + 1000)
+            self.history.append({"role": "assistant", "content": text})
+            data = _extract_json(text)
+
         updated = _parse_arch_spec(data, self.constraints)
 
         original_ids = {c.id for c in self.current_spec.components}
@@ -582,13 +598,29 @@ class Architect:
         prompt = f"Current architecture:\n{current}\n\nModification: {instruction}"
         messages = [{"role": "user", "content": prompt}]
 
+        # Scale max_tokens with spec size to avoid truncation
+        max_tokens = 3000 if len(spec.components) <= 8 else 4000
+
         # Route simple modifications to the fast model to reduce latency
         if _is_simple_modification(instruction):
-            text, _usage = self.llm.generate_fast(messages, _MODIFY_SYSTEM, max_tokens=3000)
+            generate = self.llm.generate_fast
         else:
-            text, _usage = self.llm.generate(messages, _MODIFY_SYSTEM, max_tokens=3000)
+            generate = self.llm.generate
 
-        data = _extract_json(text)
+        try:
+            text, _usage = generate(messages, _MODIFY_SYSTEM, max_tokens=max_tokens)
+            data = _extract_json(text)
+        except (ValueError, json.JSONDecodeError) as first_err:
+            log.warning("First modify attempt failed: %s — retrying", first_err)
+            messages.append({"role": "assistant", "content": "I apologize, let me provide the JSON."})
+            messages.append(
+                {
+                    "role": "user",
+                    "content": "You must respond with ONLY a valid JSON object. No markdown, no explanation.",
+                }
+            )
+            text, _usage = self.llm.generate(messages, _MODIFY_SYSTEM, max_tokens=max_tokens + 1000)
+            data = _extract_json(text)
         updated = _parse_arch_spec(data, spec.constraints)
 
         # Verify no components were silently dropped by the LLM

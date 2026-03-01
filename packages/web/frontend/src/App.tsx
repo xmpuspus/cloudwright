@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from "react";
 import ArchitectureDiagram from "./components/ArchitectureDiagram";
 import CostTable from "./components/CostTable";
 import SummaryBar from "./components/SummaryBar";
+import ValidationPanel from "./components/ValidationPanel";
+import ExportPanel from "./components/ExportPanel";
+import SpecPanel from "./components/SpecPanel";
 
 interface ArchSpec {
   name: string;
@@ -61,9 +64,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<
     "diagram" | "cost" | "validate" | "export" | "spec" | "modify"
   >("diagram");
-  const [validateResult, setValidateResult] = useState<unknown>(null);
-  const [exportResult, setExportResult] = useState<string>("");
-  const [exportFormat, setExportFormat] = useState("terraform");
+
   const [modifyInput, setModifyInput] = useState("");
   const [validationSummary, setValidationSummary] = useState<{ passed: number; total: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -311,120 +312,24 @@ function App() {
           )}
 
           {activeTab === "spec" && currentSpec && (
-            <div style={{ padding: 32 }}>
-              <pre
-                style={{
-                  background: "#f8fafc",
-                  padding: 20,
-                  borderRadius: 8,
-                  fontSize: 13,
-                  lineHeight: 1.6,
-                  overflow: "auto",
-                  color: "#334155",
-                  border: "1px solid #e2e8f0",
-                }}
-              >
-                {messages.findLast((m) => m.yaml)?.yaml || "No YAML available"}
-              </pre>
-            </div>
+            <SpecPanel
+              spec={currentSpec as ArchSpec & { boundaries?: { id: string; kind: string; label?: string; component_ids: string[] }[] }}
+              yaml={messages.findLast((m) => m.yaml)?.yaml || "No YAML available"}
+            />
           )}
           {activeTab === "spec" && !currentSpec && (
             <div style={{ padding: 32, color: "#64748b" }}>Design an architecture first.</div>
           )}
 
           {activeTab === "validate" && currentSpec && (
-            <div style={{ padding: 32, maxWidth: 800 }}>
-              <h2 style={{ fontSize: 18, marginBottom: 16, color: "#0f172a" }}>Validate Architecture</h2>
-              <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-                {["hipaa", "pci-dss", "soc2", "well-architected"].map((fw) => (
-                  <button
-                    key={fw}
-                    onClick={async () => {
-                      try {
-                        const isWA = fw === "well-architected";
-                        const res = await fetch(`${API_BASE}/validate`, {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            spec: currentSpec,
-                            compliance: isWA ? [] : [fw],
-                            well_architected: isWA,
-                          }),
-                        });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.detail || "Validation failed");
-                        setValidateResult(data.results);
-                      } catch (err) {
-                        setValidateResult({ error: err instanceof Error ? err.message : "Validation failed" });
-                      }
-                    }}
-                    style={{
-                      padding: "8px 16px",
-                      borderRadius: 6,
-                      border: "1px solid #e2e8f0",
-                      background: "#f8fafc",
-                      color: "#475569",
-                      cursor: "pointer",
-                      fontSize: 13,
-                    }}
-                  >
-                    {fw.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-              {validateResult != null && (
-                <pre style={{ background: "#f8fafc", padding: 16, borderRadius: 8, fontSize: 12, color: "#334155", overflow: "auto", border: "1px solid #e2e8f0" }}>
-                  {JSON.stringify(validateResult, null, 2)}
-                </pre>
-              )}
-            </div>
+            <ValidationPanel spec={currentSpec as unknown as Record<string, unknown>} apiBase={API_BASE} />
           )}
           {activeTab === "validate" && !currentSpec && (
             <div style={{ padding: 32, color: "#64748b" }}>Design an architecture first.</div>
           )}
 
           {activeTab === "export" && currentSpec && (
-            <div style={{ padding: 32, maxWidth: 800 }}>
-              <h2 style={{ fontSize: 18, marginBottom: 16, color: "#0f172a" }}>Export Architecture</h2>
-              <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-                {["terraform", "cloudformation", "mermaid", "d2", "sbom", "aibom"].map((fmt) => (
-                  <button
-                    key={fmt}
-                    onClick={async () => {
-                      try {
-                        setExportFormat(fmt);
-                        const res = await fetch(`${API_BASE}/export`, {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ spec: currentSpec, format: fmt }),
-                        });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.detail || "Export failed");
-                        setExportResult(data.content || JSON.stringify(data, null, 2));
-                      } catch (err) {
-                        setExportResult(`Error: ${err instanceof Error ? err.message : "Export failed"}`);
-                      }
-                    }}
-                    style={{
-                      padding: "8px 16px",
-                      borderRadius: 6,
-                      border: exportFormat === fmt ? "1px solid #2563eb" : "1px solid #e2e8f0",
-                      background: exportFormat === fmt ? "#eff6ff" : "#f8fafc",
-                      color: exportFormat === fmt ? "#2563eb" : "#475569",
-                      cursor: "pointer",
-                      fontSize: 13,
-                    }}
-                  >
-                    {fmt}
-                  </button>
-                ))}
-              </div>
-              {exportResult && (
-                <pre style={{ background: "#f8fafc", padding: 16, borderRadius: 8, fontSize: 12, color: "#334155", overflow: "auto", maxHeight: 600, border: "1px solid #e2e8f0" }}>
-                  {exportResult}
-                </pre>
-              )}
-            </div>
+            <ExportPanel spec={currentSpec as unknown as Record<string, unknown>} apiBase={API_BASE} />
           )}
           {activeTab === "export" && !currentSpec && (
             <div style={{ padding: 32, color: "#64748b" }}>Design an architecture first.</div>

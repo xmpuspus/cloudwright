@@ -160,6 +160,11 @@ def design(req: DesignRequest):
         except Exception:
             pass  # cost is best-effort
         return {"spec": spec.model_dump(exclude_none=True), "yaml": spec.to_yaml()}
+    except RuntimeError as e:
+        if "No LLM provider" in str(e):
+            raise HTTPException(status_code=503, detail=str(e)) from e
+        log.exception("Design endpoint failed")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
     except Exception as e:
         log.exception("Design endpoint failed")
         raise HTTPException(status_code=500, detail="Internal server error") from e
@@ -348,6 +353,11 @@ def chat(req: ChatRequest):
             result["spec"] = spec.model_dump(exclude_none=True)
             result["yaml"] = spec.to_yaml()
         return result
+    except RuntimeError as e:
+        if "No LLM provider" in str(e):
+            raise HTTPException(status_code=503, detail=str(e)) from e
+        log.exception("Chat endpoint failed")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
     except Exception as e:
         log.exception("Chat endpoint failed")
         raise HTTPException(status_code=500, detail="Internal server error") from e

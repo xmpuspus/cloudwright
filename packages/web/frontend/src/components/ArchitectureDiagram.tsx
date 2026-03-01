@@ -1,8 +1,10 @@
-import React, { useMemo, useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback, useEffect } from "react";
 import {
   ReactFlow,
   Background,
   Controls,
+  useNodesState,
+  useEdgesState,
   type Node,
   type Edge,
 } from "@xyflow/react";
@@ -55,9 +57,10 @@ interface ArchSpec {
 
 const NODE_WIDTH = 200;
 const NODE_HEIGHT = 90;
-const H_GAP = 220;
-const V_GAP = 180;
+const H_GAP = 300;
+const V_GAP = 240;
 const BOUNDARY_PADDING = 32;
+const MAX_PER_ROW = 4;
 
 // Custom node type registry — must be stable (defined outside component)
 const nodeTypes = { cloudService: CloudServiceNode };
@@ -90,15 +93,27 @@ function buildNodes(
 
   const sortedTiers = Object.keys(tierGroups).map(Number).sort();
 
-  // Position components without boundaries first to get absolute coords
+  // Two-pass layout: first compute tier Y origins (accounting for multi-row tiers),
+  // then position each component within its tier.
   const compPositions: Record<string, { x: number; y: number }> = {};
+  let yOffset = 40;
+  const tierBaseY: Record<number, number> = {};
+  for (const tier of sortedTiers) {
+    tierBaseY[tier] = yOffset;
+    const rows = Math.ceil(tierGroups[tier].length / MAX_PER_ROW);
+    yOffset += V_GAP + (rows - 1) * (NODE_HEIGHT + 60);
+  }
+
   for (const tier of sortedTiers) {
     const comps = tierGroups[tier];
-    const y = tier * V_GAP + 40;
-    const totalWidth = comps.length * H_GAP;
-    const startX = (800 - totalWidth) / 2;
+    const baseY = tierBaseY[tier];
     for (let i = 0; i < comps.length; i++) {
-      compPositions[comps[i].id] = { x: startX + i * H_GAP, y };
+      const row = Math.floor(i / MAX_PER_ROW);
+      const col = i % MAX_PER_ROW;
+      const rowCount = Math.min(MAX_PER_ROW, comps.length - row * MAX_PER_ROW);
+      const totalWidth = rowCount * H_GAP;
+      const startX = (1200 - totalWidth) / 2;
+      compPositions[comps[i].id] = { x: startX + col * H_GAP, y: baseY + row * (NODE_HEIGHT + 60) };
     }
   }
 
@@ -140,6 +155,7 @@ function buildNodes(
         },
         // groups render behind their children
         zIndex: -1,
+        draggable: false,
       });
     }
   }
@@ -147,9 +163,6 @@ function buildNodes(
   // Build component nodes
   for (const tier of sortedTiers) {
     const comps = tierGroups[tier];
-    const totalWidth = comps.length * H_GAP;
-    const startX = (800 - totalWidth) / 2;
-    const y = tier * V_GAP + 40;
 
     for (let i = 0; i < comps.length; i++) {
       const comp = comps[i];
@@ -158,9 +171,9 @@ function buildNodes(
         ? nodes.find((n) => n.id === `boundary-${boundaryId}`)
         : undefined;
 
-      // If parented to a boundary, position is relative to boundary's top-left
-      let posX = startX + i * H_GAP;
-      let posY = y;
+      // Use pre-computed absolute positions; adjust for boundary parent offset
+      let posX = compPositions[comp.id]?.x ?? 0;
+      let posY = compPositions[comp.id]?.y ?? 0;
       if (boundaryNode) {
         posX -= boundaryNode.position.x;
         posY -= boundaryNode.position.y;
@@ -186,6 +199,24 @@ function buildNodes(
   }
 
   return nodes;
+}
+
+function buildEdges(spec: ArchSpec): Edge[] {
+  return spec.connections.map((conn, i) => {
+    let edgeLabel = conn.label || "";
+    if (conn.protocol && !edgeLabel.includes(conn.protocol)) {
+      edgeLabel = conn.protocol + (conn.port ? `:${conn.port}` : "");
+    }
+    return {
+      id: `e${i}`,
+      source: conn.source,
+      target: conn.target,
+      label: edgeLabel,
+      style: { stroke: "#94a3b8" },
+      labelStyle: { fill: "#64748b", fontSize: 11 },
+      animated: true,
+    };
+  });
 }
 
 function ArchitectureDiagram({ spec }: { spec: ArchSpec }) {
@@ -224,26 +255,12 @@ function ArchitectureDiagram({ spec }: { spec: ArchSpec }) {
     setSelectedNode(null);
   }, []);
 
-  const { nodes, edges } = useMemo(() => {
-    const n = buildNodes(spec, showBoundaries, costMap);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
-    const e: Edge[] = spec.connections.map((conn, i) => {
-      let edgeLabel = conn.label || "";
-      if (conn.protocol && !edgeLabel.includes(conn.protocol)) {
-        edgeLabel = conn.protocol + (conn.port ? `:${conn.port}` : "");
-      }
-      return {
-        id: `e${i}`,
-        source: conn.source,
-        target: conn.target,
-        label: edgeLabel,
-        style: { stroke: "#94a3b8" },
-        labelStyle: { fill: "#64748b", fontSize: 11 },
-        animated: true,
-      };
-    });
-
-    return { nodes: n, edges: e };
+  useEffect(() => {
+    setNodes(buildNodes(spec, showBoundaries, costMap));
+    setEdges(buildEdges(spec));
   }, [spec, showBoundaries, costMap]);
 
   return (
@@ -252,6 +269,8 @@ function ArchitectureDiagram({ spec }: { spec: ArchSpec }) {
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
         fitView
         proOptions={{ hideAttribution: true }}
         style={{ background: "#f8fafc" }}
@@ -263,7 +282,7 @@ function ArchitectureDiagram({ spec }: { spec: ArchSpec }) {
           style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 8 }}
         />
       </ReactFlow>
-      <DiagramLegend />
+      <DiagramLegend components={spec.components} />
       <DiagramControls
         showBoundaries={showBoundaries}
         onToggleBoundaries={() => setShowBoundaries((v) => !v)}

@@ -1,6 +1,6 @@
 import React, { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { getCategoryColor, getServiceCategory, getIconChar } from "../lib/icons";
+import { getCategoryColor, getServiceCategory, getCategoryIconPath } from "../lib/icons";
 
 interface CloudServiceData {
   label: string;
@@ -16,7 +16,7 @@ function CloudServiceNode({ data }: NodeProps) {
   const d = data as unknown as CloudServiceData;
   const category = getServiceCategory(d.service);
   const color = getCategoryColor(category);
-  const iconChar = getIconChar(d.service);
+  const iconPath = getCategoryIconPath(category);
 
   return (
     <div
@@ -34,22 +34,26 @@ function CloudServiceNode({ data }: NodeProps) {
       <Handle type="target" position={Position.Top} style={{ background: color }} />
 
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-        <span
+        <svg
+          width={16}
+          height={16}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={color}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
           style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
+            display: "block",
             width: 28,
             height: 28,
+            padding: 5,
             borderRadius: 6,
             background: `${color}22`,
-            color,
-            fontWeight: 700,
-            fontSize: 14,
           }}
         >
-          {iconChar}
-        </span>
+          <path d={iconPath} />
+        </svg>
         <span
           style={{
             fontSize: 9,

@@ -41,14 +41,24 @@ def _launch_web() -> None:
     try:
         import cloudwright_web  # type: ignore
         import uvicorn
-
-        console.print("[cyan]Launching Cloudwright web UI...[/cyan]")
-        uvicorn.run(cloudwright_web.app, host="127.0.0.1", port=8000)
     except ImportError:
         console.print(
-            "[red]Error:[/red] cloudwright-web is not installed.\nInstall it with: pip install cloudwright-web"
+            "[red]Error:[/red] cloudwright-web is not installed.\n"
+            "Install it with: pip install 'cloudwright-ai[web]'"
         )
         raise typer.Exit(1)
+
+    import socket
+
+    port = 8000
+    for candidate in range(8000, 8100):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(("127.0.0.1", candidate)) != 0:
+                port = candidate
+                break
+
+    console.print(f"[cyan]Launching Cloudwright web UI on http://127.0.0.1:{port}[/cyan]")
+    uvicorn.run(cloudwright_web.app, host="127.0.0.1", port=port)
 
 
 def _run_terminal_chat() -> None:

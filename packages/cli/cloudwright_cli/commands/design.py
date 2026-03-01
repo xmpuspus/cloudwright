@@ -35,8 +35,14 @@ def design(
         compliance=compliance or [],
     )
 
+    try:
+        architect = Architect()
+    except RuntimeError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1) from None
+
     with console.status("Designing architecture..."):
-        spec = Architect().design(description, constraints=constraints)
+        spec = architect.design(description, constraints=constraints)
         # Set provider/region from CLI args if not overridden by LLM
         if spec.provider == "aws" and provider != "aws":
             spec = spec.model_copy(update={"provider": provider})

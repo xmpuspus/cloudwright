@@ -328,7 +328,8 @@ class ConversationSession:
         if self.current_spec is None:
             raise ValueError("No current architecture to modify. Use send() to create one first.")
 
-        current_json = self.current_spec.model_dump_json(indent=2, exclude_none=True)
+        slim = self.current_spec.model_copy(update={"cost_estimate": None, "metadata": {}})
+        current_json = slim.model_dump_json(indent=2, exclude_none=True)
         prompt = f"Current architecture:\n{current_json}\n\nModification: {instruction}"
 
         self.history.append({"role": "user", "content": prompt})
@@ -416,7 +417,9 @@ class Architect:
         return any(kw in desc_lower for kw in complex_keywords)
 
     def modify(self, spec: ArchSpec, instruction: str) -> ArchSpec:
-        current = spec.model_dump_json(indent=2, exclude_none=True)
+        # Strip cost_estimate and metadata — LLM only needs structure
+        slim = spec.model_copy(update={"cost_estimate": None, "metadata": {}})
+        current = slim.model_dump_json(indent=2, exclude_none=True)
         prompt = f"Current architecture:\n{current}\n\nModification: {instruction}"
         messages = [{"role": "user", "content": prompt}]
         text, _usage = self.llm.generate(messages, _MODIFY_SYSTEM, max_tokens=8000)

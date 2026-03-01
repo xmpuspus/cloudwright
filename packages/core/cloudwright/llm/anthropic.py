@@ -15,7 +15,7 @@ _MAX_RETRIES = 3
 
 class AnthropicLLM(BaseLLM):
     def __init__(self, api_key: str | None = None):
-        self.client = anthropic.Anthropic(api_key=api_key or os.environ.get("ANTHROPIC_API_KEY"), timeout=60.0)
+        self.client = anthropic.Anthropic(api_key=api_key or os.environ.get("ANTHROPIC_API_KEY"), timeout=180.0)
 
     def generate(self, messages: list[dict], system: str, max_tokens: int = 2000) -> tuple[str, dict]:
         return self._call(GENERATE_MODEL, messages, system, max_tokens)

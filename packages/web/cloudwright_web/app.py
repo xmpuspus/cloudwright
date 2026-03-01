@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
+import hashlib
+import json
 import logging
+import multiprocessing
+import time
 from pathlib import Path
 from typing import Literal
 
@@ -15,7 +20,7 @@ from cloudwright.exporter import FORMATS, export_spec
 from cloudwright.validator import Validator
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -67,6 +72,57 @@ def get_cost_engine() -> CostEngine:
     if _cost_engine is None:
         _cost_engine = CostEngine()
     return _cost_engine
+
+
+# --- Spec cache ---
+
+
+class _SpecCache:
+    """Simple TTL cache keyed by spec content hash."""
+
+    def __init__(self, ttl_seconds: int = 3600):
+        self._ttl = ttl_seconds
+        self._cost_cache: dict[str, tuple[float, object]] = {}
+        self._validate_cache: dict[str, tuple[float, object]] = {}
+
+    def _hash(self, spec_dict: dict) -> str:
+        key_data = {k: v for k, v in spec_dict.items() if k not in ("cost_estimate", "metadata")}
+        return hashlib.sha256(json.dumps(key_data, sort_keys=True).encode()).hexdigest()[:16]
+
+    def get_cost(self, spec_dict: dict):
+        h = self._hash(spec_dict)
+        if h in self._cost_cache:
+            ts, result = self._cost_cache[h]
+            if time.time() - ts < self._ttl:
+                return result
+            del self._cost_cache[h]
+        return None
+
+    def set_cost(self, spec_dict: dict, result):
+        h = self._hash(spec_dict)
+        self._cost_cache[h] = (time.time(), result)
+        if len(self._cost_cache) > 100:
+            oldest = min(self._cost_cache, key=lambda k: self._cost_cache[k][0])
+            del self._cost_cache[oldest]
+
+    def get_validation(self, spec_dict: dict, key_suffix: str = ""):
+        h = self._hash(spec_dict) + key_suffix
+        if h in self._validate_cache:
+            ts, result = self._validate_cache[h]
+            if time.time() - ts < self._ttl:
+                return result
+            del self._validate_cache[h]
+        return None
+
+    def set_validation(self, spec_dict: dict, result, key_suffix: str = ""):
+        h = self._hash(spec_dict) + key_suffix
+        self._validate_cache[h] = (time.time(), result)
+        if len(self._validate_cache) > 100:
+            oldest = min(self._validate_cache, key=lambda k: self._validate_cache[k][0])
+            del self._validate_cache[oldest]
+
+
+_cache = _SpecCache()
 
 
 # --- Request/Response models ---
@@ -144,21 +200,18 @@ def health():
 
 
 @app.post("/api/design")
-def design(req: DesignRequest):
+async def design(req: DesignRequest):
     try:
         architect = get_architect()
         constraints = None
         if req.budget_monthly or req.compliance:
-            constraints = Constraints(
-                budget_monthly=req.budget_monthly,
-                compliance=req.compliance,
-            )
-        spec = architect.design(req.description, constraints=constraints)
+            constraints = Constraints(budget_monthly=req.budget_monthly, compliance=req.compliance)
+        spec = await asyncio.to_thread(architect.design, req.description, constraints)
         try:
-            cost_estimate = get_cost_engine().estimate(spec)
+            cost_estimate = await asyncio.to_thread(get_cost_engine().estimate, spec)
             spec = spec.model_copy(update={"cost_estimate": cost_estimate})
         except Exception:
-            pass  # cost is best-effort
+            pass
         return {"spec": spec.model_dump(exclude_none=True), "yaml": spec.to_yaml()}
     except RuntimeError as e:
         if "No LLM provider" in str(e):
@@ -170,30 +223,116 @@ def design(req: DesignRequest):
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
+@app.post("/api/design/stream")
+async def design_stream(req: DesignRequest):
+    """Stream architecture generation via Server-Sent Events."""
+
+    async def event_generator():
+        architect = get_architect()
+        constraints = None
+        if req.budget_monthly or req.compliance:
+            constraints = Constraints(budget_monthly=req.budget_monthly, compliance=req.compliance)
+
+        yield f"data: {json.dumps({'stage': 'generating', 'message': 'Generating architecture...'})}\n\n"
+
+        try:
+            spec = await asyncio.to_thread(architect.design, req.description, constraints)
+        except Exception as e:
+            yield f"data: {json.dumps({'stage': 'error', 'message': str(e)})}\n\n"
+            return
+
+        yield f"data: {json.dumps({'stage': 'generated', 'spec': spec.model_dump(exclude_none=True), 'yaml': spec.to_yaml()})}\n\n"
+
+        yield f"data: {json.dumps({'stage': 'costing', 'message': 'Estimating cost...'})}\n\n"
+        try:
+            cost_estimate = await asyncio.to_thread(get_cost_engine().estimate, spec)
+            spec = spec.model_copy(update={"cost_estimate": cost_estimate})
+            yield f"data: {json.dumps({'stage': 'costed', 'cost_estimate': cost_estimate.model_dump()})}\n\n"
+        except Exception:
+            yield f"data: {json.dumps({'stage': 'costed', 'cost_estimate': None})}\n\n"
+
+        yield f"data: {json.dumps({'stage': 'validating', 'message': 'Running validation...'})}\n\n"
+        try:
+            validator = Validator()
+            results = await asyncio.to_thread(validator.validate, spec, well_architected=True)
+            checks = results[0].checks if results else []
+            passed = sum(1 for c in checks if c.passed)
+            yield f"data: {json.dumps({'stage': 'validated', 'passed': passed, 'total': len(checks)})}\n\n"
+        except Exception:
+            yield f"data: {json.dumps({'stage': 'validated', 'passed': None, 'total': None})}\n\n"
+
+        yield f"data: {json.dumps({'stage': 'done', 'spec': spec.model_dump(exclude_none=True), 'yaml': spec.to_yaml()})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
 @app.post("/api/modify")
-def modify(req: ModifyRequest):
+async def modify(req: ModifyRequest):
     try:
         architect = get_architect()
         spec = ArchSpec.model_validate(req.spec)
-        updated = architect.modify(spec, req.instruction)
+        updated = await asyncio.to_thread(architect.modify, spec, req.instruction)
         return {"spec": updated.model_dump(exclude_none=True), "yaml": updated.to_yaml()}
     except Exception as e:
         log.exception("Modify endpoint failed")
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
-@app.post("/api/cost")
-def cost(req: CostRequest):
-    try:
-        engine = get_cost_engine()
+@app.post("/api/modify/stream")
+async def modify_stream(req: ModifyRequest):
+    """Stream architecture modification via Server-Sent Events."""
+
+    async def event_generator():
+        architect = get_architect()
         spec = ArchSpec.model_validate(req.spec)
-        estimate = engine.estimate(spec)
+
+        yield f"data: {json.dumps({'stage': 'modifying', 'message': 'Applying modifications...'})}\n\n"
+
+        try:
+            updated = await asyncio.to_thread(architect.modify, spec, req.instruction)
+        except Exception as e:
+            yield f"data: {json.dumps({'stage': 'error', 'message': str(e)})}\n\n"
+            return
+
+        yield f"data: {json.dumps({'stage': 'modified', 'spec': updated.model_dump(exclude_none=True), 'yaml': updated.to_yaml()})}\n\n"
+
+        yield f"data: {json.dumps({'stage': 'costing', 'message': 'Estimating cost...'})}\n\n"
+        try:
+            cost_estimate = await asyncio.to_thread(get_cost_engine().estimate, updated)
+            updated = updated.model_copy(update={"cost_estimate": cost_estimate})
+            yield f"data: {json.dumps({'stage': 'costed', 'cost_estimate': cost_estimate.model_dump()})}\n\n"
+        except Exception:
+            yield f"data: {json.dumps({'stage': 'costed', 'cost_estimate': None})}\n\n"
+
+        yield f"data: {json.dumps({'stage': 'done', 'spec': updated.model_dump(exclude_none=True), 'yaml': updated.to_yaml()})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@app.post("/api/cost")
+async def cost(req: CostRequest):
+    try:
+        spec_dict = req.spec
+        cached = _cache.get_cost(spec_dict)
+        if cached is not None:
+            result: dict = {"estimate": cached}
+            if req.compare_providers:
+                spec = ArchSpec.model_validate(spec_dict)
+                architect = get_architect()
+                alternatives = await asyncio.to_thread(architect.compare, spec, req.compare_providers)
+                result["alternatives"] = [a.model_dump(exclude_none=True) for a in alternatives]
+            return result
+
+        engine = get_cost_engine()
+        spec = ArchSpec.model_validate(spec_dict)
+        estimate = await asyncio.to_thread(engine.estimate, spec)
+        _cache.set_cost(spec_dict, estimate.model_dump())
 
         result = {"estimate": estimate.model_dump()}
 
         if req.compare_providers:
             architect = get_architect()
-            alternatives = architect.compare(spec, req.compare_providers)
+            alternatives = await asyncio.to_thread(architect.compare, spec, req.compare_providers)
             result["alternatives"] = [a.model_dump(exclude_none=True) for a in alternatives]
 
         return result
@@ -203,13 +342,22 @@ def cost(req: CostRequest):
 
 
 @app.post("/api/validate")
-def validate(req: ValidateRequest):
+async def validate(req: ValidateRequest):
     try:
+        key_suffix = ",".join(sorted(req.compliance)) + str(req.well_architected)
+        cached = _cache.get_validation(req.spec, key_suffix)
+        if cached is not None:
+            return {"results": cached}
+
         validator = Validator()
         spec = ArchSpec.model_validate(req.spec)
         frameworks = req.compliance if req.compliance else []
-        results = validator.validate(spec, compliance=frameworks or None, well_architected=req.well_architected)
-        return {"results": [r.model_dump() for r in results]}
+        results = await asyncio.to_thread(
+            validator.validate, spec, compliance=frameworks or None, well_architected=req.well_architected
+        )
+        serialized = [r.model_dump() for r in results]
+        _cache.set_validation(req.spec, serialized, key_suffix)
+        return {"results": serialized}
     except Exception as e:
         log.exception("Validate endpoint failed")
         raise HTTPException(status_code=500, detail="Internal server error") from e
@@ -332,21 +480,19 @@ def get_icon(provider: str, service: str):
 
 
 @app.post("/api/chat")
-def chat(req: ChatRequest):
+async def chat(req: ChatRequest):
     try:
         from cloudwright.architect import ConversationSession
 
         architect = get_architect()
         session = ConversationSession(llm=architect.llm)
 
-        # Replay history into the session
         for msg in req.history:
             session.history.append({"role": msg.role, "content": msg.content})
 
-        text, spec = session.send(req.message)
-        # Fallback: if session didn't extract a spec, try direct design
+        text, spec = await asyncio.to_thread(session.send, req.message)
         if spec is None and not req.history:
-            spec = architect.design(req.message)
+            spec = await asyncio.to_thread(architect.design, req.message)
             text = f"Architecture: {spec.name}"
         result: dict = {"reply": text, "history": session.history}
         if spec:
@@ -380,4 +526,5 @@ def serve(host: str = "127.0.0.1", port: int = 8000):
     """Start the Cloudwright web server."""
     import uvicorn
 
-    uvicorn.run(app, host=host, port=port)
+    workers = min(multiprocessing.cpu_count(), 4)
+    uvicorn.run("cloudwright_web.app:app", host=host, port=port, workers=workers)

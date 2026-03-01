@@ -21,13 +21,14 @@ function CloudServiceNode({ data }: NodeProps) {
   return (
     <div
       style={{
-        background: "#1e293b",
+        background: "#ffffff",
         border: `2px solid ${color}`,
         borderRadius: 10,
         padding: "8px 12px",
-        color: "#f8fafc",
+        color: "#0f172a",
         minWidth: 160,
         position: "relative",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
       }}
     >
       <Handle type="target" position={Position.Top} style={{ background: color }} />
@@ -61,16 +62,17 @@ function CloudServiceNode({ data }: NodeProps) {
         </span>
       </div>
 
-      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}>{d.label}</div>
+      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2, color: "#0f172a" }}>{d.label}</div>
 
-      <div style={{ fontSize: 11, color: "#94a3b8" }}>
+      <div style={{ fontSize: 11, color: "#64748b" }}>
         {d.service}
         <span
           style={{
             marginLeft: 6,
             padding: "1px 4px",
             borderRadius: 3,
-            background: "#334155",
+            background: "#e2e8f0",
+            color: "#475569",
             fontSize: 9,
             textTransform: "uppercase",
           }}
@@ -80,7 +82,7 @@ function CloudServiceNode({ data }: NodeProps) {
       </div>
 
       {d.monthlyCost != null && d.monthlyCost > 0 && (
-        <div style={{ fontSize: 10, color: "#10b981", marginTop: 4 }}>
+        <div style={{ fontSize: 10, color: "#2563eb", marginTop: 4 }}>
           ${d.monthlyCost.toFixed(0)}/mo
         </div>
       )}

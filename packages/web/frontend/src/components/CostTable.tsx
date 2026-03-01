@@ -9,7 +9,7 @@ interface CostEstimate {
 function CostTable({ estimate }: { estimate: CostEstimate }) {
   return (
     <div style={{ padding: 32 }}>
-      <h2 style={{ fontSize: 18, marginBottom: 16 }}>Cost Breakdown</h2>
+      <h2 style={{ fontSize: 18, marginBottom: 16, color: "#0f172a" }}>Cost Breakdown</h2>
       <table
         style={{
           width: "100%",
@@ -19,19 +19,19 @@ function CostTable({ estimate }: { estimate: CostEstimate }) {
         }}
       >
         <thead>
-          <tr style={{ borderBottom: "2px solid #334155" }}>
-            <th style={{ textAlign: "left", padding: "10px 12px", color: "#94a3b8" }}>Component</th>
-            <th style={{ textAlign: "left", padding: "10px 12px", color: "#94a3b8" }}>Service</th>
-            <th style={{ textAlign: "right", padding: "10px 12px", color: "#94a3b8" }}>Monthly</th>
-            <th style={{ textAlign: "left", padding: "10px 12px", color: "#94a3b8" }}>Notes</th>
+          <tr style={{ borderBottom: "2px solid #e2e8f0", background: "#f8fafc" }}>
+            <th style={{ textAlign: "left", padding: "10px 12px", color: "#475569" }}>Component</th>
+            <th style={{ textAlign: "left", padding: "10px 12px", color: "#475569" }}>Service</th>
+            <th style={{ textAlign: "right", padding: "10px 12px", color: "#475569" }}>Monthly</th>
+            <th style={{ textAlign: "left", padding: "10px 12px", color: "#475569" }}>Notes</th>
           </tr>
         </thead>
         <tbody>
           {estimate.breakdown.map((item) => (
-            <tr key={item.component_id} style={{ borderBottom: "1px solid #1e293b" }}>
-              <td style={{ padding: "10px 12px" }}>{item.component_id}</td>
-              <td style={{ padding: "10px 12px", color: "#94a3b8" }}>{item.service}</td>
-              <td style={{ padding: "10px 12px", textAlign: "right", fontFamily: "monospace" }}>
+            <tr key={item.component_id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+              <td style={{ padding: "10px 12px", color: "#0f172a" }}>{item.component_id}</td>
+              <td style={{ padding: "10px 12px", color: "#475569" }}>{item.service}</td>
+              <td style={{ padding: "10px 12px", textAlign: "right", fontFamily: "monospace", color: "#0f172a" }}>
                 ${item.monthly.toFixed(2)}
               </td>
               <td style={{ padding: "10px 12px", color: "#64748b", fontSize: 12 }}>{item.notes}</td>
@@ -39,8 +39,8 @@ function CostTable({ estimate }: { estimate: CostEstimate }) {
           ))}
         </tbody>
         <tfoot>
-          <tr style={{ borderTop: "2px solid #334155" }}>
-            <td style={{ padding: "12px", fontWeight: 700, fontSize: 15 }} colSpan={2}>
+          <tr style={{ borderTop: "2px solid #e2e8f0", background: "#f0f9ff" }}>
+            <td style={{ padding: "12px", fontWeight: 700, fontSize: 15, color: "#0f172a" }} colSpan={2}>
               Total
             </td>
             <td
@@ -50,7 +50,7 @@ function CostTable({ estimate }: { estimate: CostEstimate }) {
                 fontWeight: 700,
                 fontSize: 15,
                 fontFamily: "monospace",
-                color: "#3b82f6",
+                color: "#2563eb",
               }}
             >
               ${estimate.monthly_total.toFixed(2)}

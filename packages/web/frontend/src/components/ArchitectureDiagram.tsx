@@ -117,10 +117,10 @@ function buildNodes(
 
       const borderStyle =
         b.kind === "vpc"
-          ? "2px dashed #334155"
+          ? "2px dashed #cbd5e1"
           : b.kind === "subnet"
-          ? "2px solid #334155"
-          : "2px dotted #334155";
+          ? "2px solid #cbd5e1"
+          : "2px dotted #cbd5e1";
 
       nodes.push({
         id: `boundary-${b.id}`,
@@ -135,7 +135,7 @@ function buildNodes(
           width: maxX - minX,
           height: maxY - minY,
           fontSize: 11,
-          color: "#475569",
+          color: "#64748b",
           fontWeight: 600,
         },
         // groups render behind their children
@@ -237,8 +237,8 @@ function ArchitectureDiagram({ spec }: { spec: ArchSpec }) {
         source: conn.source,
         target: conn.target,
         label: edgeLabel,
-        style: { stroke: "#475569" },
-        labelStyle: { fill: "#94a3b8", fontSize: 11 },
+        style: { stroke: "#94a3b8" },
+        labelStyle: { fill: "#64748b", fontSize: 11 },
         animated: true,
       };
     });
@@ -254,13 +254,13 @@ function ArchitectureDiagram({ spec }: { spec: ArchSpec }) {
         nodeTypes={nodeTypes}
         fitView
         proOptions={{ hideAttribution: true }}
-        style={{ background: "#0f172a" }}
+        style={{ background: "#f8fafc" }}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
       >
-        <Background color="#1e293b" gap={20} />
+        <Background color="#e2e8f0" gap={20} />
         <Controls
-          style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 8 }}
+          style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 8 }}
         />
       </ReactFlow>
       <DiagramLegend />

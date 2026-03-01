@@ -46,12 +46,12 @@ function formatConfigValue(value: unknown): string {
   return String(value);
 }
 
-const divider = { borderTop: '1px solid #1e293b', margin: '12px 0' };
+const divider = { borderTop: '1px solid #e2e8f0', margin: '12px 0' };
 
 const sectionLabel: React.CSSProperties = {
   fontSize: 11,
   fontWeight: 600,
-  color: '#475569',
+  color: '#64748b',
   textTransform: 'uppercase',
   letterSpacing: '0.05em',
   marginBottom: 8,
@@ -64,8 +64,8 @@ const rowStyle: React.CSSProperties = {
   marginBottom: 6,
 };
 
-const keyStyle: React.CSSProperties = { color: '#94a3b8', fontSize: 13 };
-const valStyle: React.CSSProperties = { color: '#f8fafc', fontSize: 13, fontWeight: 500 };
+const keyStyle: React.CSSProperties = { color: '#64748b', fontSize: 13 };
+const valStyle: React.CSSProperties = { color: '#0f172a', fontSize: 13, fontWeight: 500 };
 
 export default function NodeSidePanel({ component, cost, onClose }: NodeSidePanelProps) {
   const visible = component !== null;
@@ -86,18 +86,19 @@ export default function NodeSidePanel({ component, cost, onClose }: NodeSidePane
         right: 0,
         width: 320,
         height: '100%',
-        background: '#0f172a',
-        borderLeft: '1px solid #334155',
+        background: '#ffffff',
+        borderLeft: '1px solid #e2e8f0',
         transform: visible ? 'translateX(0)' : 'translateX(100%)',
         transition: 'transform 0.2s ease',
         zIndex: 20,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
+        boxShadow: '-2px 0 8px rgba(0,0,0,0.06)',
       }}
     >
       {/* Header */}
-      <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid #1e293b' }}>
+      <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid #e2e8f0' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
           <div
             style={{
@@ -121,7 +122,7 @@ export default function NodeSidePanel({ component, cost, onClose }: NodeSidePane
             style={{
               fontSize: 16,
               fontWeight: 700,
-              color: '#f8fafc',
+              color: '#0f172a',
               flex: 1,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -135,7 +136,7 @@ export default function NodeSidePanel({ component, cost, onClose }: NodeSidePane
             style={{
               background: 'none',
               border: 'none',
-              color: '#475569',
+              color: '#94a3b8',
               cursor: 'pointer',
               fontSize: 18,
               lineHeight: 1,
@@ -150,8 +151,8 @@ export default function NodeSidePanel({ component, cost, onClose }: NodeSidePane
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span
             style={{
-              background: '#1e293b',
-              color: '#94a3b8',
+              background: '#f1f5f9',
+              color: '#475569',
               borderRadius: 4,
               fontSize: 11,
               fontWeight: 600,
@@ -172,7 +173,7 @@ export default function NodeSidePanel({ component, cost, onClose }: NodeSidePane
         {/* Overview */}
         <div style={sectionLabel as React.CSSProperties}>Overview</div>
         {component?.description && (
-          <p style={{ color: '#94a3b8', fontSize: 13, marginBottom: 10, lineHeight: 1.5 }}>
+          <p style={{ color: '#475569', fontSize: 13, marginBottom: 10, lineHeight: 1.5 }}>
             {component.description}
           </p>
         )}
@@ -197,7 +198,7 @@ export default function NodeSidePanel({ component, cost, onClose }: NodeSidePane
           <>
             <div style={rowStyle}>
               <span style={keyStyle}>Monthly</span>
-              <span style={{ ...valStyle, color: '#10b981' }}>
+              <span style={{ ...valStyle, color: '#2563eb' }}>
                 ${cost.monthly.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
@@ -206,7 +207,7 @@ export default function NodeSidePanel({ component, cost, onClose }: NodeSidePane
             )}
           </>
         ) : (
-          <p style={{ color: '#475569', fontSize: 13 }}>No cost data</p>
+          <p style={{ color: '#94a3b8', fontSize: 13 }}>No cost data</p>
         )}
 
         <div style={divider} />
@@ -221,14 +222,14 @@ export default function NodeSidePanel({ component, cost, onClose }: NodeSidePane
             </div>
           ))
         ) : (
-          <p style={{ color: '#475569', fontSize: 13 }}>No configuration</p>
+          <p style={{ color: '#94a3b8', fontSize: 13 }}>No configuration</p>
         )}
 
         <div style={divider} />
 
         {/* Connections */}
         <div style={sectionLabel as React.CSSProperties}>Connections</div>
-        <p style={{ color: '#475569', fontSize: 13 }}>See diagram for connections</p>
+        <p style={{ color: '#94a3b8', fontSize: 13 }}>See diagram for connections</p>
       </div>
     </div>
   );

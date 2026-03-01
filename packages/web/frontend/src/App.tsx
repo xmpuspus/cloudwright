@@ -46,6 +46,8 @@ interface Message {
   yaml?: string;
 }
 
+type LoadingStage = "idle" | "generating" | "modifying" | "costing" | "done";
+
 const API_BASE = "/api";
 
 function renderMarkdown(text: string): React.ReactNode[] {
@@ -56,10 +58,109 @@ function renderMarkdown(text: string): React.ReactNode[] {
   );
 }
 
+async function enrichSpec(
+  rawSpec: ArchSpec,
+  setValidationSummary: (v: { passed: number; total: number } | null) => void,
+): Promise<ArchSpec> {
+  let spec = rawSpec;
+  const [costResult, valResult] = await Promise.all([
+    fetch(`${API_BASE}/cost`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ spec }),
+    }).then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch(`${API_BASE}/validate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ spec, compliance: [], well_architected: true }),
+    }).then(r => r.ok ? r.json() : null).catch(() => null),
+  ]);
+
+  if (costResult?.estimate) {
+    spec = { ...spec, cost_estimate: costResult.estimate };
+  }
+  if (valResult?.results?.length > 0) {
+    const checks = valResult.results[0].checks || [];
+    const passed = checks.filter((c: { passed: boolean }) => c.passed).length;
+    setValidationSummary({ passed, total: checks.length });
+  }
+  return spec;
+}
+
+async function streamDesignOrModify(
+  isModify: boolean,
+  payload: object,
+  callbacks: {
+    onStage: (stage: string, message?: string) => void;
+    onSpec: (spec: ArchSpec, yaml: string) => void;
+    onCost: (estimate: CostEstimate | null) => void;
+    onValidation: (passed: number | null, total: number | null) => void;
+    onDone: (spec: ArchSpec, yaml: string) => void;
+    onError: (message: string) => void;
+  }
+) {
+  const endpoint = isModify ? `${API_BASE}/modify/stream` : `${API_BASE}/design/stream`;
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const data = await response.json();
+    callbacks.onError(data.detail || "Request failed");
+    return;
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) return;
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      try {
+        const event = JSON.parse(line.slice(6));
+        switch (event.stage) {
+          case "generating":
+          case "costing":
+          case "validating":
+            callbacks.onStage(event.stage, event.message);
+            break;
+          case "generated":
+            callbacks.onSpec(event.spec, event.yaml);
+            break;
+          case "costed":
+            callbacks.onCost(event.cost_estimate);
+            break;
+          case "validated":
+            callbacks.onValidation(event.passed, event.total);
+            break;
+          case "done":
+            callbacks.onDone(event.spec, event.yaml);
+            break;
+          case "error":
+            callbacks.onError(event.message);
+            break;
+        }
+      } catch { /* skip malformed events */ }
+    }
+  }
+}
+
 function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loadingStage, setLoadingStage] = useState<LoadingStage>("idle");
   const [currentSpec, setCurrentSpec] = useState<ArchSpec | null>(null);
   const [activeTab, setActiveTab] = useState<
     "diagram" | "cost" | "validate" | "export" | "spec" | "modify"
@@ -75,73 +176,91 @@ function App() {
   }, [messages]);
 
   const sendMessage = async () => {
-    if (!input.trim() || loading) return;
+    if (!input.trim() || loadingStage !== "idle") return;
     const userMsg: Message = { role: "user", content: input };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
-    setLoading(true);
 
     const isModify = currentSpec !== null;
+    setLoadingStage(isModify ? "modifying" : "generating");
+
+    // Track final spec and yaml across streaming callbacks
+    let finalSpec: ArchSpec | null = null;
+    let finalYaml = "";
+    let streamSucceeded = false;
 
     try {
-      // If we already have a spec, modify it; otherwise design from scratch
-      const res = isModify
-        ? await fetch(`${API_BASE}/modify`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ spec: currentSpec, instruction: input }),
-          })
-        : await fetch(`${API_BASE}/design`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ description: input }),
-          });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Request failed");
-      let spec = data.spec as ArchSpec;
+      const payload = isModify
+        ? { spec: currentSpec, instruction: input }
+        : { description: input };
 
-      // Auto-populate cost after design/modify
+      // Try streaming endpoint first; fall back to regular on failure
       try {
-        const costRes = await fetch(`${API_BASE}/cost`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ spec }),
+        await streamDesignOrModify(isModify, payload, {
+          onStage: (stage) => {
+            if (stage === "generating") setLoadingStage("generating");
+            else if (stage === "costing" || stage === "validating") setLoadingStage("costing");
+          },
+          onSpec: (spec) => {
+            // Early render — show diagram as soon as spec is ready
+            setCurrentSpec(spec);
+            finalSpec = spec;
+            setLoadingStage("costing");
+          },
+          onCost: (estimate) => {
+            if (estimate && finalSpec) {
+              finalSpec = { ...finalSpec, cost_estimate: estimate };
+              setCurrentSpec(finalSpec);
+            }
+          },
+          onValidation: (passed, total) => {
+            if (passed !== null) setValidationSummary({ passed, total: total! });
+          },
+          onDone: (spec, yaml) => {
+            finalSpec = spec;
+            finalYaml = yaml;
+            setCurrentSpec(spec);
+            setLoadingStage("done");
+          },
+          onError: (msg) => { throw new Error(msg); },
         });
-        if (costRes.ok) {
-          const costData = await costRes.json();
-          spec = { ...spec, cost_estimate: costData.estimate };
-        }
+        streamSucceeded = finalSpec !== null;
       } catch {
-        // cost is best-effort
+        // Streaming endpoint not available or failed — fall through to non-streaming
+        setLoadingStage(isModify ? "modifying" : "generating");
       }
 
-      // Auto-validate (Well-Architected, best-effort)
-      try {
-        const valRes = await fetch(`${API_BASE}/validate`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ spec, compliance: [], well_architected: true }),
-        });
-        if (valRes.ok) {
-          const valData = await valRes.json();
-          const results = valData.results || [];
-          if (results.length > 0) {
-            const checks = results[0].checks || [];
-            const passed = checks.filter((c: { passed: boolean }) => c.passed).length;
-            setValidationSummary({ passed, total: checks.length });
-          }
-        }
-      } catch {
-        // validation is best-effort
+      if (!streamSucceeded) {
+        // Non-streaming fallback
+        const res = isModify
+          ? await fetch(`${API_BASE}/modify`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ spec: currentSpec, instruction: input }),
+            })
+          : await fetch(`${API_BASE}/design`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ description: input }),
+            });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Request failed");
+        finalSpec = data.spec as ArchSpec;
+        finalYaml = data.yaml;
+
+        setLoadingStage("costing");
+        finalSpec = await enrichSpec(finalSpec, setValidationSummary);
+        setCurrentSpec(finalSpec);
+        setLoadingStage("done");
       }
 
-      setCurrentSpec(spec);
+      const spec = finalSpec!;
       const verb = isModify ? "Modified" : "Designed";
       const assistantMsg: Message = {
         role: "assistant",
         content: `${verb} **${spec.name}** with ${spec.components.length} components on ${spec.provider.toUpperCase()}.${spec.cost_estimate ? ` Estimated cost: $${spec.cost_estimate.monthly_total.toFixed(2)}/mo.` : ""}`,
         spec,
-        yaml: data.yaml,
+        yaml: finalYaml,
       };
       setMessages((prev) => [...prev, assistantMsg]);
       setActiveTab("diagram");
@@ -152,7 +271,7 @@ function App() {
         { role: "assistant", content: `Error: ${errorMsg}` },
       ]);
     } finally {
-      setLoading(false);
+      setLoadingStage("idle");
       inputRef.current?.focus();
     }
   };
@@ -232,9 +351,12 @@ function App() {
               {renderMarkdown(msg.content)}
             </div>
           ))}
-          {loading && (
+          {loadingStage !== "idle" && (
             <div style={{ padding: "10px 14px", color: "#64748b", fontSize: 14 }}>
-              Designing architecture...
+              {loadingStage === "generating" && "Generating architecture..."}
+              {loadingStage === "modifying" && "Modifying architecture..."}
+              {loadingStage === "costing" && "Estimating cost & validating..."}
+              {loadingStage === "done" && "Finalizing..."}
             </div>
           )}
           <div ref={chatEndRef} />
@@ -260,14 +382,14 @@ function App() {
             />
             <button
               onClick={sendMessage}
-              disabled={loading || !input.trim()}
+              disabled={loadingStage !== "idle" || !input.trim()}
               style={{
                 padding: "10px 20px",
                 borderRadius: 8,
                 border: "none",
-                background: loading ? "#e2e8f0" : "#2563eb",
-                color: loading ? "#94a3b8" : "#fff",
-                cursor: loading ? "not-allowed" : "pointer",
+                background: loadingStage !== "idle" ? "#e2e8f0" : "#2563eb",
+                color: loadingStage !== "idle" ? "#94a3b8" : "#fff",
+                cursor: loadingStage !== "idle" ? "not-allowed" : "pointer",
                 fontSize: 14,
                 fontWeight: 600,
               }}
@@ -315,10 +437,28 @@ function App() {
           </div>
           <div style={{ flex: 1, overflow: "auto" }}>
 
-          {activeTab === "diagram" && currentSpec && (
-            <ArchitectureDiagram spec={currentSpec} />
+          {activeTab === "diagram" && (currentSpec || loadingStage !== "idle") && (
+            <div style={{ position: "relative", width: "100%", height: "100%" }}>
+              {currentSpec && <ArchitectureDiagram spec={currentSpec} />}
+              {loadingStage !== "idle" && (
+                <div style={{
+                  position: "absolute", top: 16, right: 16,
+                  background: "rgba(37, 99, 235, 0.9)", color: "white",
+                  padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 500,
+                  display: "flex", alignItems: "center", gap: 8,
+                }}>
+                  <span style={{
+                    width: 8, height: 8, borderRadius: "50%",
+                    background: "white", animation: "pulse 1s infinite",
+                  }} />
+                  {loadingStage === "generating" ? "Generating..." :
+                   loadingStage === "modifying" ? "Modifying..." :
+                   loadingStage === "costing" ? "Costing & validating..." : "Finalizing..."}
+                </div>
+              )}
+            </div>
           )}
-          {activeTab === "diagram" && !currentSpec && (
+          {activeTab === "diagram" && !currentSpec && loadingStage === "idle" && (
             <div style={{ padding: 32, color: "#64748b" }}>Design an architecture to see the diagram.</div>
           )}
 
@@ -361,10 +501,10 @@ function App() {
                   value={modifyInput}
                   onChange={(e) => setModifyInput(e.target.value)}
                   onKeyDown={async (e) => {
-                    if (e.key === "Enter" && modifyInput.trim()) {
+                    if (e.key === "Enter" && modifyInput.trim() && loadingStage === "idle") {
                       const instruction = modifyInput;
                       setModifyInput("");
-                      setLoading(true);
+                      setLoadingStage("modifying");
                       try {
                         const res = await fetch(`${API_BASE}/modify`, {
                           method: "POST",
@@ -373,40 +513,13 @@ function App() {
                         });
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.detail || "Modification failed");
-                        let spec = data.spec as ArchSpec;
+                        const rawSpec = data.spec as ArchSpec;
 
-                        // Re-estimate cost
-                        try {
-                          const costRes = await fetch(`${API_BASE}/cost`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ spec }),
-                          });
-                          if (costRes.ok) {
-                            const costData = await costRes.json();
-                            spec = { ...spec, cost_estimate: costData.estimate };
-                          }
-                        } catch { /* best-effort */ }
-
-                        // Re-validate
-                        try {
-                          const valRes = await fetch(`${API_BASE}/validate`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ spec, compliance: [], well_architected: true }),
-                          });
-                          if (valRes.ok) {
-                            const valData = await valRes.json();
-                            const results = valData.results || [];
-                            if (results.length > 0) {
-                              const checks = results[0].checks || [];
-                              const passed = checks.filter((c: { passed: boolean }) => c.passed).length;
-                              setValidationSummary({ passed, total: checks.length });
-                            }
-                          }
-                        } catch { /* best-effort */ }
-
+                        setLoadingStage("costing");
+                        const spec = await enrichSpec(rawSpec, setValidationSummary);
                         setCurrentSpec(spec);
+                        setLoadingStage("done");
+
                         setMessages((prev) => [...prev,
                           { role: "user", content: instruction },
                           { role: "assistant", content: `Modified **${spec.name}** with ${spec.components.length} components on ${spec.provider.toUpperCase()}.${spec.cost_estimate ? ` Estimated cost: $${spec.cost_estimate.monthly_total.toFixed(2)}/mo.` : ""}`, spec, yaml: data.yaml },
@@ -417,7 +530,7 @@ function App() {
                           { role: "assistant", content: `Error: ${err instanceof Error ? err.message : "Modification failed"}` },
                         ]);
                       } finally {
-                        setLoading(false);
+                        setLoadingStage("idle");
                       }
                     }
                   }}

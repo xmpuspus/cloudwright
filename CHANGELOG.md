@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - 2026-02-27
+## [0.2.0] - 2026-03-01
 
 ### Added
 
@@ -18,6 +18,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `cloudwright policy` command for policy-as-code compliance engine
 - Global error handler in all commands — clean error messages with `--verbose` for stack traces
 - JSON error responses when `--json` flag is active and a command fails
+
+### Changed
+
+- Architect: enforce exact service keys from LLM (no invented compound keys like `rds_postgres`)
+- Architect: add Terraform resource type mapping for state/config parsing
+- Architect: service name normalization layer with engine suffix extraction
+- Catalog: adjust fallback prices for container orchestrators (EKS, GKE, AKS, ECS)
+- Catalog: add debug logging for fallback pricing lookups
+
+### Fixed
+
+- README/CLAUDE.md: correct PyPI package name from `cloudwright` to `cloudwright-ai`
 
 ## [0.1.0] - 2026-02-27
 

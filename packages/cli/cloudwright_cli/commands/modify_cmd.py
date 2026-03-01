@@ -40,8 +40,13 @@ def modify(
 
         console.print(f"Modifying [cyan]{spec_file}[/cyan]: [yellow]{instruction}[/yellow]\n")
 
-        with console.status("Applying modification..."):
+        try:
             architect = Architect()
+        except RuntimeError as e:
+            console.print(f"[red]Error:[/red] {e}")
+            raise typer.Exit(1) from None
+
+        with console.status("Applying modification..."):
             modified = architect.modify(original, instruction)
 
         # Price both versions; ignore errors (catalog may not have all services)

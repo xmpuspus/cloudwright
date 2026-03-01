@@ -1070,7 +1070,7 @@ def _parse_arch_spec(data: dict, constraints: Constraints | None) -> ArchSpec:
     # Validate provider consistency — auto-fix cross-provider service keys
     validated = []
     for comp in components:
-        provider = comp.provider or data.get("provider", "aws")
+        provider = (comp.provider or data.get("provider", "aws")).lower()
         valid_for_provider = _PROVIDER_SERVICES.get(provider, set())
         if comp.service not in valid_for_provider:
             # Try equivalence mapping to correct provider

@@ -11,6 +11,14 @@ import sys
 from datetime import date
 from pathlib import Path
 
+try:
+    from benchmark.history import format_trend
+except ImportError:
+    try:
+        from history import format_trend
+    except ImportError:
+        format_trend = None
+
 METRICS = [
     "structural_validity",
     "cost_accuracy",
@@ -20,6 +28,8 @@ METRICS = [
     "diff_capability",
     "reproducibility",
     "time_to_iac",
+    "architecture_quality",
+    "cost_granularity",
 ]
 
 METRIC_LABELS = {
@@ -31,6 +41,8 @@ METRIC_LABELS = {
     "diff_capability": "Diff Capability",
     "reproducibility": "Reproducibility",
     "time_to_iac": "Time to IaC",
+    "architecture_quality": "Architecture Quality",
+    "cost_granularity": "Per-Component Cost",
 }
 
 CATEGORY_ORDER = [
@@ -77,7 +89,7 @@ def format_delta(delta: float) -> str:
     return f"{sign}{delta:.1f}%"
 
 
-def build_report(evaluated: list[dict]) -> str:
+def build_report(evaluated: list[dict], history: list[dict] | None = None) -> str:
     cw_all = [e for e in evaluated if e["tool"] == "cloudwright"]
     raw_all = [e for e in evaluated if e["tool"] == "claude_raw"]
 
@@ -89,7 +101,7 @@ def build_report(evaluated: list[dict]) -> str:
     lines.append("")
     lines.append(f"**Date:** {run_date}  ")
     lines.append(f"**Use cases:** {n_cases}  ")
-    lines.append(f"**Cloudwright wins:** {wins(cw_all, raw_all)}/8 metrics  ")
+    lines.append(f"**Cloudwright wins:** {wins(cw_all, raw_all)}/{len(METRICS)} metrics  ")
     lines.append("")
     lines.append("---")
     lines.append("")
@@ -175,6 +187,32 @@ def build_report(evaluated: list[dict]) -> str:
             )
         lines.append("")
 
+    # Model comparison — only when multiple distinct models appear in evaluated data
+    models = sorted({e.get("model") for e in evaluated if e.get("model")})
+    if len(models) > 1:
+        lines.append("---")
+        lines.append("")
+        lines.append("## Model Comparison (Cloudwright)")
+        lines.append("")
+        lines.append("Cloudwright results broken out by underlying LLM:")
+        lines.append("")
+        header_cols = "| Metric |" + "".join(f" {m} |" for m in models)
+        sep_cols = "|--------|" + "".join("---------|" for _ in models)
+        lines.append(header_cols)
+        lines.append(sep_cols)
+        for metric in METRICS:
+            row = f"| {METRIC_LABELS[metric]} |"
+            for model in models:
+                model_entries = [e for e in cw_all if e.get("model") == model]
+                row += f" {format_score(avg_score(model_entries, metric))} |"
+            lines.append(row)
+        overall_row = "| **Overall** |"
+        for model in models:
+            model_entries = [e for e in cw_all if e.get("model") == model]
+            overall_row += f" **{format_score(overall_avg(model_entries))}** |"
+        lines.append(overall_row)
+        lines.append("")
+
     lines.append("---")
     lines.append("")
 
@@ -228,15 +266,28 @@ def build_report(evaluated: list[dict]) -> str:
     lines.append("")
     lines.append("---")
     lines.append("")
+
+    # History trend (optional)
+    if history and format_trend is not None:
+        lines.append("## Score History")
+        lines.append("")
+        lines.append(format_trend(history))
+        lines.append("")
+        lines.append("---")
+        lines.append("")
+
     lines.append("## Methodology")
     lines.append("")
     lines.append("- **Cloudwright pipeline:** design -> cost -> validate -> export (Terraform)")
     lines.append(f"- **Claude raw:** same prompt, generic system prompt, `{date.today().year}` Claude Sonnet model")
-    lines.append("- **Cost accuracy:** deviation from stated budget constraint")
-    lines.append("- **Reproducibility:** estimated from schema constraints (multi-run data not collected)")
+    lines.append("- **Cost accuracy:** deviation from stated budget constraint; no-budget cases score 50")
+    lines.append("- **Reproducibility:** measured empirically across multiple runs where available; falls back to schema-constraint estimate for single-run data")
     lines.append(
-        "- **Time to IaC:** Cloudwright = automated elapsed time; Claude raw = API time + 30min manual extraction estimate"
+        "- **Time to IaC:** Cloudwright = automated elapsed seconds; Claude raw = API time + 30min manual extraction estimate"
     )
+    lines.append("- **Export quality:** includes `terraform validate` syntax check when run with --terraform-validate; unvalidated exports score lower")
+    lines.append("- **Architecture quality:** tiering, redundancy, security posture, and provider-native service selection")
+    lines.append("- **Cost granularity:** per-component itemization with instance-level detail, vs flat estimates or prose descriptions")
     lines.append("")
 
     return "\n".join(lines)
@@ -248,6 +299,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Generate benchmark markdown report")
     parser.add_argument("evaluated_file", help="Path to *_evaluated.json from evaluate.py")
     parser.add_argument("--output", default=None, help="Output path for markdown report")
+    parser.add_argument("--history", default=None, help="Path to history.jsonl for trend section")
     args = parser.parse_args()
 
     evaluated_path = Path(args.evaluated_file)
@@ -258,7 +310,23 @@ def main() -> None:
     with open(evaluated_path) as f:
         evaluated = json.load(f)
 
-    report = build_report(evaluated)
+    history = None
+    if args.history:
+        history_path = Path(args.history)
+        if not history_path.exists():
+            print(f"Warning: history file {history_path} not found, skipping trend section", file=sys.stderr)
+        else:
+            history = []
+            with open(history_path) as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        try:
+                            history.append(json.loads(line))
+                        except json.JSONDecodeError:
+                            pass
+
+    report = build_report(evaluated, history=history)
 
     if args.output:
         out = Path(args.output)
@@ -273,7 +341,7 @@ def main() -> None:
     raw = [e for e in evaluated if e["tool"] == "claude_raw"]
     print(f"\nCloudwright overall: {overall_avg(cw):.1f}%")
     print(f"Claude-raw overall:  {overall_avg(raw):.1f}%")
-    print(f"Cloudwright wins:    {wins(cw, raw)}/8 metrics")
+    print(f"Cloudwright wins:    {wins(cw, raw)}/{len(METRICS)} metrics")
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ Usage:
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -163,9 +164,40 @@ def run_cloudwright(case: dict) -> dict:
             ]
             er = subprocess.run(export_cmd, capture_output=True, text=True, timeout=30)
             result["export_success"] = er.returncode == 0
-            # Count generated files as a quality signal
-            tf_files = list(Path(tf_dir).glob("*.tf"))
+            tf_files = list(sorted(Path(tf_dir).glob("*.tf")))
             result["export_file_count"] = len(tf_files)
+
+            if result["export_success"] and tf_files:
+                result["terraform_content"] = "\n\n".join(f.read_text() for f in tf_files)
+
+                if shutil.which("terraform"):
+                    try:
+                        init_r = subprocess.run(
+                            ["terraform", "init", "-backend=false"],
+                            capture_output=True,
+                            text=True,
+                            timeout=60,
+                            cwd=tf_dir,
+                        )
+                        if init_r.returncode == 0:
+                            val_r = subprocess.run(
+                                ["terraform", "validate"],
+                                capture_output=True,
+                                text=True,
+                                timeout=60,
+                                cwd=tf_dir,
+                            )
+                            result["terraform_validate_success"] = val_r.returncode == 0
+                            result["terraform_validate_stderr"] = val_r.stderr[:500] if val_r.stderr else ""
+                        else:
+                            result["terraform_validate_success"] = False
+                            result["terraform_validate_stderr"] = init_r.stderr[:500]
+                    except subprocess.TimeoutExpired:
+                        result["terraform_validate_success"] = False
+                        result["terraform_validate_stderr"] = "timeout after 60s"
+                    except Exception as e:
+                        result["terraform_validate_success"] = False
+                        result["terraform_validate_stderr"] = str(e)
         except Exception as e:
             result["export_success"] = False
             result["export_error"] = str(e)
@@ -174,13 +206,14 @@ def run_cloudwright(case: dict) -> dict:
     return result
 
 
-def run_claude_raw(case: dict) -> dict:
+def run_claude_raw(case: dict, model: str = CLAUDE_MODEL) -> dict:
     """Run the same prompt through raw Claude API with a generic system prompt."""
     start = time.time()
     result = {
         "tool": "claude_raw",
         "case_id": case["id"],
         "case_name": case["name"],
+        "model": model,
     }
 
     try:
@@ -195,7 +228,7 @@ def run_claude_raw(case: dict) -> dict:
         )
 
         response = client.messages.create(
-            model=CLAUDE_MODEL,
+            model=model,
             max_tokens=8192,
             system=system_prompt,
             messages=[{"role": "user", "content": case["prompt"]}],
@@ -245,7 +278,21 @@ def main() -> None:
         metavar="PATH",
         help="Output file for raw results JSON",
     )
+    parser.add_argument(
+        "--runs",
+        type=int,
+        default=1,
+        help="Number of runs per case (max 5)",
+    )
+    parser.add_argument(
+        "--models",
+        nargs="*",
+        default=None,
+        metavar="MODEL",
+        help="Models for raw Claude comparison (e.g. claude-haiku-4-5 claude-sonnet-4-6)",
+    )
     args = parser.parse_args()
+    args.runs = min(args.runs, 5)
 
     cases = discover_use_cases()
     if args.cases:
@@ -270,29 +317,41 @@ def main() -> None:
         print(f"\n[{i}/{len(cases)}] {case['name']}")
 
         if args.tool in ("cloudwright", "both"):
-            print("  -> Cloudwright pipeline...", end=" ", flush=True)
-            cw = run_cloudwright(case)
-            cw["expected"] = case.get("expected", {})
-            results.append(cw)
-            design_status = "OK" if cw.get("design_success") else "FAIL"
-            cost_status = "OK" if cw.get("cost_success") else "FAIL"
-            export_status = "OK" if cw.get("export_success") else "FAIL"
-            print(
-                f"{cw.get('elapsed_seconds', 0):.1f}s  design={design_status} cost={cost_status} export={export_status}"
-            )
+            for run_idx in range(args.runs):
+                run_label = f" run {run_idx + 1}/{args.runs}" if args.runs > 1 else ""
+                print(f"  -> Cloudwright pipeline{run_label}...", end=" ", flush=True)
+                cw = run_cloudwright(case)
+                cw["expected"] = case.get("expected", {})
+                cw["run_index"] = run_idx
+                results.append(cw)
+                design_status = "OK" if cw.get("design_success") else "FAIL"
+                cost_status = "OK" if cw.get("cost_success") else "FAIL"
+                export_status = "OK" if cw.get("export_success") else "FAIL"
+                tf_status = ""
+                if "terraform_validate_success" in cw:
+                    tf_status = f" tf={'OK' if cw['terraform_validate_success'] else 'FAIL'}"
+                print(
+                    f"{cw.get('elapsed_seconds', 0):.1f}s  design={design_status} cost={cost_status} export={export_status}{tf_status}"
+                )
 
         if args.tool in ("claude", "both"):
-            print("  -> Claude raw API...", end=" ", flush=True)
-            raw = run_claude_raw(case)
-            raw["expected"] = case.get("expected", {})
-            results.append(raw)
-            status = "OK" if raw.get("design_success") else "FAIL"
-            tokens = raw.get("token_usage", {})
-            print(
-                f"{raw.get('elapsed_seconds', 0):.1f}s  "
-                f"design={status}  "
-                f"tokens={tokens.get('input', 0)}in+{tokens.get('output', 0)}out"
-            )
+            models = args.models if args.models else [CLAUDE_MODEL]
+            for model in models:
+                for run_idx in range(args.runs):
+                    run_label = f" run {run_idx + 1}/{args.runs}" if args.runs > 1 else ""
+                    model_label = f" [{model}]" if args.models else ""
+                    print(f"  -> Claude raw API{model_label}{run_label}...", end=" ", flush=True)
+                    raw = run_claude_raw(case, model=model)
+                    raw["expected"] = case.get("expected", {})
+                    raw["run_index"] = run_idx
+                    results.append(raw)
+                    status = "OK" if raw.get("design_success") else "FAIL"
+                    tokens = raw.get("token_usage", {})
+                    print(
+                        f"{raw.get('elapsed_seconds', 0):.1f}s  "
+                        f"design={status}  "
+                        f"tokens={tokens.get('input', 0)}in+{tokens.get('output', 0)}out"
+                    )
 
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)

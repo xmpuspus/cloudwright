@@ -81,6 +81,277 @@ cloudwright cost spec.yaml --compare gcp,azure
 cloudwright chat
 ```
 
+## Real-World Examples
+
+### 1. Microservices Platform — Design to Diagram in 30 Seconds
+
+Start from a template, generate a Mermaid architecture diagram, and get a cost breakdown:
+
+```bash
+$ cloudwright init --template microservices -o platform.yaml
+
+Created platform.yaml from template 'microservices'
+  Provider: aws
+  Components: 8
+
+$ cloudwright export platform.yaml --format mermaid
+```
+
+```mermaid
+flowchart TD
+    subgraph "Tier 0 - Edge"
+        cloudfront([CloudFront CDN])
+    end
+    subgraph "Tier 1 - Ingress"
+        alb([Application Load Balancer])
+    end
+    subgraph "Tier 2 - Compute"
+        ecs_api[API Service]
+        ecs_user[User Service]
+        ecs_order[Order Service]
+        sqs[/SQS Event Queue/]
+    end
+    subgraph "Tier 3 - Data"
+        elasticache[(ElastiCache Redis)]
+        rds[(RDS PostgreSQL)]
+    end
+
+    cloudfront -->|HTTPS| alb
+    alb -->|/api/*| ecs_api
+    alb -->|/users/*| ecs_user
+    alb -->|/orders/*| ecs_order
+    ecs_api --> rds
+    ecs_user --> rds
+    ecs_order --> rds
+    ecs_api --> elasticache
+    ecs_order -->|Publish events| sqs
+    ecs_api -->|Consume events| sqs
+```
+
+```bash
+$ cloudwright cost platform.yaml
+
+                       Cost Breakdown — ECS Microservices
+┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Component   ┃ Service     ┃   Monthly ┃ Notes                                ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ cloudfront  │ cloudfront  │    $42.50 │ 500GB egress                         │
+│ alb         │ alb         │    $16.43 │                                      │
+│ ecs_api     │ ecs         │   $300.00 │                                      │
+│ ecs_user    │ ecs         │   $300.00 │                                      │
+│ ecs_order   │ ecs         │   $300.00 │                                      │
+│ elasticache │ elasticache │   $360.00 │ cache.t3.medium, redis               │
+│ rds         │ rds         │   $388.00 │ db.r5.large, Multi-AZ, 200GB, pg     │
+│ sqs         │ sqs         │     $4.00 │                                      │
+├─────────────┼─────────────┼───────────┼──────────────────────────────────────┤
+│             │             │ $1,710.93 │                                      │
+└─────────────┴─────────────┴───────────┴──────────────────────────────────────┘
+```
+
+### 2. Blast Radius and SPOF Detection
+
+Find single points of failure and understand which components take everything down:
+
+```bash
+$ cloudwright analyze platform.yaml
+
+╭─────────── Blast Radius Analysis: ECS Microservices ────────────╮
+│ Components: 8  |  Max Blast Radius: 7  |  SPOFs: 3             │
+╰─────────────────────────────────────────────────────────────────╯
+
+Single Points of Failure: cloudfront, alb, ecs_api
+
+Critical Path: cloudfront -> alb -> ecs_api -> rds
+
+                            Component Impact
+┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━┓
+┃ Component   ┃ Service     ┃ Tier ┃ Direct Deps ┃ Blast Radius ┃ SPOF ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━┩
+│ cloudfront  │ cloudfront  │    0 │           1 │            7 │ YES  │
+│ alb         │ alb         │    1 │           3 │            6 │ YES  │
+│ ecs_api     │ ecs         │    2 │           3 │            3 │ YES  │
+│ ecs_order   │ ecs         │    2 │           2 │            2 │      │
+│ ecs_user    │ ecs         │    2 │           1 │            1 │      │
+│ elasticache │ elasticache │    3 │           0 │            0 │      │
+│ rds         │ rds         │    3 │           0 │            0 │      │
+│ sqs         │ sqs         │    2 │           0 │            0 │      │
+└─────────────┴─────────────┴──────┴─────────────┴──────────────┴──────┘
+
+Dependency Graph
+└── cloudfront
+    └── alb
+        ├── ecs_api
+        │   ├── rds
+        │   ├── elasticache
+        │   └── sqs
+        ├── ecs_user
+        │   └── rds
+        └── ecs_order
+            ├── rds
+            └── sqs
+```
+
+### 3. Data Lake — Compliance Audit and Linting
+
+Generate a data lake, then check it against SOC 2 and GDPR before your auditor does:
+
+```bash
+$ cloudwright init --template data_lake -o pipeline.yaml
+$ cloudwright validate pipeline.yaml --compliance soc2,gdpr
+
+──────────────────────────── SOC 2 Review ─────────────────────────
+[FAIL] logging — No logging service found
+[FAIL] access_controls — No auth service found
+[FAIL] encryption_at_rest — Missing encryption on: s3_raw, s3_processed, redshift
+[FAIL] availability — No multi-AZ or load balancer found
+[FAIL] change_management — No CI/CD service detected
+Score: 0/5 (0%)
+
+──────────────────────────── GDPR Review ──────────────────────────
+[FAIL] data_residency — Non-EU regions detected: us-east-1
+[FAIL] encryption_at_rest — Unencrypted data stores: s3_raw, s3_processed, redshift
+[PASS] encryption_in_transit — All connections use encrypted protocols
+[FAIL] access_controls — No authentication service found
+[FAIL] audit_trail — No logging or monitoring service found
+[FAIL] data_deletion_capability — No TTL, lifecycle, or retention policy found
+Score: 1/6 (16%)
+
+$ cloudwright lint pipeline.yaml
+
+                         Lint Results: Data Lake
+┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Severity  ┃ Rule          ┃ Component    ┃ Message                         ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ error     │ no_encryption │ s3_raw       │ No encryption configured        │
+│ error     │ no_encryption │ s3_processed │ No encryption configured        │
+│ error     │ no_encryption │ redshift     │ No encryption configured        │
+│ error     │ single_az     │ redshift     │ Not configured for multi-AZ     │
+│ warning   │ no_waf        │ —            │ API gateway present but no WAF  │
+│ warning   │ no_monitoring │ —            │ 7 components but no monitoring  │
+│ warning   │ no_backup     │ redshift     │ No backup configured            │
+│ warning   │ no_auth       │ —            │ No authentication service       │
+└───────────┴───────────────┴──────────────┴─────────────────────────────────┘
+
+8 finding(s): 4 error(s), 4 warning(s)
+```
+
+### 4. Cross-Cloud Instance Comparison
+
+Compare equivalent instances across AWS, GCP, and Azure — pricing, specs, and storage in one table:
+
+```bash
+$ cloudwright catalog compare m5.xlarge n2-standard-4 Standard_D4s_v5
+
+                              Instance Comparison
+┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+┃ Attribute         ┃        m5.xlarge ┃     n2-standard-4 ┃   Standard_D4s_v5 ┃
+┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+│ vcpus             │                4 │                 4 │                 4 │
+│ memory_gb         │             16.0 │              16.0 │              16.0 │
+│ arch              │           x86_64 │            x86_64 │            x86_64 │
+│ network_bandwidth │ Up to 10 Gigabit │     Up to 10 Gbps │   Up to 12.5 Gbps │
+│ price_per_hour    │          $0.1920 │           $0.1942 │           $0.1920 │
+│ price_per_month   │          $140.16 │           $141.77 │           $140.16 │
+│ storage_desc      │         EBS only │   Persistent Disk │    Remote Storage │
+└───────────────────┴──────────────────┴───────────────────┴───────────────────┘
+
+$ cloudwright catalog search "4 vcpu 16gb"
+
+                         Catalog Search: "4 vcpu 16gb"
+┏━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━┓
+┃ Service     ┃ Provider ┃ Label           ┃ vCPUs ┃ Memory (GB) ┃    $/hr ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━┩
+│ e2-standard │ gcp      │ General Purpose │     4 │        16.0 │ $0.1340 │
+│ t4g.xlarge  │ aws      │                 │     4 │        16.0 │ $0.1344 │
+│ t3a.xlarge  │ aws      │                 │     4 │        16.0 │ $0.1504 │
+│ m6g.xlarge  │ aws      │                 │     4 │        16.0 │ $0.1540 │
+│ Standard_D4 │ azure    │ General Purpose │     4 │        16.0 │ $0.1720 │
+│ m5a.xlarge  │ aws      │                 │     4 │        16.0 │ $0.1720 │
+│ ...         │          │                 │       │             │         │
+└─────────────┴──────────┴─────────────────┴───────┴─────────────┴─────────┘
+```
+
+### 5. Serverless API — From Zero to Terraform
+
+Generate a serverless API spec and export production-ready Terraform in one pipeline:
+
+```bash
+$ cloudwright init --template serverless_api -o api.yaml
+$ cloudwright cost api.yaml
+
+                    Cost Breakdown — Serverless REST API
+┏━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Component ┃ Service     ┃ Monthly ┃ Notes                                   ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ api_gw    │ api_gateway │   $1.87 │                                         │
+│ auth      │ cognito     │   $0.00 │                                         │
+│ handler   │ lambda      │  $21.83 │                                         │
+│ db        │ dynamodb    │  $25.00 │                                         │
+│ storage   │ s3          │  $23.00 │ 1000GB storage                          │
+├───────────┼─────────────┼─────────┼─────────────────────────────────────────┤
+│           │             │  $71.70 │                                         │
+└───────────┴─────────────┴─────────┴─────────────────────────────────────────┘
+
+$ cloudwright export api.yaml --format terraform -o ./infra
+
+Written to ./infra/main.tf
+```
+
+The generated Terraform includes provider config, VPC data sources, IAM role variables, and properly tagged resources:
+
+```hcl
+resource "aws_api_gateway_rest_api" "api_gw" {
+  name = "API Gateway"
+  tags = { Name = "API Gateway" }
+}
+
+resource "aws_lambda_function" "handler" {
+  function_name = "handler"
+  role          = var.lambda_role_arn
+  handler       = "index.handler"
+  runtime       = "python3.12"
+  filename      = "lambda.zip"
+  tags = { Name = "Lambda Handlers" }
+}
+
+resource "aws_dynamodb_table" "db" {
+  name         = "db"
+  billing_mode = "on_demand"
+  hash_key     = "id"
+  attribute { name = "id"; type = "S" }
+  tags = { Name = "DynamoDB Table" }
+}
+```
+
+### 6. Architecture Quality Scorecard
+
+Get a letter grade across reliability, security, cost, compliance, and complexity:
+
+```bash
+$ cloudwright score platform.yaml --with-cost
+
+╭──────────── Architecture Quality: ECS Microservices ─────────────╮
+│ Overall Score: 70/100  Grade: D                                  │
+╰──────────────────────────────────────────────────────────────────╯
+
+                              Dimension Breakdown
+┏━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Dimension       ┃ Score ┃ Weight ┃ Weighted ┃ Details                      ┃
+┡━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ Reliability     │   100 │    30% │     30.0 │ LB + Multi-AZ enabled        │
+│ Security        │    32 │    25% │      8.0 │ 1/10 connections use HTTPS   │
+│ Cost Efficiency │    60 │    20% │     12.0 │ $1,710.93/mo (avg $214/comp) │
+│ Compliance      │    70 │    15% │     10.5 │ No frameworks specified      │
+│ Complexity      │    90 │    10% │      9.0 │ 8 components, 10 connections │
+└─────────────────┴───────┴────────┴──────────┴──────────────────────────────┘
+
+Top Recommendations:
+  1. Add a WAF for web application protection
+  2. Add an authentication service
+```
+
+All examples above use real output from `cloudwright-ai 0.2.1` on PyPI — no LLM key required.
+
 ## Features
 
 ### Architecture Design
@@ -495,7 +766,7 @@ pip install -e packages/web
 ```
 
 ```bash
-pytest packages/core/tests/           # 689 tests
+pytest packages/core/tests/           # 831 tests
 ruff check packages/ && ruff format packages/
 ```
 

@@ -50,7 +50,7 @@ Full competitor analysis covering 30 tools across IaC, cost, compliance, and dia
 ## Quick Start
 
 ```bash
-pip install cloudwright[cli]
+pip install cloudwright-ai[cli]
 ```
 
 Set an LLM provider key:
@@ -295,7 +295,7 @@ cloudwright init --project                           # create .cloudwright/ proj
 FastAPI backend + React frontend for browser-based architecture design.
 
 ```bash
-pip install cloudwright[web]
+pip install cloudwright-ai[web]
 cloudwright chat --web
 ```
 
@@ -478,9 +478,9 @@ Full results: [benchmark/results/benchmark_report.md](benchmark/results/benchmar
 ```
 cloudwright/
   packages/
-    core/       pip install cloudwright          Models, architect, catalog, cost, validators, exporters
-    cli/        pip install cloudwright[cli]     Typer CLI with Rich formatting
-    web/        pip install cloudwright[web]     FastAPI + React web UI
+    core/       pip install cloudwright-ai        Models, architect, catalog, cost, validators, exporters
+    cli/        pip install cloudwright-ai[cli]     Typer CLI with Rich formatting
+    web/        pip install cloudwright-ai[web]     FastAPI + React web UI
   catalog/                                      Service catalog JSON (compute, database, storage, networking)
   benchmark/                                    54 use cases + evaluation framework
 ```

@@ -175,6 +175,8 @@ RULES:
 - Respond with ONLY the JSON object — no markdown, no explanation text
 - Include 2-4 "rationale" entries explaining key design decisions
 - Include 3 "suggestions" for modifications the user might want to make next
+- When the user mentions a specific service by name (e.g. "use RDS", "with Lambda"), INCLUDE that exact service in components. Do not substitute alternatives unless explicitly asked.
+- Use EXACT service keys listed above. Do not invent compound keys like 'rds_postgres' — use 'rds' with `engine: postgres` in config.
 
 For ALL architectures, ensure component configs include:
 - encryption: true on all data stores and caches
@@ -219,6 +221,29 @@ and including real configuration values (instance types, storage sizes, etc.).
 Respond with ONLY the JSON object — no markdown, no explanation.
 
 {_SERVICE_KEYS}
+
+TERRAFORM RESOURCE TYPE MAPPING (use these when parsing Terraform state/config):
+- aws_instance, aws_autoscaling_group -> ec2
+- aws_lb, aws_alb -> alb
+- aws_rds_instance, aws_rds_cluster -> rds (aurora for clusters)
+- aws_lambda_function -> lambda
+- aws_ecs_service, aws_ecs_cluster -> ecs
+- aws_eks_cluster -> eks
+- aws_s3_bucket -> s3
+- aws_dynamodb_table -> dynamodb
+- aws_elasticache_cluster -> elasticache
+- aws_cloudfront_distribution -> cloudfront
+- aws_sqs_queue -> sqs
+- google_compute_instance -> compute_engine
+- google_container_cluster -> gke
+- google_sql_database_instance -> cloud_sql
+- google_cloud_run_service -> cloud_run
+- google_storage_bucket -> cloud_storage
+- azurerm_virtual_machine -> virtual_machines
+- azurerm_kubernetes_cluster -> aks
+- azurerm_mssql_server -> azure_sql
+- azurerm_cosmosdb_account -> cosmos_db
+- azurerm_storage_account -> blob_storage
 
 RULES:
 - Map every resource to its closest service key
@@ -535,6 +560,34 @@ def _extract_json(text: str) -> dict:
     raise ValueError(f"Unterminated JSON object in LLM response: {text[:300]}")
 
 
+_SERVICE_NORMALIZATION: dict[str, str] = {
+    "aws_rds": "rds",
+    "aws_lambda": "lambda",
+    "aws_ec2": "ec2",
+    "aws_ecs": "ecs",
+    "aws_eks": "eks",
+    "aws_s3": "s3",
+    "lambda_function": "lambda",
+    "s3_bucket": "s3",
+    "gcp_gke": "gke",
+    "gcp_cloud_run": "cloud_run",
+    "azure_aks": "aks",
+    "azure_vm": "virtual_machines",
+    "rds_postgres": "rds",
+    "rds_mysql": "rds",
+    "aurora_postgres": "aurora",
+    "aurora_mysql": "aurora",
+}
+
+# Services that carry engine info in their compound name
+_SERVICE_ENGINE_SUFFIXES: dict[str, str] = {
+    "rds_postgres": "postgres",
+    "rds_mysql": "mysql",
+    "aurora_postgres": "postgres",
+    "aurora_mysql": "mysql",
+}
+
+
 def _parse_arch_spec(data: dict, constraints: Constraints | None) -> ArchSpec:
     components = [
         Component(
@@ -548,6 +601,20 @@ def _parse_arch_spec(data: dict, constraints: Constraints | None) -> ArchSpec:
         )
         for c in data.get("components", [])
     ]
+
+    # Normalize common LLM service key mistakes
+    normalized = []
+    for comp in components:
+        raw = comp.service
+        if raw in _SERVICE_NORMALIZATION:
+            fixed = _SERVICE_NORMALIZATION[raw]
+            log.warning("Normalizing service key '%s' -> '%s' (component: %s)", raw, fixed, comp.id)
+            cfg = dict(comp.config)
+            if raw in _SERVICE_ENGINE_SUFFIXES:
+                cfg.setdefault("engine", _SERVICE_ENGINE_SUFFIXES[raw])
+            comp = comp.model_copy(update={"service": fixed, "config": cfg})
+        normalized.append(comp)
+    components = normalized
 
     connections = [
         Connection(

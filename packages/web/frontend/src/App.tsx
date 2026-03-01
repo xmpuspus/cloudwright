@@ -362,7 +362,7 @@ function App() {
                   </button>
                 ))}
               </div>
-              {validateResult && (
+              {validateResult != null && (
                 <pre style={{ background: "#1e293b", padding: 16, borderRadius: 8, fontSize: 12, color: "#e2e8f0", overflow: "auto" }}>
                   {JSON.stringify(validateResult, null, 2)}
                 </pre>

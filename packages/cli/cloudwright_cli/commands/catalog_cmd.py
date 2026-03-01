@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Annotated
 
 import typer
@@ -34,16 +35,33 @@ def catalog_search(
     memory: Annotated[float | None, typer.Option(help="Minimum memory in GB")] = None,
 ) -> None:
     """Search the cloud service catalog."""
-    filters: dict = {}
-    if provider:
-        filters["provider"] = provider.lower()
-    if vcpus is not None:
-        filters["min_vcpus"] = vcpus
-    if memory is not None:
-        filters["min_memory_gb"] = memory
+    # Extract structured filters from natural language query
+    parsed_vcpus = vcpus
+    parsed_memory = memory
+    text_query = query
+
+    if parsed_vcpus is None:
+        m = re.search(r"(\d+)\s*vcpu", query, re.IGNORECASE)
+        if m:
+            parsed_vcpus = int(m.group(1))
+            text_query = re.sub(r"\d+\s*vcpus?\s*", "", text_query, flags=re.IGNORECASE).strip()
+
+    if parsed_memory is None:
+        m = re.search(r"(\d+(?:\.\d+)?)\s*(?:gb|gib)\s*(?:memory|ram)?", query, re.IGNORECASE)
+        if m:
+            parsed_memory = float(m.group(1))
+            text_query = re.sub(r"\d+(?:\.\d+)?\s*(?:gb|gib)\s*(?:memory|ram)?\s*", "", text_query, flags=re.IGNORECASE).strip()
+
+    # Clean up leftover whitespace/empty query
+    text_query = text_query.strip() or None
 
     with console.status("Searching catalog..."):
-        results = Catalog().search(query, **filters)
+        results = Catalog().search(
+            query=text_query,
+            vcpus=parsed_vcpus,
+            memory_gb=parsed_memory,
+            provider=provider,
+        )
 
     # Resolve ctx.obj through parent chain when invoked via sub-app
     obj = ctx.obj or (ctx.parent.obj if ctx.parent else None)
@@ -67,14 +85,15 @@ def catalog_search(
     table.add_column("Notes", style="dim")
 
     for item in results:
+        price = item.get("price_per_hour")
         table.add_row(
-            item.get("service", ""),
-            item.get("provider", ""),
-            item.get("label", ""),
+            item.get("name", ""),
+            item.get("provider_id", ""),
+            item.get("family", ""),
             str(item.get("vcpus", "-")),
             str(item.get("memory_gb", "-")),
-            f"${item['hourly']:.4f}" if item.get("hourly") else "-",
-            item.get("notes", ""),
+            f"${price:.4f}" if price else "-",
+            item.get("description", ""),
         )
 
     console.print(table)

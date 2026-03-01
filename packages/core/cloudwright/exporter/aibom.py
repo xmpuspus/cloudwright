@@ -6,6 +6,8 @@ import json
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
+from cloudwright import __version__
+
 
 def _get_model_name() -> str:
     """Detect the active LLM provider and return its model name."""
@@ -94,7 +96,7 @@ def render(spec: "ArchSpec") -> str:
         "aibomVersion": "1.0",
         "metadata": {
             "timestamp": now,
-            "generator": {"name": "Cloudwright", "version": "0.1.0"},
+            "generator": {"name": "Cloudwright", "version": __version__},
             "architecture": spec.name,
         },
         "aiComponents": ai_components,

@@ -6,6 +6,8 @@ import json
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
+from cloudwright import __version__
+
 if TYPE_CHECKING:
     from cloudwright.spec import ArchSpec
 
@@ -59,7 +61,7 @@ def render(spec: "ArchSpec") -> str:
                 "name": spec.name,
                 "version": "1.0.0",
             },
-            "tools": [{"name": "Cloudwright", "version": "0.1.0"}],
+            "tools": [{"name": "Cloudwright", "version": __version__}],
         },
         "components": components,
         "dependencies": dependencies,

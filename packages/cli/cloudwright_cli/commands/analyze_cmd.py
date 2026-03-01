@@ -27,6 +27,14 @@ def analyze(
         from cloudwright.analyzer import Analyzer
 
         spec = ArchSpec.from_file(spec_file)
+
+        if component:
+            valid_ids = {c.id for c in spec.components}
+            if component not in valid_ids:
+                console.print(f"[red]Error:[/red] Component '{component}' not found in spec.")
+                console.print(f"[dim]Available components: {', '.join(sorted(valid_ids))}[/dim]")
+                raise typer.Exit(1)
+
         analyzer = Analyzer()
         result = analyzer.analyze(spec, component_id=component)
 

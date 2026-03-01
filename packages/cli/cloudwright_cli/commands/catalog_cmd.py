@@ -50,7 +50,9 @@ def catalog_search(
         m = re.search(r"(\d+(?:\.\d+)?)\s*(?:gb|gib)\s*(?:memory|ram)?", query, re.IGNORECASE)
         if m:
             parsed_memory = float(m.group(1))
-            text_query = re.sub(r"\d+(?:\.\d+)?\s*(?:gb|gib)\s*(?:memory|ram)?\s*", "", text_query, flags=re.IGNORECASE).strip()
+            text_query = re.sub(
+                r"\d+(?:\.\d+)?\s*(?:gb|gib)\s*(?:memory|ram)?\s*", "", text_query, flags=re.IGNORECASE
+            ).strip()
 
     # Clean up leftover whitespace/empty query
     text_query = text_query.strip() or None

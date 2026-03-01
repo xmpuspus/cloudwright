@@ -24,7 +24,8 @@ def test_get_icon_unknown_404():
 
 
 def test_get_icon_path_traversal_blocked():
-    res = client.get("/api/icons/../../../etc/passwd.svg")
+    # Use percent-encoded dots to bypass client-side URL normalization
+    res = client.get("/api/icons/%2e%2e/%2e%2e/%2e%2e/etc/passwd.svg")
     assert res.status_code in (404, 422)
 
 

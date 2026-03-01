@@ -299,6 +299,134 @@ RULES:
 - Include realistic instance types and configurations for accurate pricing
 - Respond with ONLY the JSON object"""
 
+# Valid services per provider — used for consistency validation
+_PROVIDER_SERVICES: dict[str, set[str]] = {
+    "aws": {
+        "cloudfront",
+        "route53",
+        "api_gateway",
+        "waf",
+        "alb",
+        "nlb",
+        "ec2",
+        "ecs",
+        "eks",
+        "lambda",
+        "fargate",
+        "rds",
+        "aurora",
+        "dynamodb",
+        "elasticache",
+        "sqs",
+        "sns",
+        "s3",
+        "kinesis",
+        "redshift",
+        "emr",
+        "sagemaker",
+        "cognito",
+        "iam",
+        "step_functions",
+        "eventbridge",
+        "cloudwatch",
+        "cloudtrail",
+        "dms",
+        "migration_hub",
+        "direct_connect",
+        "vpn",
+        "codepipeline",
+        "codecommit",
+        "codebuild",
+        "ecr",
+        "config",
+        "guardduty",
+        "inspector",
+        "kms",
+        "shield",
+        "security_hub",
+        "glue",
+        "athena",
+        "fsx",
+        "efs",
+        "ebs",
+    },
+    "gcp": {
+        "cloud_cdn",
+        "cloud_dns",
+        "cloud_load_balancing",
+        "cloud_armor",
+        "compute_engine",
+        "gke",
+        "cloud_run",
+        "cloud_functions",
+        "app_engine",
+        "cloud_sql",
+        "firestore",
+        "spanner",
+        "memorystore",
+        "pub_sub",
+        "cloud_storage",
+        "bigquery",
+        "dataflow",
+        "vertex_ai",
+        "firebase_auth",
+        "cloud_logging",
+        "cloud_build",
+        "artifact_registry",
+        "cloud_composer",
+        "dataproc",
+        "cloud_interconnect",
+        "alloydb",
+    },
+    "azure": {
+        "azure_cdn",
+        "azure_dns",
+        "app_gateway",
+        "azure_waf",
+        "azure_lb",
+        "virtual_machines",
+        "aks",
+        "container_apps",
+        "azure_functions",
+        "app_service",
+        "azure_sql",
+        "cosmos_db",
+        "azure_cache",
+        "service_bus",
+        "event_hubs",
+        "blob_storage",
+        "synapse",
+        "azure_ml",
+        "azure_ad",
+        "logic_apps",
+        "azure_monitor",
+        "azure_devops",
+        "azure_migrate",
+        "expressroute",
+        "azure_firewall",
+        "azure_sentinel",
+        "azure_policy",
+        "data_factory",
+        "api_management",
+    },
+}
+
+_ALL_VALID_SERVICES: set[str] = set().union(*_PROVIDER_SERVICES.values())
+
+# Default instance types when LLM omits them
+_DEFAULT_INSTANCE_TYPES: dict[str, dict[str, str]] = {
+    "aws": {"compute": "m5.large", "database": "db.r5.large", "cache": "cache.r5.large"},
+    "gcp": {"compute": "n2-standard-4", "database": "db-n1-standard-4", "cache": "M1"},
+    "azure": {"compute": "Standard_D4s_v3", "database": "GP_Gen5_4", "cache": "C3"},
+}
+
+# Default connection ports by tier relationship
+_DEFAULT_CONNECTION_PROTOCOLS: list[tuple[tuple[int, int], str, int]] = [
+    ((0, 1), "HTTPS", 443),
+    ((1, 2), "HTTPS", 443),
+    ((2, 3), "TCP", 5432),  # database tier
+]
+
 
 class ConversationSession:
     """Multi-turn architecture design conversation with history tracking."""
@@ -308,11 +436,13 @@ class ConversationSession:
         self.constraints = constraints
         self.history: list[dict] = []
         self.current_spec: ArchSpec | None = None
+        self._error_hints: list[str] = []
 
     def send(self, message: str) -> tuple[str, ArchSpec | None]:
         """Send a user message and get response + optionally updated spec."""
         self.history.append({"role": "user", "content": message})
-        text, _usage = self.llm.generate(self.history, _CHAT_SYSTEM, max_tokens=8000)
+        system = self._build_system_with_hints(_CHAT_SYSTEM)
+        text, _usage = self.llm.generate(self.history, system, max_tokens=4000)
         self.history.append({"role": "assistant", "content": text})
 
         spec = self._try_parse_spec(text)
@@ -328,16 +458,31 @@ class ConversationSession:
         if self.current_spec is None:
             raise ValueError("No current architecture to modify. Use send() to create one first.")
 
-        slim = self.current_spec.model_copy(update={"cost_estimate": None, "metadata": {}})
-        current_json = slim.model_dump_json(indent=2, exclude_none=True)
+        current_json = _slim_for_modify(self.current_spec)
         prompt = f"Current architecture:\n{current_json}\n\nModification: {instruction}"
 
         self.history.append({"role": "user", "content": prompt})
-        text, _usage = self.llm.generate(self.history, _MODIFY_SYSTEM, max_tokens=8000)
+        system = self._build_system_with_hints(_MODIFY_SYSTEM)
+        text, _usage = self.llm.generate(self.history, system, max_tokens=3000)
         self.history.append({"role": "assistant", "content": text})
 
         data = _extract_json(text)
         updated = _parse_arch_spec(data, self.constraints)
+
+        original_ids = {c.id for c in self.current_spec.components}
+        updated_ids = {c.id for c in updated.components}
+        dropped = original_ids - updated_ids
+        if dropped:
+            remove_words = {"remove", "delete", "drop", "eliminate", "get rid of"}
+            explicitly_removed = any(w in instruction.lower() for w in remove_words)
+            if not explicitly_removed:
+                restored = list(updated.components)
+                original_map = {c.id: c for c in self.current_spec.components}
+                for cid in dropped:
+                    restored.append(original_map[cid])
+                updated = updated.model_copy(update={"components": restored})
+                log.warning("Restored %d dropped components: %s", len(dropped), dropped)
+                self._error_hints.append("Do not remove existing components unless explicitly asked")
 
         if self.current_spec.cost_estimate and not updated.cost_estimate:
             updated = updated.model_copy(update={"cost_estimate": self.current_spec.cost_estimate})
@@ -355,17 +500,33 @@ class ConversationSession:
         except (ValueError, KeyError, json.JSONDecodeError):
             return None
 
+    def _build_system_with_hints(self, base_system: str) -> str:
+        if not self._error_hints:
+            return base_system
+        hints = "\n".join(f"- {h}" for h in self._error_hints[-5:])
+        return f"{base_system}\n\nLEARNINGS FROM THIS SESSION (avoid repeating):\n{hints}"
+
 
 class Architect:
     def __init__(self, llm: BaseLLM | None = None):
         self.llm = llm or get_llm()
 
     def design(self, description: str, constraints: Constraints | None = None) -> ArchSpec:
+        # Check if a pre-computed template matches before calling the LLM
+        provider = constraints.regions[0].split("-")[0] if constraints and constraints.regions else None
+        template = _match_template_for_design(description, provider)
+        if template is not None:
+            log.info("Template match — skipping LLM call for design")
+            spec = _parse_arch_spec(template, constraints)
+            if constraints and constraints.regions:
+                spec = spec.model_copy(update={"region": constraints.regions[0]})
+            return spec
+
         system = self._select_system_prompt(description)
         if constraints:
             system += _build_constraint_prompt(constraints)
 
-        max_tokens = 8000 if len(description) > 200 or self._is_complex_use_case(description) else 4000
+        max_tokens = 4000 if len(description) > 200 or self._is_complex_use_case(description) else 2500
         messages = [{"role": "user", "content": description}]
 
         try:
@@ -417,14 +578,34 @@ class Architect:
         return any(kw in desc_lower for kw in complex_keywords)
 
     def modify(self, spec: ArchSpec, instruction: str) -> ArchSpec:
-        # Strip cost_estimate and metadata — LLM only needs structure
-        slim = spec.model_copy(update={"cost_estimate": None, "metadata": {}})
-        current = slim.model_dump_json(indent=2, exclude_none=True)
+        current = _slim_for_modify(spec)
         prompt = f"Current architecture:\n{current}\n\nModification: {instruction}"
         messages = [{"role": "user", "content": prompt}]
-        text, _usage = self.llm.generate(messages, _MODIFY_SYSTEM, max_tokens=8000)
+
+        # Route simple modifications to the fast model to reduce latency
+        if _is_simple_modification(instruction):
+            text, _usage = self.llm.generate_fast(messages, _MODIFY_SYSTEM, max_tokens=3000)
+        else:
+            text, _usage = self.llm.generate(messages, _MODIFY_SYSTEM, max_tokens=3000)
+
         data = _extract_json(text)
         updated = _parse_arch_spec(data, spec.constraints)
+
+        # Verify no components were silently dropped by the LLM
+        original_ids = {c.id for c in spec.components}
+        updated_ids = {c.id for c in updated.components}
+        dropped = original_ids - updated_ids
+        if dropped:
+            remove_words = {"remove", "delete", "drop", "eliminate", "get rid of"}
+            explicitly_removed = any(w in instruction.lower() for w in remove_words)
+            if not explicitly_removed:
+                restored = list(updated.components)
+                original_map = {c.id: c for c in spec.components}
+                for cid in dropped:
+                    restored.append(original_map[cid])
+                updated = updated.model_copy(update={"components": restored})
+                log.warning("Restored %d dropped components: %s", len(dropped), dropped)
+
         # Preserve cost estimate and alternatives from original if LLM didn't regenerate them
         if spec.cost_estimate and not updated.cost_estimate:
             updated.cost_estimate = spec.cost_estimate
@@ -435,6 +616,59 @@ class Architect:
 
         engine = CostEngine()
         return engine.compare_providers(spec, providers)
+
+
+def _is_simple_modification(instruction: str) -> bool:
+    """Heuristic: short instructions without compliance/migration keywords are simple."""
+    words = instruction.split()
+    if len(words) > 25:
+        return False
+    complex_keywords = {
+        "compliance",
+        "hipaa",
+        "pci",
+        "soc2",
+        "gdpr",
+        "fedramp",
+        "migrate",
+        "redesign",
+        "re-architect",
+        "overhaul",
+        "security audit",
+    }
+    return not any(kw in instruction.lower() for kw in complex_keywords)
+
+
+def _slim_for_modify(spec: ArchSpec) -> str:
+    """Serialize spec with minimal fields for LLM modify prompt."""
+    data = spec.model_dump(exclude_none=True)
+    data.pop("cost_estimate", None)
+    data.pop("metadata", None)
+    for comp in data.get("components", []):
+        comp.pop("description", None)
+        cfg = comp.get("config", {})
+        keep_keys = {
+            "instance_type",
+            "instance_class",
+            "node_type",
+            "storage_gb",
+            "count",
+            "engine",
+            "model",
+            "cpu",
+            "memory",
+            "min_instances",
+            "max_instances",
+        }
+        comp["config"] = {k: v for k, v in cfg.items() if k in keep_keys}
+    return json.dumps(data, indent=2)
+
+
+def _match_template_for_design(description: str, provider: str | None) -> dict | None:
+    """Return a template dict if the description matches with high confidence."""
+    from cloudwright.templates import match_template
+
+    return match_template(description, provider)
 
 
 def _build_constraint_prompt(constraints: Constraints) -> str:
@@ -517,6 +751,35 @@ def _post_validate(spec: ArchSpec, constraints: Constraints | None) -> ArchSpec:
             if not cfg.get("auto_scaling"):
                 cfg["auto_scaling"] = True
                 updated = True
+
+        # Fill missing instance type/class/node_type defaults
+        provider = comp.provider or spec.provider
+        defaults = _DEFAULT_INSTANCE_TYPES.get(provider, _DEFAULT_INSTANCE_TYPES["aws"])
+
+        if comp.service in _COMPUTE_SERVICES and "instance_type" not in cfg:
+            cfg["instance_type"] = defaults["compute"]
+            updated = True
+            log.warning("Set default instance_type '%s' on component %s", defaults["compute"], comp.id)
+
+        if comp.service in _DATABASE_SERVICES and "instance_class" not in cfg:
+            cfg["instance_class"] = defaults["database"]
+            updated = True
+            log.warning("Set default instance_class '%s' on component %s", defaults["database"], comp.id)
+
+        if comp.service in {"elasticache", "memorystore", "azure_cache"} and "node_type" not in cfg:
+            cfg["node_type"] = defaults["cache"]
+            updated = True
+            log.warning("Set default node_type '%s' on component %s", defaults["cache"], comp.id)
+
+        if comp.service in _DATABASE_SERVICES and "storage_gb" not in cfg:
+            cfg["storage_gb"] = 100
+            updated = True
+            log.warning("Set default storage_gb 100 on component %s", comp.id)
+
+        if comp.service in _COMPUTE_SERVICES and "count" not in cfg:
+            cfg["count"] = 2
+            updated = True
+            log.warning("Set default count 2 on component %s", comp.id)
 
         if updated:
             components[i] = comp.model_copy(update={"config": cfg})
@@ -616,6 +879,29 @@ _SERVICE_NORMALIZATION: dict[str, str] = {
     "azure_logic_apps": "logic_apps",
     "azure_cosmos_db": "cosmos_db",
     "azure_sentinel": "azure_sentinel",
+    # Additional LLM mistakes
+    "cloud_function": "cloud_functions",
+    "pubsub": "pub_sub",
+    "pub/sub": "pub_sub",
+    "cloud_run_service": "cloud_run",
+    "gcs": "cloud_storage",
+    "bq": "bigquery",
+    "big_query": "bigquery",
+    "cloud_sql_instance": "cloud_sql",
+    "aws_sqs": "sqs",
+    "aws_sns": "sns",
+    "aws_cloudwatch": "cloudwatch",
+    "aws_cloudtrail": "cloudtrail",
+    "aws_kinesis": "kinesis",
+    "azure_blob": "blob_storage",
+    "azure_cosmosdb": "cosmos_db",
+    "azure_redis": "azure_cache",
+    "redis": "elasticache",
+    "postgres": "rds",
+    "mysql": "rds",
+    "mongodb": "cosmos_db",
+    "kubernetes": "eks",
+    "docker": "ecs",
 }
 
 # Services that carry engine info in their compound name
@@ -625,6 +911,78 @@ _SERVICE_ENGINE_SUFFIXES: dict[str, str] = {
     "aurora_postgres": "postgres",
     "aurora_mysql": "mysql",
 }
+
+
+def _enforce_connections(spec: ArchSpec) -> ArchSpec:
+    """Validate connection references and add defaults for isolated components."""
+    component_ids = {c.id for c in spec.components}
+    id_to_comp = {c.id: c for c in spec.components}
+
+    # Remove connections with invalid source/target references
+    valid_conns = [c for c in spec.connections if c.source in component_ids and c.target in component_ids]
+    dropped_count = len(spec.connections) - len(valid_conns)
+    if dropped_count:
+        log.warning("Removed %d orphan connections (invalid component references)", dropped_count)
+
+    # Find components with no connections
+    connected_ids: set[str] = set()
+    for c in valid_conns:
+        connected_ids.add(c.source)
+        connected_ids.add(c.target)
+
+    isolated = [c for c in spec.components if c.id not in connected_ids]
+    new_conns = list(valid_conns)
+
+    if isolated and spec.components:
+        # Sort all components by tier for nearest-neighbor wiring
+        tier_sorted = sorted(spec.components, key=lambda c: c.tier)
+        for iso in isolated:
+            # Find the nearest non-isolated component at an adjacent tier
+            candidate = None
+            for comp in tier_sorted:
+                if comp.id != iso.id and comp.id in connected_ids:
+                    candidate = comp
+                    if abs(comp.tier - iso.tier) <= 1:
+                        break
+
+            if candidate:
+                # Pick source/target based on tier ordering
+                if iso.tier <= candidate.tier:
+                    src, tgt = iso.id, candidate.id
+                else:
+                    src, tgt = candidate.id, iso.id
+
+                # Choose protocol/port based on target service
+                tgt_comp = id_to_comp.get(tgt)
+                if tgt_comp and tgt_comp.service in _DATABASE_SERVICES:
+                    proto, port, label = "TCP", 5432, "TCP/5432"
+                elif tgt_comp and tgt_comp.service in {"elasticache", "memorystore", "azure_cache"}:
+                    proto, port, label = "TCP", 6379, "TCP/6379"
+                else:
+                    proto, port, label = "HTTPS", 443, "HTTPS/443"
+
+                new_conns.append(Connection(source=src, target=tgt, label=label, protocol=proto, port=port))
+                log.warning("Auto-connected isolated component %s -> %s", src, tgt)
+
+    # Add default protocol/port to connections missing them
+    final_conns = []
+    for conn in new_conns:
+        if conn.protocol is None or conn.port is None:
+            src_comp = id_to_comp.get(conn.source)
+            tgt_comp = id_to_comp.get(conn.target)
+            if tgt_comp and tgt_comp.service in _DATABASE_SERVICES:
+                conn = conn.model_copy(update={"protocol": "TCP", "port": 5432})
+            elif tgt_comp and tgt_comp.service in {"elasticache", "memorystore", "azure_cache"}:
+                conn = conn.model_copy(update={"protocol": "TCP", "port": 6379})
+            elif src_comp and tgt_comp:
+                # Higher-tier to lower-tier → HTTPS by default
+                if src_comp.tier <= 2:
+                    conn = conn.model_copy(update={"protocol": "HTTPS", "port": 443})
+        final_conns.append(conn)
+
+    if final_conns != spec.connections or valid_conns != spec.connections:
+        return spec.model_copy(update={"connections": final_conns})
+    return spec
 
 
 def _parse_arch_spec(data: dict, constraints: Constraints | None) -> ArchSpec:
@@ -652,8 +1010,47 @@ def _parse_arch_spec(data: dict, constraints: Constraints | None) -> ArchSpec:
             if raw in _SERVICE_ENGINE_SUFFIXES:
                 cfg.setdefault("engine", _SERVICE_ENGINE_SUFFIXES[raw])
             comp = comp.model_copy(update={"service": fixed, "config": cfg})
+        elif raw not in _ALL_VALID_SERVICES:
+            # Try stripping cloud provider prefix (e.g. aws_firehose -> firehose)
+            for prefix in ("aws_", "gcp_", "azure_", "google_"):
+                if raw.startswith(prefix):
+                    stripped = raw[len(prefix) :]
+                    if stripped in _ALL_VALID_SERVICES:
+                        log.warning(
+                            "Stripping prefix from service key '%s' -> '%s' (component: %s)",
+                            raw,
+                            stripped,
+                            comp.id,
+                        )
+                        comp = comp.model_copy(update={"service": stripped})
+                        break
         normalized.append(comp)
     components = normalized
+
+    # Validate provider consistency — auto-fix cross-provider service keys
+    validated = []
+    for comp in components:
+        provider = comp.provider or data.get("provider", "aws")
+        valid_for_provider = _PROVIDER_SERVICES.get(provider, set())
+        if comp.service not in valid_for_provider:
+            # Try equivalence mapping to correct provider
+            equivalent = get_equivalent(comp.service, _infer_service_provider(comp.service), provider)
+            if equivalent:
+                log.warning(
+                    "Provider mismatch: service '%s' not valid for %s, mapped to '%s'",
+                    comp.service,
+                    provider,
+                    equivalent,
+                )
+                comp = comp.model_copy(update={"service": equivalent})
+            else:
+                log.warning(
+                    "Service '%s' not in valid set for provider '%s' — keeping as-is",
+                    comp.service,
+                    provider,
+                )
+        validated.append(comp)
+    components = validated
 
     connections = [
         Connection(
@@ -681,7 +1078,16 @@ def _parse_arch_spec(data: dict, constraints: Constraints | None) -> ArchSpec:
         connections=connections,
         metadata=metadata,
     )
+    spec = _enforce_connections(spec)
     return _post_validate(spec, constraints)
+
+
+def _infer_service_provider(service: str) -> str:
+    """Infer which provider owns a service key for equivalence lookups."""
+    for provider, services in _PROVIDER_SERVICES.items():
+        if service in services:
+            return provider
+    return "aws"
 
 
 def _map_components(spec: ArchSpec, target_provider: str) -> ArchSpec:

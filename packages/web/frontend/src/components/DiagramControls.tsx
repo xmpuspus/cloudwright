@@ -16,9 +16,9 @@ export default function DiagramControls({
   const btnStyle: React.CSSProperties = {
     padding: "4px 10px",
     borderRadius: 4,
-    border: "1px solid #334155",
-    background: "#1e293b",
-    color: "#94a3b8",
+    border: "1px solid #e2e8f0",
+    background: "#ffffff",
+    color: "#475569",
     cursor: "pointer",
     fontSize: 11,
   };
@@ -31,10 +31,11 @@ export default function DiagramControls({
         zIndex: 10,
         display: "flex",
         gap: 4,
-        background: "#0f172a",
+        background: "#ffffff",
         padding: 4,
-        border: "1px solid #1e293b",
+        border: "1px solid #e2e8f0",
         borderRadius: 8,
+        boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
       }}
     >
       {onExportSvg && (
@@ -48,7 +49,7 @@ export default function DiagramControls({
         </button>
       )}
       <button
-        style={{ ...btnStyle, background: showBoundaries ? "#334155" : "#1e293b" }}
+        style={{ ...btnStyle, background: showBoundaries ? "#f1f5f9" : "#ffffff" }}
         onClick={onToggleBoundaries}
       >
         {showBoundaries ? "Hide" : "Show"} Boundaries

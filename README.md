@@ -363,10 +363,10 @@ cloudwright chat --web
 
 | Architecture Diagram | Cost Breakdown |
 |:---:|:---:|
-| ![E-Commerce Platform](docs/screenshots/cloudwright-screenshot-1-ecommerce.png) | ![Cost Breakdown](docs/screenshots/cloudwright-screenshot-3-cost.png) |
-| ![Analytics Pipeline](docs/screenshots/cloudwright-screenshot-2-analytics.png) | |
+| ![E-Commerce Platform](docs/screenshots/cloudwright-light-1-ecommerce.png) | ![Analytics Pipeline](docs/screenshots/cloudwright-light-2-analytics.png) |
+| ![Cost Breakdown](docs/screenshots/cloudwright-light-3-cost.png) | ![Compliance Validation](docs/screenshots/cloudwright-light-4-validate.png) |
 
-Interactive React Flow diagrams with tier-based layout, service-category color coding, boundary grouping, per-component cost overlay, and one-click Terraform/YAML export.
+Interactive React Flow diagrams with tier-based layout, service-category color coding, boundary grouping, per-component cost overlay, compliance validation, and one-click Terraform/YAML export.
 
 ## Features
 

@@ -45,6 +45,14 @@ interface Message {
 
 const API_BASE = "/api";
 
+function renderMarkdown(text: string): React.ReactNode[] {
+  return text.split(/(\*\*.*?\*\*)/g).map((part, i) =>
+    part.startsWith('**') && part.endsWith('**')
+      ? <strong key={i}>{part.slice(2, -2)}</strong>
+      : <span key={i}>{part}</span>
+  );
+}
+
 function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -165,26 +173,26 @@ function App() {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
+    <div style={{ display: "flex", height: "100vh", background: "#ffffff" }}>
       {/* Sidebar - Chat */}
       <div
         style={{
           width: 420,
-          borderRight: "1px solid #1e293b",
+          borderRight: "1px solid #e2e8f0",
           display: "flex",
           flexDirection: "column",
-          background: "#0f172a",
+          background: "#f8fafc",
         }}
       >
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid #1e293b" }}>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: "#f8fafc" }}>Cloudwright</h1>
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid #e2e8f0" }}>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a" }}>Cloudwright</h1>
           <p style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>Architecture Intelligence</p>
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
           {messages.length === 0 && (
-            <div style={{ color: "#475569", padding: 20, textAlign: "center" }}>
+            <div style={{ color: "#64748b", padding: 20, textAlign: "center" }}>
               <p style={{ fontSize: 14 }}>Describe your cloud architecture</p>
-              <p style={{ fontSize: 12, marginTop: 8, color: "#334155" }}>
+              <p style={{ fontSize: 12, marginTop: 8, color: "#94a3b8" }}>
                 "3-tier web app on AWS with CloudFront, ALB, EC2, and RDS"
               </p>
             </div>
@@ -196,12 +204,13 @@ function App() {
                 marginBottom: 12,
                 padding: "10px 14px",
                 borderRadius: 8,
-                background: msg.role === "user" ? "#1e40af" : "#1e293b",
+                background: msg.role === "user" ? "#2563eb" : "#f1f5f9",
+                color: msg.role === "user" ? "#ffffff" : "#1e293b",
                 fontSize: 14,
                 lineHeight: 1.5,
               }}
             >
-              {msg.content}
+              {renderMarkdown(msg.content)}
             </div>
           ))}
           {loading && (
@@ -211,7 +220,7 @@ function App() {
           )}
           <div ref={chatEndRef} />
         </div>
-        <div style={{ padding: 16, borderTop: "1px solid #1e293b" }}>
+        <div style={{ padding: 16, borderTop: "1px solid #e2e8f0" }}>
           <div style={{ display: "flex", gap: 8 }}>
             <input
               ref={inputRef}
@@ -223,9 +232,9 @@ function App() {
                 flex: 1,
                 padding: "10px 14px",
                 borderRadius: 8,
-                border: "1px solid #334155",
-                background: "#1e293b",
-                color: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                background: "#ffffff",
+                color: "#0f172a",
                 fontSize: 14,
                 outline: "none",
               }}
@@ -237,8 +246,8 @@ function App() {
                 padding: "10px 20px",
                 borderRadius: 8,
                 border: "none",
-                background: loading ? "#334155" : "#2563eb",
-                color: "#fff",
+                background: loading ? "#e2e8f0" : "#2563eb",
+                color: loading ? "#94a3b8" : "#fff",
                 cursor: loading ? "not-allowed" : "pointer",
                 fontSize: 14,
                 fontWeight: 600,
@@ -251,9 +260,9 @@ function App() {
       </div>
 
       {/* Main content area */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#ffffff" }}>
         {/* Tabs */}
-        <div style={{ display: "flex", borderBottom: "1px solid #1e293b", background: "#0f172a" }}>
+        <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", background: "#ffffff" }}>
           {(["diagram", "cost", "validate", "export", "spec", "modify"] as const).map((tab) => (
             <button
               key={tab}
@@ -261,9 +270,9 @@ function App() {
               style={{
                 padding: "12px 24px",
                 border: "none",
-                borderBottom: activeTab === tab ? "2px solid #3b82f6" : "2px solid transparent",
+                borderBottom: activeTab === tab ? "2px solid #2563eb" : "2px solid transparent",
                 background: "transparent",
-                color: activeTab === tab ? "#f8fafc" : "#64748b",
+                color: activeTab === tab ? "#2563eb" : "#64748b",
                 cursor: "pointer",
                 fontSize: 14,
                 fontWeight: 500,
@@ -305,13 +314,14 @@ function App() {
             <div style={{ padding: 32 }}>
               <pre
                 style={{
-                  background: "#1e293b",
+                  background: "#f8fafc",
                   padding: 20,
                   borderRadius: 8,
                   fontSize: 13,
                   lineHeight: 1.6,
                   overflow: "auto",
-                  color: "#e2e8f0",
+                  color: "#334155",
+                  border: "1px solid #e2e8f0",
                 }}
               >
                 {messages.findLast((m) => m.yaml)?.yaml || "No YAML available"}
@@ -324,7 +334,7 @@ function App() {
 
           {activeTab === "validate" && currentSpec && (
             <div style={{ padding: 32, maxWidth: 800 }}>
-              <h2 style={{ fontSize: 18, marginBottom: 16 }}>Validate Architecture</h2>
+              <h2 style={{ fontSize: 18, marginBottom: 16, color: "#0f172a" }}>Validate Architecture</h2>
               <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
                 {["hipaa", "pci-dss", "soc2", "well-architected"].map((fw) => (
                   <button
@@ -351,9 +361,9 @@ function App() {
                     style={{
                       padding: "8px 16px",
                       borderRadius: 6,
-                      border: "1px solid #334155",
-                      background: "#1e293b",
-                      color: "#cbd5e1",
+                      border: "1px solid #e2e8f0",
+                      background: "#f8fafc",
+                      color: "#475569",
                       cursor: "pointer",
                       fontSize: 13,
                     }}
@@ -363,7 +373,7 @@ function App() {
                 ))}
               </div>
               {validateResult != null && (
-                <pre style={{ background: "#1e293b", padding: 16, borderRadius: 8, fontSize: 12, color: "#e2e8f0", overflow: "auto" }}>
+                <pre style={{ background: "#f8fafc", padding: 16, borderRadius: 8, fontSize: 12, color: "#334155", overflow: "auto", border: "1px solid #e2e8f0" }}>
                   {JSON.stringify(validateResult, null, 2)}
                 </pre>
               )}
@@ -375,7 +385,7 @@ function App() {
 
           {activeTab === "export" && currentSpec && (
             <div style={{ padding: 32, maxWidth: 800 }}>
-              <h2 style={{ fontSize: 18, marginBottom: 16 }}>Export Architecture</h2>
+              <h2 style={{ fontSize: 18, marginBottom: 16, color: "#0f172a" }}>Export Architecture</h2>
               <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
                 {["terraform", "cloudformation", "mermaid", "d2", "sbom", "aibom"].map((fmt) => (
                   <button
@@ -398,9 +408,9 @@ function App() {
                     style={{
                       padding: "8px 16px",
                       borderRadius: 6,
-                      border: exportFormat === fmt ? "1px solid #3b82f6" : "1px solid #334155",
-                      background: exportFormat === fmt ? "#1e3a5f" : "#1e293b",
-                      color: "#cbd5e1",
+                      border: exportFormat === fmt ? "1px solid #2563eb" : "1px solid #e2e8f0",
+                      background: exportFormat === fmt ? "#eff6ff" : "#f8fafc",
+                      color: exportFormat === fmt ? "#2563eb" : "#475569",
                       cursor: "pointer",
                       fontSize: 13,
                     }}
@@ -410,7 +420,7 @@ function App() {
                 ))}
               </div>
               {exportResult && (
-                <pre style={{ background: "#1e293b", padding: 16, borderRadius: 8, fontSize: 12, color: "#e2e8f0", overflow: "auto", maxHeight: 600 }}>
+                <pre style={{ background: "#f8fafc", padding: 16, borderRadius: 8, fontSize: 12, color: "#334155", overflow: "auto", maxHeight: 600, border: "1px solid #e2e8f0" }}>
                   {exportResult}
                 </pre>
               )}
@@ -422,7 +432,7 @@ function App() {
 
           {activeTab === "modify" && currentSpec && (
             <div style={{ padding: 32, maxWidth: 800 }}>
-              <h2 style={{ fontSize: 18, marginBottom: 16 }}>Modify Architecture</h2>
+              <h2 style={{ fontSize: 18, marginBottom: 16, color: "#0f172a" }}>Modify Architecture</h2>
               <div style={{ display: "flex", gap: 8 }}>
                 <input
                   value={modifyInput}
@@ -459,15 +469,15 @@ function App() {
                     flex: 1,
                     padding: "10px 14px",
                     borderRadius: 8,
-                    border: "1px solid #334155",
-                    background: "#1e293b",
-                    color: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    background: "#ffffff",
+                    color: "#0f172a",
                     fontSize: 14,
                     outline: "none",
                   }}
                 />
               </div>
-              <p style={{ fontSize: 12, color: "#475569", marginTop: 8 }}>Press Enter to apply modification</p>
+              <p style={{ fontSize: 12, color: "#64748b", marginTop: 8 }}>Press Enter to apply modification</p>
             </div>
           )}
           {activeTab === "modify" && !currentSpec && (

@@ -626,7 +626,7 @@ _PROVIDER_KEYWORDS = {
 
 
 def match_template(description: str, provider: str | None = None) -> dict | None:
-    """Return the best-matching template if confidence > 0.7, else None."""
+    """Return the best-matching template if confidence >= 0.5, else None."""
     desc = description.lower()
 
     # Detect provider from description if not specified
@@ -655,6 +655,6 @@ def match_template(description: str, provider: str | None = None) -> dict | None
             best_score = score
             best_key = key
 
-    if best_score >= 0.7 and best_key:
+    if best_score >= 0.5 and best_key:
         return TEMPLATES[best_key]
     return None

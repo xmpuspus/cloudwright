@@ -1094,8 +1094,8 @@ def _parse_arch_spec(data: dict, constraints: Constraints | None) -> ArchSpec:
 
     connections = [
         Connection(
-            source=conn["source"],
-            target=conn["target"],
+            source=conn.get("source") or conn.get("from") or conn["source"],
+            target=conn.get("target") or conn.get("to") or conn["target"],
             label=conn.get("label", ""),
             protocol=conn.get("protocol"),
             port=conn.get("port"),

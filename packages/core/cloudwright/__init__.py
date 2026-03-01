@@ -17,7 +17,7 @@ from cloudwright.spec import (
     ValidationResult,
 )
 
-__version__ = "0.2.8"
+__version__ = "0.2.10"
 
 __all__ = [
     "Alternative",

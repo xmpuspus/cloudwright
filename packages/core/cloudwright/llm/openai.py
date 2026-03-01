@@ -15,7 +15,7 @@ _MAX_RETRIES = 3
 
 class OpenAILLM(BaseLLM):
     def __init__(self, api_key: str | None = None):
-        self.client = openai.OpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"), timeout=60.0)
+        self.client = openai.OpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"), timeout=180.0)
 
     def generate(self, messages: list[dict], system: str, max_tokens: int = 2000) -> tuple[str, dict]:
         full_messages = [{"role": "system", "content": system}] + messages

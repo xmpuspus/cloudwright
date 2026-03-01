@@ -81,31 +81,38 @@ function App() {
     setInput("");
     setLoading(true);
 
+    const isModify = currentSpec !== null;
+
     try {
-      const res = await fetch(`${API_BASE}/design`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: input }),
-      });
+      // If we already have a spec, modify it; otherwise design from scratch
+      const res = isModify
+        ? await fetch(`${API_BASE}/modify`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ spec: currentSpec, instruction: input }),
+          })
+        : await fetch(`${API_BASE}/design`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ description: input }),
+          });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Request failed");
       let spec = data.spec as ArchSpec;
 
-      // Auto-populate cost after design
-      if (!spec.cost_estimate) {
-        try {
-          const costRes = await fetch(`${API_BASE}/cost`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ spec }),
-          });
-          if (costRes.ok) {
-            const costData = await costRes.json();
-            spec = { ...spec, cost_estimate: costData.estimate };
-          }
-        } catch {
-          // cost is best-effort
+      // Auto-populate cost after design/modify
+      try {
+        const costRes = await fetch(`${API_BASE}/cost`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ spec }),
+        });
+        if (costRes.ok) {
+          const costData = await costRes.json();
+          spec = { ...spec, cost_estimate: costData.estimate };
         }
+      } catch {
+        // cost is best-effort
       }
 
       // Auto-validate (Well-Architected, best-effort)
@@ -129,9 +136,10 @@ function App() {
       }
 
       setCurrentSpec(spec);
+      const verb = isModify ? "Modified" : "Designed";
       const assistantMsg: Message = {
         role: "assistant",
-        content: `Designed **${spec.name}** with ${spec.components.length} components on ${spec.provider.toUpperCase()}.${spec.cost_estimate ? ` Estimated cost: $${spec.cost_estimate.monthly_total.toFixed(2)}/mo.` : ""}`,
+        content: `${verb} **${spec.name}** with ${spec.components.length} components on ${spec.provider.toUpperCase()}.${spec.cost_estimate ? ` Estimated cost: $${spec.cost_estimate.monthly_total.toFixed(2)}/mo.` : ""}`,
         spec,
         yaml: data.yaml,
       };
@@ -185,9 +193,19 @@ function App() {
           background: "#f8fafc",
         }}
       >
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid #e2e8f0" }}>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a" }}>Cloudwright</h1>
-          <p style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>Architecture Intelligence</p>
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a" }}>Cloudwright</h1>
+            <p style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>Architecture Intelligence</p>
+          </div>
+          {currentSpec && (
+            <button
+              onClick={() => { setCurrentSpec(null); setMessages([]); setValidationSummary(null); }}
+              style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#ffffff", color: "#64748b", cursor: "pointer", fontSize: 12, fontWeight: 500 }}
+            >
+              New
+            </button>
+          )}
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
           {messages.length === 0 && (
@@ -344,24 +362,58 @@ function App() {
                   onChange={(e) => setModifyInput(e.target.value)}
                   onKeyDown={async (e) => {
                     if (e.key === "Enter" && modifyInput.trim()) {
+                      const instruction = modifyInput;
+                      setModifyInput("");
                       setLoading(true);
                       try {
                         const res = await fetch(`${API_BASE}/modify`, {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ spec: currentSpec, instruction: modifyInput }),
+                          body: JSON.stringify({ spec: currentSpec, instruction }),
                         });
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.detail || "Modification failed");
-                        setCurrentSpec(data.spec);
-                        setModifyInput("");
+                        let spec = data.spec as ArchSpec;
+
+                        // Re-estimate cost
+                        try {
+                          const costRes = await fetch(`${API_BASE}/cost`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ spec }),
+                          });
+                          if (costRes.ok) {
+                            const costData = await costRes.json();
+                            spec = { ...spec, cost_estimate: costData.estimate };
+                          }
+                        } catch { /* best-effort */ }
+
+                        // Re-validate
+                        try {
+                          const valRes = await fetch(`${API_BASE}/validate`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ spec, compliance: [], well_architected: true }),
+                          });
+                          if (valRes.ok) {
+                            const valData = await valRes.json();
+                            const results = valData.results || [];
+                            if (results.length > 0) {
+                              const checks = results[0].checks || [];
+                              const passed = checks.filter((c: { passed: boolean }) => c.passed).length;
+                              setValidationSummary({ passed, total: checks.length });
+                            }
+                          }
+                        } catch { /* best-effort */ }
+
+                        setCurrentSpec(spec);
                         setMessages((prev) => [...prev,
-                          { role: "user", content: `Modify: ${modifyInput}` },
-                          { role: "assistant", content: `Updated to ${data.spec.name} with ${data.spec.components.length} components.`, spec: data.spec, yaml: data.yaml },
+                          { role: "user", content: instruction },
+                          { role: "assistant", content: `Modified **${spec.name}** with ${spec.components.length} components on ${spec.provider.toUpperCase()}.${spec.cost_estimate ? ` Estimated cost: $${spec.cost_estimate.monthly_total.toFixed(2)}/mo.` : ""}`, spec, yaml: data.yaml },
                         ]);
                       } catch (err) {
                         setMessages((prev) => [...prev,
-                          { role: "user", content: `Modify: ${modifyInput}` },
+                          { role: "user", content: instruction },
                           { role: "assistant", content: `Error: ${err instanceof Error ? err.message : "Modification failed"}` },
                         ]);
                       } finally {

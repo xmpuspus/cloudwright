@@ -22,7 +22,10 @@ Commands:
   /validate [fw]       Run compliance check (hipaa, pci-dss, soc2, fedramp, gdpr)
   /export <fmt>        Export last architecture (terraform, mermaid, d2, cloudformation, sbom, aibom)
   /terraform           Export last architecture as Terraform
+  /new                 Start a new architecture from scratch
   /quit                Exit
+
+Follow-up messages modify the current architecture. Use /new to start over.
 """
 
 
@@ -99,6 +102,12 @@ def _run_terminal_chat() -> None:
             console.print("[dim]Goodbye.[/dim]")
             break
 
+        if text.lower() == "/new":
+            last_spec = None
+            history.clear()
+            console.print("[cyan]Starting fresh. Describe a new architecture.[/cyan]")
+            continue
+
         if text.startswith("/save "):
             path = text[6:].strip()
             if not last_spec:
@@ -170,12 +179,12 @@ def _run_terminal_chat() -> None:
                     console.print(f"[red]Error:[/red] {e}")
             continue
 
-        # Treat as architecture request
+        # Treat as architecture request — modify existing or design new
         history.append({"role": "user", "content": text})
 
         with console.status("Thinking..."):
             try:
-                if last_spec and _looks_like_modification(text):
+                if last_spec is not None:
                     spec = architect.modify(last_spec, text)
                 else:
                     spec = architect.design(text)
@@ -184,8 +193,19 @@ def _run_terminal_chat() -> None:
                 history.pop()
                 continue
 
+        # Auto-reprice after each design/modify
+        if not spec.cost_estimate:
+            try:
+                from cloudwright.cost import CostEngine
+
+                estimate = CostEngine().estimate(spec)
+                spec = spec.model_copy(update={"cost_estimate": estimate})
+            except Exception:
+                pass  # cost is best-effort
+
+        verb = "Modified" if last_spec is not None else "Designed"
         last_spec = spec
-        history.append({"role": "assistant", "content": f"Designed: {spec.name}"})
+        history.append({"role": "assistant", "content": f"{verb}: {spec.name}"})
 
         console.print(Rule(f"[bold cyan]{spec.name}[/bold cyan]"))
         console.print(render_ascii(spec))
@@ -226,23 +246,6 @@ def _run_validate(spec: ArchSpec, framework: str | None) -> None:
             if not check.passed and check.recommendation:
                 console.print(f"    [dim]{check.recommendation}[/dim]")
 
-
-def _looks_like_modification(text: str) -> bool:
-    mod_verbs = (
-        "add",
-        "remove",
-        "change",
-        "update",
-        "replace",
-        "increase",
-        "decrease",
-        "modify",
-        "swap",
-        "upgrade",
-        "downgrade",
-    )
-    lower = text.lower()
-    return any(lower.startswith(v) or f" {v} " in lower for v in mod_verbs)
 
 
 def _print_cost_summary(spec: ArchSpec) -> None:

@@ -63,7 +63,7 @@ TEMPLATES: dict[str, dict] = {
             "Add S3 for static asset storage",
             "Add CloudWatch for monitoring and alerting",
         ],
-        "keywords": ["3-tier", "three-tier", "web app", "web application", "alb", "rds", "postgres", "mysql"],
+        "keywords": ["3-tier", "three-tier", "web app", "aws", "rds", "alb"],
     },
     "serverless-api-aws": {
         "name": "Serverless API (AWS)",
@@ -109,6 +109,51 @@ TEMPLATES: dict[str, dict] = {
             "Add CloudFront in front of API Gateway for global distribution",
         ],
         "keywords": ["serverless", "lambda", "api gateway", "dynamodb", "api", "rest api", "function"],
+    },
+    "serverless-api-gcp": {
+        "name": "Serverless API (GCP)",
+        "provider": "gcp",
+        "region": "us-central1",
+        "components": [
+            {
+                "id": "lb",
+                "service": "cloud_load_balancing",
+                "provider": "gcp",
+                "label": "Cloud Load Balancing",
+                "tier": 0,
+                "config": {"https": True},
+            },
+            {
+                "id": "fn",
+                "service": "cloud_functions",
+                "provider": "gcp",
+                "label": "Cloud Functions",
+                "tier": 2,
+                "config": {"runtime": "python312", "auto_scaling": True, "min_instances": 0},
+            },
+            {
+                "id": "db",
+                "service": "firestore",
+                "provider": "gcp",
+                "label": "Firestore",
+                "tier": 3,
+                "config": {"encryption": True, "backup": True},
+            },
+        ],
+        "connections": [
+            {"source": "lb", "target": "fn", "label": "Invoke", "protocol": "HTTPS", "port": 443},
+            {"source": "fn", "target": "db", "label": "SDK", "protocol": "HTTPS", "port": 443},
+        ],
+        "rationale": [
+            {"decision": "Cloud Functions for compute", "reason": "Zero server management, scales to zero"},
+            {"decision": "Firestore for storage", "reason": "Serverless NoSQL, real-time sync"},
+        ],
+        "suggestions": [
+            "Add Firebase Auth for user authentication",
+            "Add Pub/Sub for async event processing",
+            "Add Cloud Armor for WAF protection",
+        ],
+        "keywords": ["serverless", "gcp", "api", "cloud functions", "firestore", "function"],
     },
     "3-tier-web-gcp": {
         "name": "3-Tier Web Application (GCP)",

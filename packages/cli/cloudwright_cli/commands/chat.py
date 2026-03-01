@@ -57,7 +57,18 @@ def _launch_web() -> None:
                 port = candidate
                 break
 
-    console.print(f"[cyan]Launching Cloudwright web UI on http://127.0.0.1:{port}[/cyan]")
+    import threading
+    import time
+    import webbrowser
+
+    url = f"http://127.0.0.1:{port}"
+    console.print(f"[cyan]Launching Cloudwright web UI on {url}[/cyan]")
+
+    def _open_browser():
+        time.sleep(1.5)
+        webbrowser.open(url)
+
+    threading.Thread(target=_open_browser, daemon=True).start()
     uvicorn.run(cloudwright_web.app, host="127.0.0.1", port=port)
 
 

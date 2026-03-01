@@ -38,6 +38,9 @@ _DATA_STORE_SERVICES = {
     "azure_cache",
     "blob_storage",
     "synapse",
+    "alloydb",
+    "fsx",
+    "efs",
 }
 
 # Databases that support multi-AZ / replication
@@ -51,6 +54,7 @@ _DATABASE_SERVICES = {
     "synapse",
     "redshift",
     "bigquery",
+    "alloydb",
 }
 
 _COMPUTE_SERVICES = {
@@ -102,6 +106,7 @@ _COMPLIANCE_CONTROLS: dict[str, str] = {
     ),
 }
 
+# Last updated: 2026-03-01
 _SERVICE_KEYS = """VALID SERVICE KEYS — use exactly these strings:
 AWS: cloudfront, route53, api_gateway, waf, alb, nlb, ec2, ecs, eks, lambda, fargate,
      rds, aurora, dynamodb, elasticache, sqs, sns, s3, kinesis, redshift, emr, sagemaker,
@@ -111,12 +116,22 @@ AWS: cloudfront, route53, api_gateway, waf, alb, nlb, ec2, ecs, eks, lambda, far
 GCP: cloud_cdn, cloud_dns, cloud_load_balancing, cloud_armor, compute_engine, gke,
      cloud_run, cloud_functions, app_engine, cloud_sql, firestore, spanner, memorystore,
      pub_sub, cloud_storage, bigquery, dataflow, vertex_ai, firebase_auth, cloud_logging,
-     cloud_build, artifact_registry, cloud_composer, dataproc, cloud_interconnect
+     cloud_build, artifact_registry, cloud_composer, dataproc, cloud_interconnect, alloydb
 Azure: azure_cdn, azure_dns, app_gateway, azure_waf, azure_lb, virtual_machines, aks,
        container_apps, azure_functions, app_service, azure_sql, cosmos_db, azure_cache,
        service_bus, event_hubs, blob_storage, synapse, azure_ml, azure_ad, logic_apps,
        azure_monitor, azure_devops, azure_migrate, expressroute, azure_firewall,
-       azure_sentinel, azure_policy, data_factory"""
+       azure_sentinel, azure_policy, data_factory, api_management"""
+
+# Last updated: 2026-03-01
+_MODEL_VERSION_GUIDANCE = """
+CURRENT AI/ML MODEL VERSIONS (as of March 2026):
+GCP Vertex AI: gemini-3.1-pro (flagship), gemini-3-flash, gemini-2.5-pro, gemini-2.5-flash
+AWS Bedrock: anthropic.claude-opus-4-6-v1, anthropic.claude-sonnet-4-6, amazon.nova-pro-v1
+AWS SageMaker: meta.llama3.3-70b, mistral-large-3
+Azure OpenAI: gpt-5 (GA), gpt-5-mini, gpt-5-nano, gpt-5.2 (preview)
+When an architecture includes ML/AI services (vertex_ai, sagemaker, azure_ml), use these current
+model versions in the config. Do NOT use outdated versions like gemini-1.5-pro or gpt-4-turbo."""
 
 _DESIGN_SYSTEM = f"""You generate cloud architectures as structured JSON.
 
@@ -188,15 +203,17 @@ For ALL architectures, ensure component configs include:
 - ALWAYS include instance_class in config for RDS/Aurora/Cloud SQL/Azure SQL (e.g. db.r5.large, db-n1-standard-4)
 - ALWAYS include node_type in config for ElastiCache/Memorystore (e.g. cache.r5.large)
 - Include storage_gb on all database and storage components
-- Include count on compute components when multiple instances needed"""
+- Include count on compute components when multiple instances needed
+{_MODEL_VERSION_GUIDANCE}"""
 
-_MODIFY_SYSTEM = """You modify an existing cloud architecture based on user instructions.
+_MODIFY_SYSTEM = f"""You modify an existing cloud architecture based on user instructions.
 
 You will receive the current architecture JSON and a modification instruction.
 Return the COMPLETE updated architecture JSON in the same format — never return partial updates.
 Preserve all existing component IDs unless explicitly removing or renaming them.
 Apply the requested change precisely without unnecessary restructuring.
-Respond with ONLY the JSON object — no markdown, no explanation."""
+Respond with ONLY the JSON object — no markdown, no explanation.
+{_MODEL_VERSION_GUIDANCE}"""
 
 
 _CHAT_SYSTEM = f"""You are a cloud architecture assistant. You help design and refine architectures through conversation.
@@ -209,7 +226,8 @@ When generating architecture JSON, also include:
 
 When the user asks questions or wants to discuss trade-offs, respond conversationally — no JSON needed.
 
-{_SERVICE_KEYS}"""
+{_SERVICE_KEYS}
+{_MODEL_VERSION_GUIDANCE}"""
 
 _IMPORT_SYSTEM = f"""You parse infrastructure descriptions or state into structured JSON architecture specs.
 
@@ -577,6 +595,24 @@ _SERVICE_NORMALIZATION: dict[str, str] = {
     "rds_mysql": "rds",
     "aurora_postgres": "aurora",
     "aurora_mysql": "aurora",
+    "gcp_alloydb": "alloydb",
+    "gcp_cloud_armor": "cloud_armor",
+    "gcp_vertex_ai": "vertex_ai",
+    "gcp_firestore": "firestore",
+    "gcp_spanner": "spanner",
+    "gcp_dataflow": "dataflow",
+    "gcp_dataproc": "dataproc",
+    "gcp_cloud_composer": "cloud_composer",
+    "aws_eventbridge": "eventbridge",
+    "aws_athena": "athena",
+    "aws_glue": "glue",
+    "aws_fargate": "fargate",
+    "aws_shield": "shield",
+    "azure_api_management": "api_management",
+    "azure_data_factory": "data_factory",
+    "azure_logic_apps": "logic_apps",
+    "azure_cosmos_db": "cosmos_db",
+    "azure_sentinel": "azure_sentinel",
 }
 
 # Services that carry engine info in their compound name

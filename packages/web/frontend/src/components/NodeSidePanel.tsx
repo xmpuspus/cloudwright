@@ -1,5 +1,5 @@
 import React from 'react';
-import { getCategoryColor, getServiceCategory, getIconChar } from '../lib/icons';
+import { getCategoryColor, getServiceCategory, getCategoryIconPath } from '../lib/icons';
 
 interface ComponentData {
   id: string;
@@ -72,7 +72,7 @@ export default function NodeSidePanel({ component, cost, onClose }: NodeSidePane
 
   const category = component ? getServiceCategory(component.service) : 'compute';
   const color = getCategoryColor(category);
-  const iconChar = component ? getIconChar(component.service) : '';
+  const iconPath = getCategoryIconPath(category);
 
   const configEntries = component?.config
     ? Object.entries(component.config).filter(([, v]) => v !== null && v !== undefined)
@@ -110,13 +110,22 @@ export default function NodeSidePanel({ component, cost, onClose }: NodeSidePane
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 15,
-              fontWeight: 700,
-              color,
               flexShrink: 0,
             }}
           >
-            {iconChar}
+            <svg
+              width={20}
+              height={20}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={color}
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ display: 'block' }}
+            >
+              <path d={iconPath} />
+            </svg>
           </div>
           <span
             style={{

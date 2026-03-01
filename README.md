@@ -50,7 +50,7 @@ Full competitor analysis covering 30 tools across IaC, cost, compliance, and dia
 ## Quick Start
 
 ```bash
-pip install cloudwright-ai[cli]
+pip install 'cloudwright-ai[cli]'
 ```
 
 Set an LLM provider key:
@@ -352,6 +352,22 @@ Top Recommendations:
 
 All examples above use real output from `cloudwright-ai 0.2.1` on PyPI — no LLM key required.
 
+## Web UI
+
+Cloudwright includes an interactive web interface for architecture design, visualization, and cost analysis.
+
+```bash
+pip install 'cloudwright-ai[web]'
+cloudwright chat --web
+```
+
+| Architecture Diagram | Cost Breakdown |
+|:---:|:---:|
+| ![E-Commerce Platform](docs/screenshots/cloudwright-screenshot-1-ecommerce.png) | ![Cost Breakdown](docs/screenshots/cloudwright-screenshot-3-cost.png) |
+| ![Analytics Pipeline](docs/screenshots/cloudwright-screenshot-2-analytics.png) | |
+
+Interactive React Flow diagrams with tier-based layout, service-category color coding, boundary grouping, per-component cost overlay, and one-click Terraform/YAML export.
+
 ## Features
 
 ### Architecture Design
@@ -566,7 +582,7 @@ cloudwright init --project                           # create .cloudwright/ proj
 FastAPI backend + React frontend for browser-based architecture design.
 
 ```bash
-pip install cloudwright-ai[web]
+pip install 'cloudwright-ai[web]'
 cloudwright chat --web
 ```
 
@@ -750,8 +766,8 @@ Full results: [benchmark/results/benchmark_report.md](benchmark/results/benchmar
 cloudwright/
   packages/
     core/       pip install cloudwright-ai        Models, architect, catalog, cost, validators, exporters
-    cli/        pip install cloudwright-ai[cli]     Typer CLI with Rich formatting
-    web/        pip install cloudwright-ai[web]     FastAPI + React web UI
+    cli/        pip install 'cloudwright-ai[cli]'     Typer CLI with Rich formatting
+    web/        pip install 'cloudwright-ai[web]'     FastAPI + React web UI
   catalog/                                      Service catalog JSON (compute, database, storage, networking)
   benchmark/                                    54 use cases + evaluation framework
 ```

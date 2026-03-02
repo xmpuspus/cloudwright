@@ -10,6 +10,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import CloudServiceNode from "./CloudServiceNode";
+import BoundaryNode from "./BoundaryNode";
 import DiagramLegend from "./DiagramLegend";
 import DiagramControls from "./DiagramControls";
 import NodeSidePanel from "./NodeSidePanel";
@@ -78,6 +79,34 @@ const TIER_KINDS: Record<number, string> = {
   3: "subnet",
 };
 
+interface BoundaryStyle {
+  border: string;
+  bg: string;
+  labelColor: string;
+  labelBg: string;
+  dot: string;
+}
+
+const TIER_COLORS: Record<number, BoundaryStyle> = {
+  0: { border: "#60a5fa", bg: "rgba(219, 234, 254, 0.18)", labelColor: "#1d4ed8", labelBg: "rgba(219, 234, 254, 0.92)", dot: "#3b82f6" },
+  1: { border: "#34d399", bg: "rgba(209, 250, 229, 0.18)", labelColor: "#047857", labelBg: "rgba(209, 250, 229, 0.92)", dot: "#10b981" },
+  2: { border: "#fb923c", bg: "rgba(255, 237, 213, 0.18)", labelColor: "#9a3412", labelBg: "rgba(255, 237, 213, 0.92)", dot: "#f97316" },
+  3: { border: "#a78bfa", bg: "rgba(237, 233, 254, 0.18)", labelColor: "#5b21b6", labelBg: "rgba(237, 233, 254, 0.92)", dot: "#8b5cf6" },
+  4: { border: "#2dd4bf", bg: "rgba(204, 251, 241, 0.18)", labelColor: "#0f766e", labelBg: "rgba(204, 251, 241, 0.92)", dot: "#14b8a6" },
+  5: { border: "#2dd4bf", bg: "rgba(204, 251, 241, 0.18)", labelColor: "#0f766e", labelBg: "rgba(204, 251, 241, 0.92)", dot: "#14b8a6" },
+};
+
+const VPC_COLORS: BoundaryStyle = {
+  border: "#94a3b8", bg: "rgba(241, 245, 249, 0.35)", labelColor: "#475569", labelBg: "rgba(241, 245, 249, 0.92)", dot: "#94a3b8",
+};
+
+function getBoundaryColors(boundaryId: string, kind: string): BoundaryStyle {
+  if (kind === "vpc") return VPC_COLORS;
+  const tierMatch = boundaryId.match(/^tier-(\d+)$/);
+  if (tierMatch) return TIER_COLORS[parseInt(tierMatch[1])] || TIER_COLORS[2];
+  return TIER_COLORS[2];
+}
+
 function inferBoundaries(components: Component[]): Boundary[] {
   const tierGroups: Record<number, string[]> = {};
   for (const c of components) {
@@ -113,7 +142,7 @@ function inferBoundaries(components: Component[]): Boundary[] {
 }
 
 // Custom node type registry — must be stable (defined outside component)
-const nodeTypes = { cloudService: CloudServiceNode };
+const nodeTypes = { cloudService: CloudServiceNode, boundaryGroup: BoundaryNode };
 
 function buildNodes(
   spec: ArchSpec,
@@ -183,24 +212,25 @@ function buildNodes(
       const maxY = Math.max(...ys) + NODE_HEIGHT + BOUNDARY_PADDING;
 
       const isVpc = b.kind === "vpc";
-      const border = isVpc ? "2px dashed #94a3b8" : "1.5px solid #cbd5e1";
-      const bg = isVpc ? "rgba(241, 245, 249, 0.4)" : "rgba(248, 250, 252, 0.6)";
+      const colors = getBoundaryColors(b.id, b.kind);
 
       nodes.push({
         id: `boundary-${b.id}`,
-        type: "group",
+        type: "boundaryGroup",
         position: { x: minX, y: minY },
-        data: { label: b.label || b.id },
+        data: {
+          label: b.label || b.id,
+          labelColor: colors.labelColor,
+          labelBg: colors.labelBg,
+          dotColor: colors.dot,
+        },
         style: {
-          background: bg,
-          border,
+          background: colors.bg,
+          border: isVpc ? `2px dashed ${colors.border}` : `1.5px solid ${colors.border}`,
           borderRadius: isVpc ? 16 : 10,
           padding: BOUNDARY_PADDING,
           width: maxX - minX,
           height: maxY - minY,
-          fontSize: isVpc ? 13 : 11,
-          color: isVpc ? "#475569" : "#94a3b8",
-          fontWeight: 600,
         },
         zIndex: isVpc ? -2 : -1,
         draggable: false,

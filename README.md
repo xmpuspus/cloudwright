@@ -12,18 +12,16 @@ Cloudwright bridges the gap between a whiteboard sketch and deployable infrastru
 
 ```mermaid
 flowchart TD
-    prompt["HIPAA-compliant 3-tier app on AWS,\nbudget $3k/month"]
-    spec["ArchSpec\n8 components · connections · constraints"]
-    cost["Cost\n$2,847/mo"]
-    validate["Validate\nHIPAA 5/5"]
-    export["Export\nTerraform · CFN · Mermaid"]
+    prompt["💬 HIPAA-compliant 3-tier app on AWS, budget $3k/month"]
+    spec["📋 ArchSpec — 8 components · connections · constraints"]
+    cost["💰 Cost — $2,847/mo"]
+    validate["✅ Validate — HIPAA 5/5"]
+    export["📦 Export — Terraform · CFN · Mermaid"]
 
-    prompt -->|design| spec
-    spec --> cost
-    spec --> validate
-    spec --> export
+    prompt -- design --> spec
+    spec --> cost & validate & export
 
-    style prompt fill:#f8f9fa,stroke:#343a40,color:#343a40
+    style prompt fill:#f8f9fa,stroke:#6c757d,color:#212529
     style spec fill:#1a3a5c,stroke:#1a3a5c,color:#fff
     style cost fill:#e8f4f8,stroke:#1a3a5c,color:#1a3a5c
     style validate fill:#e8f4f8,stroke:#1a3a5c,color:#1a3a5c

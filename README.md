@@ -10,22 +10,45 @@ Cloudwright bridges the gap between a whiteboard sketch and deployable infrastru
 
 <p align="center"><em>Multi-cloud architecture design from a single prompt — "Design an AI chatbot on GCP connecting to RDS and S3 in AWS. Keep it secure." The web UI generates the full architecture with cost estimates, boundary grouping, and interactive diagrams in under 40 seconds.</em></p>
 
-```
-"HIPAA-compliant 3-tier app on AWS, budget $3k/month"
-    │
-    ▼
-┌────────────────────────────────────────────────┐
-│  ArchSpec (YAML)                               │
-│  ├── 8 components (ALB, ECS, RDS, S3, ...)    │
-│  ├── connections with protocols                │
-│  └── constraints: hipaa, budget: 3000          │
-└────────┬───────────┬──────────┬────────────────┘
-         │           │          │
-    ┌────▼───┐  ┌───▼────┐ ┌──▼──────────┐
-    │  Cost  │  │Validate│ │   Export     │
-    │$2,847  │  │ HIPAA  │ │ Terraform   │
-    │  /mo   │  │ 5/5    │ │ CFN, Mermaid│
-    └────────┘  └────────┘ └─────────────┘
+```mermaid
+flowchart LR
+    subgraph Input
+        nl(["Natural language"])
+        tpl(["14 templates"])
+        imp(["Import TF / CFN"])
+    end
+
+    spec["ArchSpec\nYAML"]
+
+    subgraph Analyze
+        cost["Cost estimation"]
+        lint["Lint 10 rules"]
+        score["Score 5 dimensions"]
+        blast["Blast radius / SPOF"]
+    end
+
+    subgraph Validate
+        comply["6 compliance frameworks"]
+        policy["Policy engine"]
+        drift["Drift detection"]
+    end
+
+    subgraph Export
+        iac["Terraform / CloudFormation"]
+        diagram["Mermaid / D2"]
+        sbom["SBOM / AIBOM"]
+        diff["Arch diff"]
+    end
+
+    nl -- design / chat --> spec
+    tpl -- init --> spec
+    imp -- import --> spec
+
+    spec --> cost & lint & score & blast
+    spec --> comply & policy & drift
+    spec --> iac & diagram & sbom & diff
+
+    style spec fill:#1a3a5c,stroke:#1a3a5c,color:#fff
 ```
 
 ## Why Cloudwright

@@ -61,6 +61,7 @@ const NODE_HEIGHT = 90;
 const H_GAP = 300;
 const V_GAP = 240;
 const BOUNDARY_PADDING = 32;
+const VPC_LABEL_EXTRA = 36;
 const MAX_PER_ROW = 4;
 
 const TIER_LABELS: Record<number, string> = {
@@ -198,26 +199,75 @@ function buildNodes(
     }
   }
 
-  // Build boundary group nodes
-  if (showBoundaries && boundaries.length > 0) {
-    for (const b of boundaries) {
-      if (b.component_ids.length === 0) continue;
+  // Track absolute positions of boundaries (for computing child offsets)
+  const boundaryAbsPos: Record<string, { x: number; y: number }> = {};
 
-      // Compute bounding box from contained components
-      const xs = b.component_ids.map((cid) => compPositions[cid]?.x ?? 0);
-      const ys = b.component_ids.map((cid) => compPositions[cid]?.y ?? 0);
+  // Build boundary group nodes in two phases: VPC first, then tier boundaries
+  if (showBoundaries && boundaries.length > 0) {
+    const vpcBoundary = boundaries.find((b) => b.kind === "vpc");
+    let vpcNodeId: string | undefined;
+
+    // Phase 1: Build VPC boundary (outermost container)
+    if (vpcBoundary && vpcBoundary.component_ids.length > 0) {
+      const xs = vpcBoundary.component_ids.map((cid) => compPositions[cid]?.x ?? 0);
+      const ys = vpcBoundary.component_ids.map((cid) => compPositions[cid]?.y ?? 0);
       const minX = Math.min(...xs) - BOUNDARY_PADDING;
-      const minY = Math.min(...ys) - BOUNDARY_PADDING - 24; // room for label
+      const minY = Math.min(...ys) - BOUNDARY_PADDING - 24 - VPC_LABEL_EXTRA;
       const maxX = Math.max(...xs) + NODE_WIDTH + BOUNDARY_PADDING;
       const maxY = Math.max(...ys) + NODE_HEIGHT + BOUNDARY_PADDING;
 
-      const isVpc = b.kind === "vpc";
+      vpcNodeId = `boundary-${vpcBoundary.id}`;
+      boundaryAbsPos[vpcBoundary.id] = { x: minX, y: minY };
+
+      nodes.push({
+        id: vpcNodeId,
+        type: "boundaryGroup",
+        position: { x: minX, y: minY },
+        data: {
+          label: vpcBoundary.label || vpcBoundary.id,
+          labelColor: VPC_COLORS.labelColor,
+          labelBg: VPC_COLORS.labelBg,
+          dotColor: VPC_COLORS.dot,
+        },
+        style: {
+          background: VPC_COLORS.bg,
+          border: `2px dashed ${VPC_COLORS.border}`,
+          borderRadius: 16,
+          padding: BOUNDARY_PADDING,
+          width: maxX - minX,
+          height: maxY - minY,
+        },
+        zIndex: -2,
+      });
+    }
+
+    // Phase 2: Build tier boundaries (nested inside VPC when applicable)
+    for (const b of boundaries) {
+      if (b.kind === "vpc") continue;
+      if (b.component_ids.length === 0) continue;
+
+      const xs = b.component_ids.map((cid) => compPositions[cid]?.x ?? 0);
+      const ys = b.component_ids.map((cid) => compPositions[cid]?.y ?? 0);
+      const minX = Math.min(...xs) - BOUNDARY_PADDING;
+      const minY = Math.min(...ys) - BOUNDARY_PADDING - 24;
+      const maxX = Math.max(...xs) + NODE_WIDTH + BOUNDARY_PADDING;
+      const maxY = Math.max(...ys) + NODE_HEIGHT + BOUNDARY_PADDING;
+
+      boundaryAbsPos[b.id] = { x: minX, y: minY };
       const colors = getBoundaryColors(b.id, b.kind);
+
+      // Nest inside VPC if this tier shares components with it
+      const isInsideVpc = vpcNodeId && vpcBoundary &&
+        b.component_ids.some((cid) => vpcBoundary.component_ids.includes(cid));
+
+      const position = isInsideVpc
+        ? { x: minX - boundaryAbsPos[vpcBoundary!.id].x, y: minY - boundaryAbsPos[vpcBoundary!.id].y }
+        : { x: minX, y: minY };
 
       nodes.push({
         id: `boundary-${b.id}`,
         type: "boundaryGroup",
-        position: { x: minX, y: minY },
+        position,
         data: {
           label: b.label || b.id,
           labelColor: colors.labelColor,
@@ -226,14 +276,14 @@ function buildNodes(
         },
         style: {
           background: colors.bg,
-          border: isVpc ? `2px dashed ${colors.border}` : `1.5px solid ${colors.border}`,
-          borderRadius: isVpc ? 16 : 10,
+          border: `1.5px solid ${colors.border}`,
+          borderRadius: 10,
           padding: BOUNDARY_PADDING,
           width: maxX - minX,
           height: maxY - minY,
         },
-        zIndex: isVpc ? -2 : -1,
-        draggable: false,
+        zIndex: -1,
+        parentId: isInsideVpc ? vpcNodeId : undefined,
       });
     }
   }
@@ -245,16 +295,14 @@ function buildNodes(
     for (let i = 0; i < comps.length; i++) {
       const comp = comps[i];
       const boundaryId = compBoundary[comp.id];
-      const boundaryNode = showBoundaries && boundaryId
-        ? nodes.find((n) => n.id === `boundary-${boundaryId}`)
-        : undefined;
+      const hasBoundary = showBoundaries && boundaryId && boundaryAbsPos[boundaryId];
 
-      // Use pre-computed absolute positions; adjust for boundary parent offset
+      // Position relative to parent boundary using absolute offsets
       let posX = compPositions[comp.id]?.x ?? 0;
       let posY = compPositions[comp.id]?.y ?? 0;
-      if (boundaryNode) {
-        posX -= boundaryNode.position.x;
-        posY -= boundaryNode.position.y;
+      if (hasBoundary) {
+        posX -= boundaryAbsPos[boundaryId].x;
+        posY -= boundaryAbsPos[boundaryId].y;
       }
 
       nodes.push({
@@ -270,8 +318,8 @@ function buildNodes(
           config: comp.config || {},
           monthlyCost: costMap[comp.id],
         },
-        parentId: boundaryNode ? `boundary-${boundaryId}` : undefined,
-        extent: boundaryNode ? "parent" : undefined,
+        parentId: hasBoundary ? `boundary-${boundaryId}` : undefined,
+        extent: hasBoundary ? "parent" : undefined,
       });
     }
   }

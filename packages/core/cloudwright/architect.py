@@ -445,7 +445,7 @@ class ConversationSession:
         """Send a user message and get response + optionally updated spec."""
         self.history.append({"role": "user", "content": message})
         system = self._build_system_with_hints(_CHAT_SYSTEM)
-        text, _usage = self.llm.generate(self.history, system, max_tokens=4000)
+        text, _usage = self.llm.generate(self.history, system, max_tokens=6000)
         self.history.append({"role": "assistant", "content": text})
 
         spec = self._try_parse_spec(text)
@@ -467,14 +467,14 @@ class ConversationSession:
         self.history.append({"role": "user", "content": prompt})
         system = self._build_system_with_hints(_MODIFY_SYSTEM)
 
-        max_tokens = 3000 if len(self.current_spec.components) <= 8 else 4000
+        max_tokens = 4000 if len(self.current_spec.components) <= 8 else 6000
 
         try:
             text, _usage = self.llm.generate(self.history, system, max_tokens=max_tokens)
             self.history.append({"role": "assistant", "content": text})
             data = _extract_json(text)
         except (ValueError, json.JSONDecodeError) as first_err:
-            log.warning("First modify attempt failed: %s — retrying", first_err)
+            log.warning("First modify attempt failed: %s — retrying with more tokens", first_err)
             self.history.append({"role": "assistant", "content": "I apologize, let me provide the JSON."})
             self.history.append(
                 {
@@ -482,7 +482,7 @@ class ConversationSession:
                     "content": "You must respond with ONLY a valid JSON object. No markdown, no explanation.",
                 }
             )
-            text, _usage = self.llm.generate(self.history, system, max_tokens=max_tokens + 1000)
+            text, _usage = self.llm.generate(self.history, system, max_tokens=max_tokens + 2000)
             self.history.append({"role": "assistant", "content": text})
             data = _extract_json(text)
 
@@ -545,14 +545,14 @@ class Architect:
         if constraints:
             system += _build_constraint_prompt(constraints)
 
-        max_tokens = 4000 if len(description) > 200 or self._is_complex_use_case(description) else 2500
+        max_tokens = 6000 if len(description) > 200 or self._is_complex_use_case(description) else 4000
         messages = [{"role": "user", "content": description}]
 
         try:
             text, _usage = self.llm.generate(messages, system, max_tokens=max_tokens)
             data = _extract_json(text)
         except (ValueError, json.JSONDecodeError) as first_err:
-            log.warning("First design attempt failed: %s — retrying", first_err)
+            log.warning("First design attempt failed: %s — retrying with more tokens", first_err)
             messages.append({"role": "assistant", "content": "I apologize, let me provide the JSON."})
             messages.append(
                 {
@@ -560,7 +560,7 @@ class Architect:
                     "content": "You must respond with ONLY a valid JSON object. No markdown, no explanation.",
                 }
             )
-            text, _usage = self.llm.generate(messages, system, max_tokens=max_tokens)
+            text, _usage = self.llm.generate(messages, system, max_tokens=max_tokens + 2000)
             data = _extract_json(text)
 
         return _parse_arch_spec(data, constraints)
@@ -593,8 +593,16 @@ class Architect:
     @staticmethod
     def _is_complex_use_case(description: str) -> bool:
         desc_lower = description.lower()
-        complex_keywords = {"import", "migrate", "re-architect", "compare", "versus", "modernize"}
-        return any(kw in desc_lower for kw in complex_keywords)
+        complex_keywords = {
+            "import", "migrate", "re-architect", "compare", "versus", "modernize",
+            "multi-cloud", "multi cloud", "hybrid", "bridging", "cross-cloud",
+            "multi-tier", "multi tier", "6 tier", "5 tier", "microservice",
+        }
+        if any(kw in desc_lower for kw in complex_keywords):
+            return True
+        # Multiple providers mentioned = complex
+        providers = sum(1 for p in ("aws", "gcp", "azure") if p in desc_lower)
+        return providers >= 2
 
     def modify(self, spec: ArchSpec, instruction: str) -> ArchSpec:
         current = _slim_for_modify(spec)
@@ -602,7 +610,7 @@ class Architect:
         messages = [{"role": "user", "content": prompt}]
 
         # Scale max_tokens with spec size to avoid truncation
-        max_tokens = 3000 if len(spec.components) <= 8 else 4000
+        max_tokens = 4000 if len(spec.components) <= 8 else 6000
 
         # Route simple modifications to the fast model to reduce latency
         if _is_simple_modification(instruction):
@@ -614,7 +622,7 @@ class Architect:
             text, _usage = generate(messages, _MODIFY_SYSTEM, max_tokens=max_tokens)
             data = _extract_json(text)
         except (ValueError, json.JSONDecodeError) as first_err:
-            log.warning("First modify attempt failed: %s — retrying", first_err)
+            log.warning("First modify attempt failed: %s — retrying with more tokens", first_err)
             messages.append({"role": "assistant", "content": "I apologize, let me provide the JSON."})
             messages.append(
                 {
@@ -622,7 +630,7 @@ class Architect:
                     "content": "You must respond with ONLY a valid JSON object. No markdown, no explanation.",
                 }
             )
-            text, _usage = self.llm.generate(messages, _MODIFY_SYSTEM, max_tokens=max_tokens + 1000)
+            text, _usage = self.llm.generate(messages, _MODIFY_SYSTEM, max_tokens=max_tokens + 2000)
             data = _extract_json(text)
         updated = _parse_arch_spec(data, spec.constraints)
 

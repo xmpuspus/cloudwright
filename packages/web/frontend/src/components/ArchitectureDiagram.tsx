@@ -90,7 +90,6 @@ function inferBoundaries(components: Component[]): Boundary[] {
   const boundaries: Boundary[] = [];
 
   for (const t of tiers) {
-    if (tierGroups[t].length < 2) continue;
     boundaries.push({
       id: `tier-${t}`,
       kind: TIER_KINDS[t] || "subnet",
@@ -101,7 +100,7 @@ function inferBoundaries(components: Component[]): Boundary[] {
 
   // Wrap non-edge tiers in a VPC boundary if there are inner boundaries
   const innerIds = boundaries.filter((b) => b.id !== "tier-0").flatMap((b) => b.component_ids);
-  if (innerIds.length >= 3) {
+  if (innerIds.length >= 2) {
     boundaries.unshift({
       id: "vpc",
       kind: "vpc",

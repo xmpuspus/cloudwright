@@ -10,22 +10,24 @@ Cloudwright bridges the gap between a whiteboard sketch and deployable infrastru
 
 <p align="center"><em>Multi-cloud architecture design from a single prompt — "Design an AI chatbot on GCP connecting to RDS and S3 in AWS. Keep it secure." The web UI generates the full architecture with cost estimates, boundary grouping, and interactive diagrams in under 40 seconds.</em></p>
 
-```
-"HIPAA-compliant 3-tier app on AWS, budget $3k/month"
-    │
-    ▼
-┌────────────────────────────────────────────────┐
-│  ArchSpec (YAML)                               │
-│  ├── 8 components (ALB, ECS, RDS, S3, ...)    │
-│  ├── connections with protocols                │
-│  └── constraints: hipaa, budget: 3000          │
-└────────┬───────────┬──────────┬────────────────┘
-         │           │          │
-    ┌────▼───┐  ┌───▼────┐ ┌──▼──────────┐
-    │  Cost  │  │Validate│ │   Export     │
-    │$2,847  │  │ HIPAA  │ │ Terraform   │
-    │  /mo   │  │ 5/5    │ │ CFN, Mermaid│
-    └────────┘  └────────┘ └─────────────┘
+```mermaid
+flowchart TD
+    prompt["HIPAA-compliant 3-tier app on AWS,\nbudget $3k/month"]
+    spec["ArchSpec\n8 components · connections · constraints"]
+    cost["Cost\n$2,847/mo"]
+    validate["Validate\nHIPAA 5/5"]
+    export["Export\nTerraform · CFN · Mermaid"]
+
+    prompt -->|design| spec
+    spec --> cost
+    spec --> validate
+    spec --> export
+
+    style prompt fill:#f8f9fa,stroke:#343a40,color:#343a40
+    style spec fill:#1a3a5c,stroke:#1a3a5c,color:#fff
+    style cost fill:#e8f4f8,stroke:#1a3a5c,color:#1a3a5c
+    style validate fill:#e8f4f8,stroke:#1a3a5c,color:#1a3a5c
+    style export fill:#e8f4f8,stroke:#1a3a5c,color:#1a3a5c
 ```
 
 ## Why Cloudwright

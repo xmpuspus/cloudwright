@@ -4,6 +4,12 @@ Architecture intelligence for cloud engineers.
 
 Cloudwright bridges the gap between a whiteboard sketch and deployable infrastructure. Describe a system in natural language, and Cloudwright produces a structured architecture spec, cost estimates, compliance reports, Terraform/CloudFormation code, diagrams, and diffs — all from a single format called **ArchSpec**.
 
+<p align="center">
+  <img src="examples/cloudwright-demo.gif" alt="Cloudwright Web UI Demo" width="800">
+</p>
+
+<p align="center"><em>Multi-cloud architecture design from a single prompt — "Design an AI chatbot on GCP connecting to RDS and S3 in AWS. Keep it secure." The web UI generates the full architecture with cost estimates, boundary grouping, and interactive diagrams in under 40 seconds.</em></p>
+
 ```
 "HIPAA-compliant 3-tier app on AWS, budget $3k/month"
     │

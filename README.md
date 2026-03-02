@@ -11,21 +11,44 @@ Cloudwright bridges the gap between a whiteboard sketch and deployable infrastru
 <p align="center"><em>Multi-cloud architecture design from a single prompt — "Design an AI chatbot on GCP connecting to RDS and S3 in AWS. Keep it secure." The web UI generates the full architecture with cost estimates, boundary grouping, and interactive diagrams in under 40 seconds.</em></p>
 
 ```mermaid
-flowchart TD
-    prompt["HIPAA-compliant 3-tier app on AWS, budget $3k/month"]
-    spec["ArchSpec — 8 components · connections · constraints"]
-    cost["Cost — $2,847/mo"]
-    validate["Validate — HIPAA 5/5"]
-    export["Export — Terraform · CFN · Mermaid"]
+flowchart LR
+    subgraph Input
+        nl(["Natural language"])
+        tpl(["14 templates"])
+        imp(["Import TF / CFN"])
+    end
 
-    prompt -- design --> spec
-    spec --> cost & validate & export
+    spec["ArchSpec\nYAML"]
 
-    style prompt fill:#f8f9fa,stroke:#6c757d,color:#212529
+    subgraph Analyze
+        cost["Cost estimation"]
+        lint["Lint 10 rules"]
+        score["Score 5 dimensions"]
+        blast["Blast radius / SPOF"]
+    end
+
+    subgraph Validate
+        comply["6 compliance frameworks"]
+        policy["Policy engine"]
+        drift["Drift detection"]
+    end
+
+    subgraph Export
+        iac["Terraform / CloudFormation"]
+        diagram["Mermaid / D2"]
+        sbom["SBOM / AIBOM"]
+        diff["Arch diff"]
+    end
+
+    nl -- design / chat --> spec
+    tpl -- init --> spec
+    imp -- import --> spec
+
+    spec --> cost & lint & score & blast
+    spec --> comply & policy & drift
+    spec --> iac & diagram & sbom & diff
+
     style spec fill:#1a3a5c,stroke:#1a3a5c,color:#fff
-    style cost fill:#e8f4f8,stroke:#1a3a5c,color:#1a3a5c
-    style validate fill:#e8f4f8,stroke:#1a3a5c,color:#1a3a5c
-    style export fill:#e8f4f8,stroke:#1a3a5c,color:#1a3a5c
 ```
 
 ## Why Cloudwright

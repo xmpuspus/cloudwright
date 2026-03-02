@@ -12,5 +12,9 @@ node_modules/
 .pytest_cache/
 .mypy_cache/
 
-# Codebase intelligence (auto-generated)
+# AI tooling
+.claude/
 .planning/
+CLAUDE.md
+packages/*/CLAUDE.md
+docs/fix-plan.md

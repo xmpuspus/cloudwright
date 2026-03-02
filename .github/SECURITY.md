@@ -12,7 +12,7 @@ If you discover a security vulnerability in Cloudwright, please report it respon
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
-Instead, please email security reports to: **security@cloudwright.dev**
+Instead, please email security reports to: **xpuspus@gmail.com**
 
 Include:
 - Description of the vulnerability

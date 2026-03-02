@@ -18,7 +18,7 @@ flowchart LR
         imp(["Import TF / CFN"])
     end
 
-    spec["ArchSpec\nYAML"]
+    spec["ArchSpec (YAML)"]
 
     subgraph Analyze
         cost["Cost estimation"]

@@ -594,9 +594,22 @@ class Architect:
     def _is_complex_use_case(description: str) -> bool:
         desc_lower = description.lower()
         complex_keywords = {
-            "import", "migrate", "re-architect", "compare", "versus", "modernize",
-            "multi-cloud", "multi cloud", "hybrid", "bridging", "cross-cloud",
-            "multi-tier", "multi tier", "6 tier", "5 tier", "microservice",
+            "import",
+            "migrate",
+            "re-architect",
+            "compare",
+            "versus",
+            "modernize",
+            "multi-cloud",
+            "multi cloud",
+            "hybrid",
+            "bridging",
+            "cross-cloud",
+            "multi-tier",
+            "multi tier",
+            "6 tier",
+            "5 tier",
+            "microservice",
         }
         if any(kw in desc_lower for kw in complex_keywords):
             return True

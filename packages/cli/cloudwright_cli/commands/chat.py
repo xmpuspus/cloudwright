@@ -247,7 +247,6 @@ def _run_validate(spec: ArchSpec, framework: str | None) -> None:
                 console.print(f"    [dim]{check.recommendation}[/dim]")
 
 
-
 def _print_cost_summary(spec: ArchSpec) -> None:
     from rich.table import Table
 

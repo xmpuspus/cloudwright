@@ -27,7 +27,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 log = logging.getLogger(__name__)
 
-app = FastAPI(title="Cloudwright", version="0.2.18", description="Architecture intelligence for cloud engineers")
+app = FastAPI(title="Cloudwright", version="0.2.19", description="Architecture intelligence for cloud engineers")
 
 
 class PathTraversalMiddleware(BaseHTTPMiddleware):

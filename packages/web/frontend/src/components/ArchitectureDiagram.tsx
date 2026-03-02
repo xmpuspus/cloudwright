@@ -62,6 +62,57 @@ const V_GAP = 240;
 const BOUNDARY_PADDING = 32;
 const MAX_PER_ROW = 4;
 
+const TIER_LABELS: Record<number, string> = {
+  0: "Edge / CDN",
+  1: "Network / Ingress",
+  2: "Application",
+  3: "Data Layer",
+  4: "Platform Services",
+  5: "Platform Services",
+};
+
+const TIER_KINDS: Record<number, string> = {
+  0: "edge",
+  1: "subnet",
+  2: "subnet",
+  3: "subnet",
+};
+
+function inferBoundaries(components: Component[]): Boundary[] {
+  const tierGroups: Record<number, string[]> = {};
+  for (const c of components) {
+    const t = c.tier ?? 2;
+    if (!tierGroups[t]) tierGroups[t] = [];
+    tierGroups[t].push(c.id);
+  }
+
+  const tiers = Object.keys(tierGroups).map(Number).sort();
+  const boundaries: Boundary[] = [];
+
+  for (const t of tiers) {
+    if (tierGroups[t].length < 2) continue;
+    boundaries.push({
+      id: `tier-${t}`,
+      kind: TIER_KINDS[t] || "subnet",
+      label: TIER_LABELS[t] || `Tier ${t}`,
+      component_ids: tierGroups[t],
+    });
+  }
+
+  // Wrap non-edge tiers in a VPC boundary if there are inner boundaries
+  const innerIds = boundaries.filter((b) => b.id !== "tier-0").flatMap((b) => b.component_ids);
+  if (innerIds.length >= 3) {
+    boundaries.unshift({
+      id: "vpc",
+      kind: "vpc",
+      label: "VPC / Virtual Network",
+      component_ids: innerIds,
+    });
+  }
+
+  return boundaries;
+}
+
 // Custom node type registry — must be stable (defined outside component)
 const nodeTypes = { cloudService: CloudServiceNode };
 
@@ -71,12 +122,14 @@ function buildNodes(
   costMap: Record<string, number>
 ): Node[] {
   const nodes: Node[] = [];
-  const boundaries = spec.boundaries || [];
+  const explicitBoundaries = spec.boundaries || [];
+  const boundaries = explicitBoundaries.length > 0 ? explicitBoundaries : inferBoundaries(spec.components);
 
-  // Map component_id -> boundary id (first boundary that contains it)
+  // Map component_id -> most specific boundary (skip VPC — it's visual-only)
   const compBoundary: Record<string, string> = {};
   if (showBoundaries) {
     for (const b of boundaries) {
+      if (b.kind === "vpc") continue;
       for (const cid of b.component_ids) {
         if (!compBoundary[cid]) compBoundary[cid] = b.id;
       }
@@ -130,12 +183,9 @@ function buildNodes(
       const maxX = Math.max(...xs) + NODE_WIDTH + BOUNDARY_PADDING;
       const maxY = Math.max(...ys) + NODE_HEIGHT + BOUNDARY_PADDING;
 
-      const borderStyle =
-        b.kind === "vpc"
-          ? "2px dashed #cbd5e1"
-          : b.kind === "subnet"
-          ? "2px solid #cbd5e1"
-          : "2px dotted #cbd5e1";
+      const isVpc = b.kind === "vpc";
+      const border = isVpc ? "2px dashed #94a3b8" : "1.5px solid #cbd5e1";
+      const bg = isVpc ? "rgba(241, 245, 249, 0.4)" : "rgba(248, 250, 252, 0.6)";
 
       nodes.push({
         id: `boundary-${b.id}`,
@@ -143,18 +193,17 @@ function buildNodes(
         position: { x: minX, y: minY },
         data: { label: b.label || b.id },
         style: {
-          background: "transparent",
-          border: borderStyle,
-          borderRadius: 12,
+          background: bg,
+          border,
+          borderRadius: isVpc ? 16 : 10,
           padding: BOUNDARY_PADDING,
           width: maxX - minX,
           height: maxY - minY,
-          fontSize: 11,
-          color: "#64748b",
+          fontSize: isVpc ? 13 : 11,
+          color: isVpc ? "#475569" : "#94a3b8",
           fontWeight: 600,
         },
-        // groups render behind their children
-        zIndex: -1,
+        zIndex: isVpc ? -2 : -1,
         draggable: false,
       });
     }

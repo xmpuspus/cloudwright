@@ -1,0 +1,85 @@
+name: Databricks ML Platform
+version: 1
+provider: databricks
+region: us-east-1
+components:
+  - id: unity_catalog
+    service: databricks_unity_catalog
+    provider: databricks
+    label: Unity Catalog
+    description: Centralized governance for data and ML models
+    tier: 0
+    config: {}
+  - id: cluster
+    service: databricks_cluster
+    provider: databricks
+    label: ML Training Cluster
+    description: All-purpose compute for model training
+    tier: 2
+    config:
+      instance_type: i3.xlarge
+      count: 2
+  - id: notebook
+    service: databricks_notebook
+    provider: databricks
+    label: Data Science Notebook
+    description: Interactive notebooks for exploration and development
+    tier: 2
+    config:
+      instance_type: i3.xlarge
+      count: 2
+  - id: model_serving
+    service: databricks_model_serving
+    provider: databricks
+    label: Model Serving Endpoint
+    description: Real-time ML inference via REST API
+    tier: 2
+    config:
+      compute_type: model_serving
+  - id: vector_search
+    service: databricks_vector_search
+    provider: databricks
+    label: Vector Search Index
+    description: Vector similarity search for RAG and embeddings
+    tier: 3
+    config: {}
+  - id: dashboard
+    service: databricks_dashboard
+    provider: databricks
+    label: ML Metrics Dashboard
+    description: Model performance monitoring dashboard
+    tier: 4
+    config: {}
+connections:
+  - source: unity_catalog
+    target: cluster
+    label: Governs compute access
+    protocol: internal
+    port: 443
+  - source: unity_catalog
+    target: model_serving
+    label: Model registry governance
+    protocol: internal
+    port: 443
+  - source: notebook
+    target: cluster
+    label: Runs on cluster
+    protocol: internal
+    port: 443
+  - source: cluster
+    target: model_serving
+    label: Registers trained models
+    protocol: MLflow
+    port: 443
+  - source: vector_search
+    target: model_serving
+    label: RAG context retrieval
+    protocol: REST
+    port: 443
+  - source: model_serving
+    target: dashboard
+    label: Metrics and predictions
+    protocol: SQL/JDBC
+    port: 443
+constraints:
+  availability: 99.9

@@ -97,3 +97,17 @@ templates:
     file: azure-microservices.yaml
     tags: [containers, microservices, production]
     complexity: high
+  databricks_lakehouse:
+    name: Databricks Lakehouse
+    description: Databricks lakehouse with Unity Catalog, SQL Warehouse, DLT, and model serving
+    provider: databricks
+    file: databricks-lakehouse.yaml
+    tags: [databricks, lakehouse, analytics, delta-lake, etl]
+    complexity: medium
+  databricks_ml_platform:
+    name: Databricks ML Platform
+    description: End-to-end ML platform with training clusters, notebooks, model serving, and vector search
+    provider: databricks
+    file: databricks-ml-platform.yaml
+    tags: [databricks, ml, machine-learning, mlflow, model-serving]
+    complexity: high

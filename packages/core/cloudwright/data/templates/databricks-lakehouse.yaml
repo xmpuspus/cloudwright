@@ -1,0 +1,90 @@
+name: Databricks Lakehouse
+version: 1
+provider: databricks
+region: us-east-1
+components:
+  - id: unity_catalog
+    service: databricks_unity_catalog
+    provider: databricks
+    label: Unity Catalog
+    description: Centralized governance for data and AI assets
+    tier: 0
+    config: {}
+  - id: sql_warehouse
+    service: databricks_sql_warehouse
+    provider: databricks
+    label: SQL Warehouse
+    description: Serverless SQL compute for analytics queries
+    tier: 2
+    config:
+      instance_class: Small
+      storage_gb: 100
+  - id: dlt_pipeline
+    service: databricks_pipeline
+    provider: databricks
+    label: DLT Pipeline
+    description: Delta Live Tables pipeline for ETL ingestion
+    tier: 2
+    config:
+      compute_type: dlt_core
+  - id: volume
+    service: databricks_volume
+    provider: databricks
+    label: Data Volume
+    description: Unity Catalog managed volume for raw and curated data
+    tier: 3
+    config:
+      storage_gb: 1000
+  - id: model_serving
+    service: databricks_model_serving
+    provider: databricks
+    label: Model Serving Endpoint
+    description: Real-time ML inference endpoint
+    tier: 2
+    config:
+      compute_type: model_serving
+  - id: dashboard
+    service: databricks_dashboard
+    provider: databricks
+    label: Lakehouse Dashboard
+    description: AI/BI dashboard for analytics visualization
+    tier: 4
+    config: {}
+connections:
+  - source: unity_catalog
+    target: volume
+    label: Governs storage assets
+    protocol: internal
+    port: 443
+  - source: unity_catalog
+    target: sql_warehouse
+    label: Access control and lineage
+    protocol: internal
+    port: 443
+  - source: volume
+    target: dlt_pipeline
+    label: Source data
+    protocol: Delta
+    port: 443
+  - source: dlt_pipeline
+    target: volume
+    label: Write curated tables
+    protocol: Delta
+    port: 443
+  - source: volume
+    target: sql_warehouse
+    label: Query Delta tables
+    protocol: SQL
+    port: 443
+  - source: sql_warehouse
+    target: dashboard
+    label: Powers BI dashboards
+    protocol: SQL/JDBC
+    port: 443
+  - source: sql_warehouse
+    target: model_serving
+    label: Feature serving
+    protocol: REST
+    port: 443
+constraints:
+  availability: 99.9

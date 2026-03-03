@@ -26,7 +26,16 @@ services:
       pricing_formula: per_request
       default_config: {monthly_actions: 1000000}
 
+  databricks:
+    databricks_job:
+      name: "Databricks Job"
+      description: "Scheduled workflow orchestration"
+      terraform_types: ["databricks_job"]
+      pricing_formula: per_dbu
+      default_config: {compute_type: jobs, dbu_per_hour: 2.0}
+
 equivalences:
   - aws: step_functions
     gcp: workflows
     azure: logic_apps
+    databricks: databricks_job

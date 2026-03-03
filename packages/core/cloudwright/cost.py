@@ -13,13 +13,14 @@ from cloudwright.spec import Alternative, ArchSpec, Component, ComponentCost, Co
 
 log = logging.getLogger(__name__)
 
-_CONTAINER_ORCHESTRATION = {"eks", "gke", "aks", "ecs"}
+_CONTAINER_ORCHESTRATION = {"eks", "gke", "aks", "ecs", "databricks_cluster"}
 
 # Per-provider internet egress rates ($/GB) by transfer type
 _EGRESS_RATES = {
     "aws": {"same_region": 0.01, "cross_region": 0.02, "internet": 0.09},
     "gcp": {"same_region": 0.01, "cross_region": 0.08, "internet": 0.12},
     "azure": {"same_region": 0.01, "cross_region": 0.02, "internet": 0.087},
+    "databricks": {"same_region": 0.01, "cross_region": 0.02, "internet": 0.09},
     "cross_provider": 0.09,
 }
 

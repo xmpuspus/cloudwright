@@ -41,6 +41,8 @@ _DATA_STORE_SERVICES = {
     "alloydb",
     "fsx",
     "efs",
+    "databricks_vector_search",
+    "databricks_volume",
 }
 
 # Databases that support multi-AZ / replication
@@ -55,6 +57,7 @@ _DATABASE_SERVICES = {
     "redshift",
     "bigquery",
     "alloydb",
+    "databricks_sql_warehouse",
 }
 
 _COMPUTE_SERVICES = {
@@ -73,12 +76,14 @@ _COMPUTE_SERVICES = {
     "container_apps",
     "app_engine",
     "fargate",
+    "databricks_cluster",
+    "databricks_notebook",
 }
 
 # HIPAA required service types (by service key or category)
 _HIPAA_REQUIRED = {
-    "audit_logging": {"cloudtrail", "cloud_logging", "azure_monitor"},
-    "access_control": {"cognito", "firebase_auth", "azure_ad", "iam"},
+    "audit_logging": {"cloudtrail", "cloud_logging", "azure_monitor", "databricks_unity_catalog"},
+    "access_control": {"cognito", "firebase_auth", "azure_ad", "iam", "databricks_unity_catalog"},
 }
 
 _COMPLIANCE_CONTROLS: dict[str, str] = {
@@ -121,7 +126,11 @@ Azure: azure_cdn, azure_dns, app_gateway, azure_waf, azure_lb, virtual_machines,
        container_apps, azure_functions, app_service, azure_sql, cosmos_db, azure_cache,
        service_bus, event_hubs, blob_storage, synapse, azure_ml, azure_ad, logic_apps,
        azure_monitor, azure_devops, azure_migrate, expressroute, azure_firewall,
-       azure_sentinel, azure_policy, data_factory, api_management"""
+       azure_sentinel, azure_policy, data_factory, api_management
+Databricks: databricks_sql_warehouse, databricks_cluster, databricks_job, databricks_pipeline,
+            databricks_model_serving, databricks_unity_catalog, databricks_vector_search,
+            databricks_genie, databricks_notebook, databricks_secret_scope,
+            databricks_dashboard, databricks_volume"""
 
 # Last updated: 2026-03-01
 _MODEL_VERSION_GUIDANCE = """
@@ -138,13 +147,13 @@ _DESIGN_SYSTEM = f"""You generate cloud architectures as structured JSON.
 Given a natural language description, produce a JSON object with this exact structure:
 {{
   "name": "Short descriptive name for the architecture",
-  "provider": "aws|gcp|azure",
+  "provider": "aws|gcp|azure|databricks",
   "region": "primary region (e.g. us-east-1, us-central1, eastus)",
   "components": [
     {{
       "id": "unique_snake_case_id",
       "service": "<service_key>",
-      "provider": "aws|gcp|azure",
+      "provider": "aws|gcp|azure|databricks",
       "label": "Human-readable label",
       "description": "Brief purpose note (instance type, config)",
       "tier": <integer 0-4>,
@@ -265,6 +274,17 @@ TERRAFORM RESOURCE TYPE MAPPING (use these when parsing Terraform state/config):
 - azurerm_mssql_server -> azure_sql
 - azurerm_cosmosdb_account -> cosmos_db
 - azurerm_storage_account -> blob_storage
+- databricks_sql_endpoint -> databricks_sql_warehouse
+- databricks_cluster -> databricks_cluster
+- databricks_job -> databricks_job
+- databricks_pipeline -> databricks_pipeline
+- databricks_serving_endpoint -> databricks_model_serving
+- databricks_catalog -> databricks_unity_catalog
+- databricks_vector_search_endpoint -> databricks_vector_search
+- databricks_notebook -> databricks_notebook
+- databricks_secret_scope -> databricks_secret_scope
+- databricks_volume -> databricks_volume
+- databricks_sql_dashboard -> databricks_dashboard
 
 RULES:
 - Map every resource to its closest service key
@@ -412,6 +432,20 @@ _PROVIDER_SERVICES: dict[str, set[str]] = {
         "data_factory",
         "api_management",
     },
+    "databricks": {
+        "databricks_sql_warehouse",
+        "databricks_cluster",
+        "databricks_job",
+        "databricks_pipeline",
+        "databricks_model_serving",
+        "databricks_unity_catalog",
+        "databricks_vector_search",
+        "databricks_genie",
+        "databricks_notebook",
+        "databricks_secret_scope",
+        "databricks_dashboard",
+        "databricks_volume",
+    },
 }
 
 _ALL_VALID_SERVICES: set[str] = set().union(*_PROVIDER_SERVICES.values())
@@ -421,6 +455,7 @@ _DEFAULT_INSTANCE_TYPES: dict[str, dict[str, str]] = {
     "aws": {"compute": "m5.large", "database": "db.r5.large", "cache": "cache.r5.large"},
     "gcp": {"compute": "n2-standard-4", "database": "db-n1-standard-4", "cache": "M1"},
     "azure": {"compute": "Standard_D4s_v3", "database": "GP_Gen5_4", "cache": "C3"},
+    "databricks": {"compute": "i3.xlarge", "database": "Small", "cache": "Small"},
 }
 
 # Default connection ports by tier relationship
@@ -962,6 +997,16 @@ _SERVICE_NORMALIZATION: dict[str, str] = {
     "mongodb": "cosmos_db",
     "kubernetes": "eks",
     "docker": "ecs",
+    # Databricks aliases
+    "sql_warehouse": "databricks_sql_warehouse",
+    "dlt": "databricks_pipeline",
+    "delta_live_tables": "databricks_pipeline",
+    "dbx_cluster": "databricks_cluster",
+    "dbx_job": "databricks_job",
+    "mlflow_serving": "databricks_model_serving",
+    "databricks_dlt": "databricks_pipeline",
+    "unity_catalog": "databricks_unity_catalog",
+    "secret_scope": "databricks_secret_scope",
 }
 
 # Services that carry engine info in their compound name
@@ -1189,4 +1234,6 @@ def _diff_services(original: ArchSpec, mapped: ArchSpec) -> list[str]:
 
 
 def _default_region(provider: str) -> str:
-    return {"aws": "us-east-1", "gcp": "us-central1", "azure": "eastus"}.get(provider, "us-east-1")
+    return {"aws": "us-east-1", "gcp": "us-central1", "azure": "eastus", "databricks": "us-east-1"}.get(
+        provider, "us-east-1"
+    )

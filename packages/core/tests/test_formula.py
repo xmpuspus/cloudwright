@@ -66,7 +66,7 @@ class TestPricingFormulas:
         assert result > 0
 
     def test_all_formulas_registered(self):
-        assert len(PRICING_FORMULAS) == 10
+        assert len(PRICING_FORMULAS) == 11
         for name, fn in PRICING_FORMULAS.items():
             assert callable(fn)
 

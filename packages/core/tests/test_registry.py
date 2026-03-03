@@ -14,9 +14,9 @@ class TestRegistryLoad:
     def test_loads_without_error(self, registry):
         assert registry is not None
 
-    def test_has_three_providers(self, registry):
+    def test_has_four_providers(self, registry):
         providers = registry.list_providers()
-        assert set(providers) == {"aws", "gcp", "azure"}
+        assert set(providers) == {"aws", "gcp", "azure", "databricks"}
 
     def test_has_expected_categories(self, registry):
         cats = set(registry.list_categories())
@@ -39,7 +39,7 @@ class TestRegistryLoad:
         s = registry.stats()
         assert s["total_services"] > 20
         assert s["categories"] >= 13
-        assert s["providers"] == 3
+        assert s["providers"] == 4
         assert s["equivalences"] > 5
 
 

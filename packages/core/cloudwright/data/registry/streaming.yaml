@@ -26,7 +26,16 @@ services:
       pricing_formula: per_shard_hour
       default_config: {throughput_units: 1, retention_days: 1}
 
+  databricks:
+    databricks_pipeline:
+      name: "Databricks Delta Live Tables"
+      description: "Declarative ETL pipelines"
+      terraform_types: ["databricks_pipeline"]
+      pricing_formula: per_dbu
+      default_config: {compute_type: dlt_core, dbu_per_hour: 3.0}
+
 equivalences:
   - aws: kinesis
     gcp: dataflow
     azure: event_hubs
+    databricks: databricks_pipeline

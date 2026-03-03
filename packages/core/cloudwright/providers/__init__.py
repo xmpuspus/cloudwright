@@ -2,12 +2,14 @@
 
 from cloudwright.providers.aws import AWS_SERVICES
 from cloudwright.providers.azure import AZURE_SERVICES
+from cloudwright.providers.databricks import DATABRICKS_SERVICES
 from cloudwright.providers.gcp import GCP_SERVICES
 
 PROVIDERS = {
     "aws": AWS_SERVICES,
     "gcp": GCP_SERVICES,
     "azure": AZURE_SERVICES,
+    "databricks": DATABRICKS_SERVICES,
 }
 
 # Cross-cloud service equivalence map: aws_key -> {gcp: key, azure: key}
@@ -19,8 +21,8 @@ EQUIVALENCES = {
     "rds": {"gcp": "cloud_sql", "azure": "azure_sql"},
     "aurora": {"gcp": "cloud_sql", "azure": "azure_sql"},
     "dynamodb": {"gcp": "firestore", "azure": "cosmos_db"},
-    "elasticache": {"gcp": "memorystore", "azure": "azure_cache"},
-    "s3": {"gcp": "cloud_storage", "azure": "blob_storage"},
+    "elasticache": {"gcp": "memorystore", "azure": "azure_cache", "databricks": "databricks_vector_search"},
+    "s3": {"gcp": "cloud_storage", "azure": "blob_storage", "databricks": "databricks_volume"},
     "sqs": {"gcp": "pub_sub", "azure": "service_bus"},
     "sns": {"gcp": "pub_sub", "azure": "event_hubs"},
     "cloudfront": {"gcp": "cloud_cdn", "azure": "azure_cdn"},
@@ -28,11 +30,11 @@ EQUIVALENCES = {
     "nlb": {"gcp": "cloud_load_balancing", "azure": "azure_lb"},
     "route53": {"gcp": "cloud_dns", "azure": "azure_dns"},
     "waf": {"gcp": "cloud_armor", "azure": "azure_waf"},
-    "kinesis": {"gcp": "dataflow", "azure": "event_hubs"},
-    "redshift": {"gcp": "bigquery", "azure": "synapse"},
-    "sagemaker": {"gcp": "vertex_ai", "azure": "azure_ml"},
+    "kinesis": {"gcp": "dataflow", "azure": "event_hubs", "databricks": "databricks_pipeline"},
+    "redshift": {"gcp": "bigquery", "azure": "synapse", "databricks": "databricks_sql_warehouse"},
+    "sagemaker": {"gcp": "vertex_ai", "azure": "azure_ml", "databricks": "databricks_model_serving"},
     "cognito": {"gcp": "firebase_auth", "azure": "azure_ad"},
-    "step_functions": {"gcp": "workflows", "azure": "logic_apps"},
+    "step_functions": {"gcp": "workflows", "azure": "logic_apps", "databricks": "databricks_job"},
     "api_gateway": {"gcp": "api_gateway", "azure": "api_management"},
 }
 
@@ -53,7 +55,21 @@ def get_equivalent(service: str, from_provider: str, to_provider: str) -> str | 
                 return aws_key
             return mappings.get(to_provider)
 
+    # Handle cases where neither provider is AWS (e.g., gcp -> databricks)
+    for aws_key, mappings in EQUIVALENCES.items():
+        all_services = {"aws": aws_key, **mappings}
+        if all_services.get(from_provider) == service:
+            return all_services.get(to_provider)
+
     return None
 
 
-__all__ = ["AWS_SERVICES", "GCP_SERVICES", "AZURE_SERVICES", "PROVIDERS", "EQUIVALENCES", "get_equivalent"]
+__all__ = [
+    "AWS_SERVICES",
+    "GCP_SERVICES",
+    "AZURE_SERVICES",
+    "DATABRICKS_SERVICES",
+    "PROVIDERS",
+    "EQUIVALENCES",
+    "get_equivalent",
+]

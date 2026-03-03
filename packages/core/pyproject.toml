@@ -30,8 +30,9 @@ dependencies = [
 [project.optional-dependencies]
 cli = ["cloudwright-ai-cli==0.2.24"]
 web = ["cloudwright-ai-cli==0.2.24", "cloudwright-ai-web==0.2.24"]
-all = ["cloudwright-ai-cli==0.2.24", "cloudwright-ai-web==0.2.24"]
+all = ["cloudwright-ai-cli==0.2.24", "cloudwright-ai-web==0.2.24", "databricks-sdk>=0.38.0"]
 pdf = ["weasyprint", "markdown2"]
+databricks = ["databricks-sdk>=0.38.0"]
 
 [project.urls]
 Homepage = "https://github.com/xmpuspus/cloudwright"

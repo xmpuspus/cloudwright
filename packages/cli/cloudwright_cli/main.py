@@ -6,6 +6,7 @@ from cloudwright_cli.commands.catalog_cmd import catalog_app
 from cloudwright_cli.commands.chat import chat
 from cloudwright_cli.commands.compare import compare
 from cloudwright_cli.commands.cost import cost
+from cloudwright_cli.commands.databricks_cmd import databricks_validate
 from cloudwright_cli.commands.design import design
 from cloudwright_cli.commands.diff import diff
 from cloudwright_cli.commands.drift_cmd import drift
@@ -63,4 +64,5 @@ app.command()(score)
 app.command()(analyze)
 app.command()(refresh)
 app.command()(lint)
+app.command()(databricks_validate)
 app.add_typer(catalog_app, name="catalog")

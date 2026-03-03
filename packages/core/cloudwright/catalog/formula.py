@@ -95,6 +95,26 @@ def per_node_hour(config: dict[str, Any], base_rate: float = 0.0) -> float:
     return compute + storage
 
 
+def per_dbu(config: dict, base_rate: float = 0.0) -> float:
+    """Databricks Unit (DBU) based pricing."""
+    dbu_rates = {
+        "jobs": 0.15,
+        "all_purpose": 0.40,
+        "sql_serverless": 0.55,
+        "sql_classic": 0.22,
+        "model_serving": 0.07,
+        "dlt_core": 0.20,
+        "dlt_pro": 0.25,
+        "dlt_advanced": 0.36,
+        "vector_search": 0.40,
+    }
+    compute_type = config.get("compute_type", "all_purpose")
+    dbu_rate = base_rate or dbu_rates.get(compute_type, 0.40)
+    dbu_per_hour = config.get("dbu_per_hour", 2.0)
+    hours = config.get("hours_per_month", 730)
+    return round(dbu_rate * dbu_per_hour * hours, 2)
+
+
 PRICING_FORMULAS = {
     "per_hour": per_hour,
     "per_request": per_request,
@@ -106,6 +126,7 @@ PRICING_FORMULAS = {
     "per_shard_hour": per_shard_hour,
     "per_tb_query": per_tb_query,
     "per_node_hour": per_node_hour,
+    "per_dbu": per_dbu,
 }
 
 _FALLBACK_PRICES: dict[str, float] = {
@@ -231,6 +252,19 @@ _FALLBACK_PRICES: dict[str, float] = {
     "ses": 1.0,
     "sendgrid": 0.0,
     "terraform_cloud": 0.0,
+    # Databricks
+    "databricks_sql_warehouse": 300.0,
+    "databricks_cluster": 400.0,
+    "databricks_job": 100.0,
+    "databricks_pipeline": 150.0,
+    "databricks_model_serving": 200.0,
+    "databricks_unity_catalog": 0.0,
+    "databricks_vector_search": 50.0,
+    "databricks_genie": 25.0,
+    "databricks_notebook": 0.0,
+    "databricks_secret_scope": 0.0,
+    "databricks_dashboard": 0.0,
+    "databricks_volume": 15.0,
 }
 
 

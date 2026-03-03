@@ -13,6 +13,7 @@ PROVIDER_COLORS = {
     "aws": "#FF9900",
     "gcp": "#4285F4",
     "azure": "#0078D4",
+    "databricks": "#FF3621",
 }
 
 # Category accent colors (dark-theme friendly)
@@ -29,6 +30,9 @@ CATEGORY_COLORS = {
     "monitoring": "#06b6d4",
     "ml": "#ec4899",
     "analytics": "#a855f7",
+    "orchestration": "#a78bfa",
+    "streaming": "#f97316",
+    "containers": "#14b8a6",
 }
 
 # Category -> D2/Mermaid node shape
@@ -45,6 +49,9 @@ CATEGORY_SHAPES = {
     "monitoring": "rectangle",
     "ml": "rectangle",
     "analytics": "cylinder",
+    "orchestration": "hexagon",
+    "streaming": "parallelogram",
+    "containers": "rectangle",
 }
 
 # Category -> ASCII single-char label
@@ -61,6 +68,9 @@ CATEGORY_ASCII = {
     "monitoring": "M",
     "ml": "A",
     "analytics": "R",
+    "orchestration": "O",
+    "streaming": "~",
+    "containers": "#",
 }
 
 VALID_SHAPES = {"rectangle", "cylinder", "hexagon", "stadium", "parallelogram"}
@@ -157,6 +167,22 @@ _AZURE_ICONS: list[ServiceIcon] = [
     _icon("azure", "service_bus", "queue", "Service Bus"),
 ]
 
+# --- Databricks ---
+_DATABRICKS_ICONS: list[ServiceIcon] = [
+    _icon("databricks", "databricks_sql_warehouse", "analytics", "SQL Warehouse"),
+    _icon("databricks", "databricks_cluster", "compute", "Cluster"),
+    _icon("databricks", "databricks_job", "orchestration", "Job"),
+    _icon("databricks", "databricks_pipeline", "streaming", "DLT Pipeline"),
+    _icon("databricks", "databricks_model_serving", "ml", "Model Serving"),
+    _icon("databricks", "databricks_unity_catalog", "security", "Unity Catalog"),
+    _icon("databricks", "databricks_vector_search", "database", "Vector Search"),
+    _icon("databricks", "databricks_genie", "analytics", "Genie"),
+    _icon("databricks", "databricks_notebook", "compute", "Notebook"),
+    _icon("databricks", "databricks_secret_scope", "security", "Secret Scope"),
+    _icon("databricks", "databricks_dashboard", "analytics", "Dashboard"),
+    _icon("databricks", "databricks_volume", "storage", "Volume"),
+]
+
 # --- Generic fallbacks ---
 _GENERIC_ICONS: list[ServiceIcon] = [
     _icon("generic", "user", "network", "User"),
@@ -173,7 +199,7 @@ _GENERIC_ICONS: list[ServiceIcon] = [
 
 # Build the lookup registry: (provider, service) -> ServiceIcon
 ICON_REGISTRY: dict[tuple[str, str], ServiceIcon] = {}
-for _icon_list in (_AWS_ICONS, _GCP_ICONS, _AZURE_ICONS, _GENERIC_ICONS):
+for _icon_list in (_AWS_ICONS, _GCP_ICONS, _AZURE_ICONS, _DATABRICKS_ICONS, _GENERIC_ICONS):
     for _si in _icon_list:
         ICON_REGISTRY[(_si.provider, _si.service)] = _si
 

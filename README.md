@@ -14,7 +14,7 @@ Cloudwright bridges the gap between a whiteboard sketch and deployable infrastru
 flowchart LR
     subgraph Input
         nl(["Natural language"])
-        tpl(["14 templates"])
+        tpl(["16 templates"])
         imp(["Import TF / CFN"])
     end
 
@@ -68,7 +68,7 @@ Most cloud tooling assumes you already know what to build (IaC) or already have 
 | Architecture diffing | Y | Plan diff | Preview diff | Drift | Cost diff | - |
 | Diagram export | Mermaid + D2 | - | - | Y | - | - |
 | SBOM / AIBOM | Y | - | - | - | - | - |
-| Multi-cloud | AWS/GCP/Azure | All | All | AWS/GCP/Azure/OCI | AWS/GCP/Azure | All |
+| Multi-cloud | AWS/GCP/Azure/Databricks | All | All | AWS/GCP/Azure/OCI | AWS/GCP/Azure | All |
 | Open source | Y | BSL / OpenTofu | Engine only | - | CLI only | Y |
 | Runs locally | Y | Y | Y | - | Y | Y |
 
@@ -379,7 +379,67 @@ Top Recommendations:
   2. Add an authentication service
 ```
 
-All examples above use real output from `cloudwright-ai 0.2.1` on PyPI — no LLM key required.
+### 7. Databricks Lakehouse — Design to Deploy
+
+Design a Databricks lakehouse architecture with cost estimates and Terraform export:
+
+```bash
+$ cloudwright init --template lakehouse-databricks -o lakehouse.yaml
+
+Created lakehouse.yaml from template 'lakehouse-databricks'
+  Provider: databricks
+  Components: 6
+
+$ cloudwright cost lakehouse.yaml
+
+                  Cost Breakdown — Databricks Lakehouse
+┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Component      ┃ Service                  ┃  Monthly ┃ Notes                   ┃
+┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ unity_catalog  │ databricks_unity_catalog │    $0.00 │ Governance (included)   │
+│ sql_warehouse  │ databricks_sql_warehouse │  $300.00 │ SQL Serverless, 2 DBU/h │
+│ etl_pipeline   │ databricks_pipeline      │  $150.00 │ DLT Pro                 │
+│ volume         │ databricks_volume        │   $15.00 │ 100GB managed storage   │
+│ model_serving  │ databricks_model_serving │  $200.00 │ GPU inference endpoint  │
+│ dashboard      │ databricks_dashboard     │    $0.00 │ AI/BI (included)        │
+├────────────────┼──────────────────────────┼──────────┼─────────────────────────┤
+│                │                          │  $665.00 │                         │
+└────────────────┴──────────────────────────┴──────────┴─────────────────────────┘
+
+$ cloudwright export lakehouse.yaml --format terraform -o ./infra
+
+Written to ./infra/main.tf
+```
+
+The generated Terraform uses the `databricks/databricks` provider and maps each service to native Databricks resources:
+
+```hcl
+terraform {
+  required_providers {
+    databricks = {
+      source  = "databricks/databricks"
+      version = "~> 1.65"
+    }
+  }
+}
+
+resource "databricks_sql_endpoint" "sql_warehouse" {
+  name             = "SQL Analytics Warehouse"
+  cluster_size     = "Small"
+  max_num_clusters = 1
+  tags { custom_tags { key = "managed-by"; value = "cloudwright" } }
+}
+
+resource "databricks_pipeline" "etl_pipeline" {
+  name    = "ETL Pipeline"
+  edition = "ADVANCED"
+  channel = "CURRENT"
+}
+```
+
+Cross-cloud equivalences map Databricks services to AWS/GCP/Azure alternatives — `cloudwright compare lakehouse.yaml --providers aws` shows what the same architecture would cost on pure AWS (Redshift + Glue + SageMaker).
+
+All examples above use real output from `cloudwright-ai` on PyPI — no LLM key required.
 
 ## Web UI
 
@@ -412,10 +472,11 @@ cloudwright modify spec.yaml "Add a Redis cache between the API and database"
 cloudwright chat  # interactive mode with /save, /cost, /export commands
 ```
 
-100 service keys across three clouds:
+112 service keys across four clouds:
 - **AWS** (47): EC2, ECS, EKS, Lambda, RDS, Aurora, DynamoDB, S3, SQS, SNS, Kinesis, Redshift, SageMaker, KMS, GuardDuty, CloudTrail, and more
 - **GCP** (25): Compute Engine, GKE, Cloud Run, Cloud SQL, Spanner, BigQuery, Pub/Sub, Vertex AI, Cloud Build, and more
 - **Azure** (28): Virtual Machines, AKS, Azure Functions, Azure SQL, Cosmos DB, Synapse, Azure ML, Azure Sentinel, and more
+- **Databricks** (12): SQL Warehouse, Clusters, Jobs, DLT Pipelines, Model Serving, Unity Catalog, Vector Search, Genie, Notebooks, Volumes, and more
 
 The architect applies safe defaults automatically: encryption on data stores, backups on databases, multi-AZ on production workloads, auto-scaling on compute.
 
@@ -429,7 +490,7 @@ cloudwright cost spec.yaml --pricing-tier reserved_1yr  # 1-year reserved
 cloudwright cost spec.yaml --compare gcp,azure          # multi-cloud comparison
 ```
 
-The cost engine resolves prices through three tiers: catalog database (instance-level pricing), registry formula dispatch (10 named formulas for serverless/managed services), and static fallback table (90+ service defaults). Data transfer costs are calculated separately with per-provider egress rates.
+The cost engine resolves prices through three tiers: catalog database (instance-level pricing), registry formula dispatch (11 named formulas for serverless/managed services), and static fallback table (100+ service defaults). Data transfer costs are calculated separately with per-provider egress rates.
 
 Pricing tiers: `on_demand` (1.0x), `reserved_1yr` (0.6x), `reserved_3yr` (0.4x), `spot` (0.3x).
 
@@ -460,7 +521,7 @@ Seven export formats from a single ArchSpec:
 
 | Format | Flag | Description |
 |---|---|---|
-| Terraform HCL | `terraform` | Provider-native resources for AWS (24 types), GCP (11), Azure (10) |
+| Terraform HCL | `terraform` | Provider-native resources for AWS (24 types), GCP (11), Azure (10), Databricks (12) |
 | CloudFormation | `cloudformation` | YAML template with Parameters and Outputs |
 | Mermaid | `mermaid` | Tier-grouped flowchart for docs and GitHub |
 | D2 | `d2` | D2 diagram language with provider badges |
@@ -593,18 +654,20 @@ Auto-detects format from file extension and content. Plugin support for custom i
 
 ### Templates
 
-14 starter architectures across three providers:
+16 starter architectures across four providers:
 
 ```bash
 cloudwright init --list                              # show available templates
 cloudwright init --template serverless_api           # AWS API Gateway + Lambda + DynamoDB
 cloudwright init --template gcp_microservices -o .   # GKE + service mesh
+cloudwright init --template lakehouse-databricks     # Unity Catalog + SQL Warehouse + DLT
 cloudwright init --project                           # create .cloudwright/ project directory
 ```
 
 **AWS** (8): three_tier_web, serverless_api, ml_pipeline, data_lake, event_driven, static_site, microservices, batch_processing.
 **GCP** (3): three_tier_web, serverless_api, microservices.
 **Azure** (3): three_tier_web, serverless_api, microservices.
+**Databricks** (2): lakehouse-databricks, ml-platform-databricks.
 
 ### Web UI
 
@@ -710,6 +773,7 @@ Components use a 5-tier system for vertical positioning: Edge (0), Ingress (1), 
 | `refresh` | Update catalog pricing data (`--provider`, `--dry-run`) |
 | `catalog search <query>` | Search instance catalog by specs |
 | `catalog compare <a> <b>` | Side-by-side instance comparison |
+| `databricks-validate <spec>` | Validate Databricks components against workspace (`--host`, `--token`) |
 
 Global flags: `--json`, `--verbose / -v`, `--version / -V`.
 
@@ -759,12 +823,12 @@ print(f"Grade: {report.grade} ({report.overall:.0f}/100)")
 
 Ships as a SQLite database bundled with the package. No network calls required.
 
-- Compute, database, networking, and storage pricing for AWS, GCP, and Azure
+- Compute, database, networking, and storage pricing for AWS, GCP, Azure, and Databricks
 - 4 pricing tiers (on-demand, reserved 1yr/3yr, spot)
 - Cross-cloud instance equivalences with confidence scores
-- 22 service-level equivalence pairs for multi-cloud mapping
-- 10 named pricing formulas for managed/serverless services
-- 90+ static fallback prices for less common services
+- 22 service-level equivalence pairs for multi-cloud mapping (including Databricks)
+- 11 named pricing formulas for managed/serverless services (including DBU-based)
+- 100+ static fallback prices for less common services
 
 ```bash
 cloudwright catalog search "8 vcpu 32gb memory"
@@ -811,7 +875,7 @@ pip install -e packages/web
 ```
 
 ```bash
-pytest packages/core/tests/           # 831 tests
+pytest packages/core/tests/           # 800+ tests
 ruff check packages/ && ruff format packages/
 ```
 

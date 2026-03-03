@@ -27,7 +27,16 @@ services:
         request_units: 400
         storage_gb: 10
 
+  databricks:
+    databricks_vector_search:
+      name: "Databricks Vector Search"
+      description: "Managed vector database for similarity search"
+      terraform_types: ["databricks_vector_search_endpoint", "databricks_vector_search_index"]
+      pricing_formula: per_dbu
+      default_config: {compute_type: vector_search, dbu_per_hour: 2.0}
+
 equivalences:
   - aws: dynamodb
     gcp: firestore
     azure: cosmos_db
+    databricks: databricks_vector_search

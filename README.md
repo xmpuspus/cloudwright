@@ -381,6 +381,10 @@ Top Recommendations:
 
 ### 7. Databricks Lakehouse — Design to Deploy
 
+<p align="center">
+  <img src="examples/cloudwright-databricks-demo.gif" alt="Databricks Lakehouse Demo" width="800">
+</p>
+
 Design a Databricks lakehouse architecture with cost estimates and Terraform export:
 
 ```bash

@@ -4,7 +4,8 @@
 
 | Version | Supported |
 | ------- | --------- |
-| 0.1.x   | Yes       |
+| 0.2.x   | Yes       |
+| 0.1.x   | No        |
 
 ## Reporting a Vulnerability
 
@@ -38,15 +39,6 @@ Cloudwright follows these security practices:
 - **No dangerous functions** — no eval(), exec(), or pickle with untrusted data
 - **LLM timeouts** (60s) to prevent hanging requests
 - **Parameterized SQL** throughout the catalog layer
-
-### Not Yet Implemented
-
-The following are planned for production readiness but not yet in place:
-
-- API key authentication (planned: check `CLOUDWRIGHT_API_KEY` env var)
-- Rate limiting on LLM-backed endpoints
-- Security headers middleware (X-Content-Type-Options, X-Frame-Options)
-- Thread-safe singleton initialization
 
 ## Dependency Management
 

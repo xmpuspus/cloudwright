@@ -12,9 +12,12 @@ authors = [{name = "Xavier Puspus"}]
 readme = "README.md"
 keywords = ["cloud", "web", "architecture", "fastapi"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
+    "Environment :: Web Environment",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: System :: Systems Administration",
 ]
 dependencies = [
     "cloudwright-ai>=0.1.0,<1",
@@ -25,6 +28,8 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/xmpuspus/cloudwright"
 Repository = "https://github.com/xmpuspus/cloudwright"
+Issues = "https://github.com/xmpuspus/cloudwright/issues"
+Changelog = "https://github.com/xmpuspus/cloudwright/blob/main/CHANGELOG.md"
 
 [tool.hatch.version]
 path = "cloudwright_web/__init__.py"

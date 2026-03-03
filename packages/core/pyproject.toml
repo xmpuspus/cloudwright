@@ -12,7 +12,7 @@ authors = [{name = "Xavier Puspus"}]
 readme = "README.md"
 keywords = ["cloud", "architecture", "terraform", "aws", "gcp", "azure", "infrastructure", "iac"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.12",
@@ -28,9 +28,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-cli = ["cloudwright-ai-cli==0.2.26"]
-web = ["cloudwright-ai-cli==0.2.26", "cloudwright-ai-web==0.2.26"]
-all = ["cloudwright-ai-cli==0.2.26", "cloudwright-ai-web==0.2.26", "databricks-sdk>=0.38.0"]
+cli = ["cloudwright-ai-cli==0.2.27"]
+web = ["cloudwright-ai-cli==0.2.27", "cloudwright-ai-web==0.2.27"]
+all = ["cloudwright-ai-cli==0.2.27", "cloudwright-ai-web==0.2.27", "databricks-sdk>=0.38.0"]
 pdf = ["weasyprint", "markdown2"]
 databricks = ["databricks-sdk>=0.38.0"]
 
@@ -38,6 +38,7 @@ databricks = ["databricks-sdk>=0.38.0"]
 Homepage = "https://github.com/xmpuspus/cloudwright"
 Repository = "https://github.com/xmpuspus/cloudwright"
 Issues = "https://github.com/xmpuspus/cloudwright/issues"
+Changelog = "https://github.com/xmpuspus/cloudwright/blob/main/CHANGELOG.md"
 
 [tool.hatch.version]
 path = "cloudwright/__init__.py"

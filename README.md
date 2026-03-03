@@ -1,5 +1,10 @@
 # Cloudwright
 
+[![PyPI](https://img.shields.io/pypi/v/cloudwright-ai.svg)](https://pypi.org/project/cloudwright-ai/)
+[![CI](https://github.com/xmpuspus/cloudwright/actions/workflows/ci.yml/badge.svg)](https://github.com/xmpuspus/cloudwright/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.12+](https://img.shields.io/pypi/pyversions/cloudwright-ai)](https://pypi.org/project/cloudwright-ai/)
+
 Architecture intelligence for cloud engineers.
 
 Cloudwright bridges the gap between a whiteboard sketch and deployable infrastructure. Describe a system in natural language, and Cloudwright produces a structured architecture spec, cost estimates, compliance reports, Terraform/CloudFormation code, diagrams, and diffs — all from a single format called **ArchSpec**.
@@ -388,9 +393,9 @@ Top Recommendations:
 Design a Databricks lakehouse architecture with cost estimates and Terraform export:
 
 ```bash
-$ cloudwright init --template lakehouse-databricks -o lakehouse.yaml
+$ cloudwright init --template databricks_lakehouse -o lakehouse.yaml
 
-Created lakehouse.yaml from template 'lakehouse-databricks'
+Created lakehouse.yaml from template 'databricks_lakehouse'
   Provider: databricks
   Components: 6
 
@@ -664,14 +669,14 @@ Auto-detects format from file extension and content. Plugin support for custom i
 cloudwright init --list                              # show available templates
 cloudwright init --template serverless_api           # AWS API Gateway + Lambda + DynamoDB
 cloudwright init --template gcp_microservices -o .   # GKE + service mesh
-cloudwright init --template lakehouse-databricks     # Unity Catalog + SQL Warehouse + DLT
+cloudwright init --template databricks_lakehouse     # Unity Catalog + SQL Warehouse + DLT
 cloudwright init --project                           # create .cloudwright/ project directory
 ```
 
 **AWS** (8): three_tier_web, serverless_api, ml_pipeline, data_lake, event_driven, static_site, microservices, batch_processing.
 **GCP** (3): three_tier_web, serverless_api, microservices.
 **Azure** (3): three_tier_web, serverless_api, microservices.
-**Databricks** (2): lakehouse-databricks, ml-platform-databricks.
+**Databricks** (2): databricks_lakehouse, databricks_ml_platform.
 
 ### Web UI
 
@@ -872,14 +877,14 @@ cloudwright/
 ## Development
 
 ```bash
-git clone https://github.com/theAtticAI/cloudwright
+git clone https://github.com/xmpuspus/cloudwright
 pip install -e packages/core
 pip install -e packages/cli
 pip install -e packages/web
 ```
 
 ```bash
-pytest packages/core/tests/           # 800+ tests
+pytest packages/core/tests/           # 1000+ tests
 ruff check packages/ && ruff format packages/
 ```
 

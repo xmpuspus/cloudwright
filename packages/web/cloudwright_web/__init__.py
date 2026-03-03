@@ -1,6 +1,6 @@
 """Cloudwright Web — FastAPI backend for architecture intelligence."""
 
-__version__ = "0.2.24"
+__version__ = "0.2.25"
 
 
 def __getattr__(name: str):

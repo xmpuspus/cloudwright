@@ -32,6 +32,14 @@ services:
         instance_type: Standard_D2s_v5
         storage_gb: 30
 
+  databricks:
+    databricks_cluster:
+      name: "Databricks Cluster"
+      description: "General purpose compute clusters"
+      terraform_types: ["databricks_cluster"]
+      pricing_formula: per_dbu
+      default_config: {compute_type: all_purpose, dbu_per_hour: 2.0}
+
 equivalences:
   - aws: ec2
     gcp: compute_engine

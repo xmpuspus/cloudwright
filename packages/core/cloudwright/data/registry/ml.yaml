@@ -26,7 +26,16 @@ services:
       pricing_formula: per_hour
       default_config: {instance_type: Standard_DS3_v2, training_hours: 10}
 
+  databricks:
+    databricks_model_serving:
+      name: "Databricks Model Serving"
+      description: "Real-time ML model inference endpoints"
+      terraform_types: ["databricks_serving_endpoint"]
+      pricing_formula: per_dbu
+      default_config: {compute_type: model_serving, dbu_per_hour: 10.0}
+
 equivalences:
   - aws: sagemaker
     gcp: vertex_ai
     azure: azure_ml
+    databricks: databricks_model_serving

@@ -1,0 +1,88 @@
+"""Databricks service definitions."""
+
+DATABRICKS_SERVICES = {
+    "databricks_sql_warehouse": {
+        "name": "Databricks SQL Warehouse",
+        "category": "analytics",
+        "description": "Serverless SQL compute endpoints for BI and analytics",
+        "pricing_model": "per_dbu",
+        "default_config": {"compute_type": "sql_serverless", "dbu_per_hour": 4.0, "hours_per_month": 730},
+    },
+    "databricks_cluster": {
+        "name": "Databricks Cluster",
+        "category": "compute",
+        "description": "General purpose compute clusters for data engineering and science",
+        "pricing_model": "per_dbu",
+        "default_config": {"compute_type": "all_purpose", "dbu_per_hour": 2.0, "hours_per_month": 730},
+    },
+    "databricks_job": {
+        "name": "Databricks Job",
+        "category": "orchestration",
+        "description": "Scheduled and triggered workflow orchestration",
+        "pricing_model": "per_dbu",
+        "default_config": {"compute_type": "jobs", "dbu_per_hour": 2.0, "hours_per_month": 200},
+    },
+    "databricks_pipeline": {
+        "name": "Databricks Delta Live Tables",
+        "category": "streaming",
+        "description": "Declarative ETL pipelines with Delta Live Tables",
+        "pricing_model": "per_dbu",
+        "default_config": {"compute_type": "dlt_core", "dbu_per_hour": 3.0, "hours_per_month": 730},
+    },
+    "databricks_model_serving": {
+        "name": "Databricks Model Serving",
+        "category": "ml",
+        "description": "Real-time and batch ML model inference endpoints",
+        "pricing_model": "per_dbu",
+        "default_config": {"compute_type": "model_serving", "dbu_per_hour": 10.0, "hours_per_month": 730},
+    },
+    "databricks_unity_catalog": {
+        "name": "Databricks Unity Catalog",
+        "category": "security",
+        "description": "Unified data governance for all data and AI assets",
+        "pricing_model": "included",
+        "default_config": {},
+    },
+    "databricks_vector_search": {
+        "name": "Databricks Vector Search",
+        "category": "database",
+        "description": "Serverless vector similarity search for RAG and embeddings",
+        "pricing_model": "per_dbu",
+        "default_config": {"compute_type": "vector_search", "dbu_per_hour": 1.0, "hours_per_month": 730},
+    },
+    "databricks_genie": {
+        "name": "Databricks Genie",
+        "category": "analytics",
+        "description": "Natural language data exploration and Q&A",
+        "pricing_model": "per_dbu",
+        "default_config": {"compute_type": "sql_serverless", "dbu_per_hour": 0.5, "hours_per_month": 200},
+    },
+    "databricks_notebook": {
+        "name": "Databricks Notebook",
+        "category": "compute",
+        "description": "Interactive collaborative notebooks for data exploration",
+        "pricing_model": "per_dbu",
+        "default_config": {"compute_type": "all_purpose", "dbu_per_hour": 2.0, "hours_per_month": 160},
+    },
+    "databricks_secret_scope": {
+        "name": "Databricks Secret Scope",
+        "category": "security",
+        "description": "Secure secrets management backed by Databricks or Azure Key Vault",
+        "pricing_model": "included",
+        "default_config": {},
+    },
+    "databricks_dashboard": {
+        "name": "Databricks AI/BI Dashboard",
+        "category": "analytics",
+        "description": "AI-powered business intelligence dashboards",
+        "pricing_model": "per_dbu",
+        "default_config": {"compute_type": "sql_serverless", "dbu_per_hour": 0.5, "hours_per_month": 200},
+    },
+    "databricks_volume": {
+        "name": "Databricks Volume",
+        "category": "storage",
+        "description": "Unity Catalog managed and external volumes for file storage",
+        "pricing_model": "per_gb",
+        "default_config": {"storage_gb": 100},
+    },
+}

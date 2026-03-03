@@ -137,6 +137,15 @@ REGION_MAP = {
         "westeurope": ("eu_west", "West Europe"),
         "southeastasia": ("ap_southeast", "Southeast Asia"),
     },
+    "databricks": {
+        "us-east-1": ("us_east", "US East (Virginia)"),
+        "us-west-2": ("us_west", "US West (Oregon)"),
+        "eu-west-1": ("eu_west", "EU (Ireland)"),
+        "ap-southeast-1": ("ap_southeast", "Asia Pacific (Singapore)"),
+        "eastus": ("us_east", "East US"),
+        "westeurope": ("eu_west", "West Europe"),
+        "europe-west1": ("eu_west", "EU (Belgium)"),
+    },
 }
 
 
@@ -184,7 +193,12 @@ class Catalog:
     def _seed(self, conn: sqlite3.Connection):
         """Load catalog data from JSON files into SQLite."""
         # Insert providers
-        for pid, name in [("aws", "Amazon Web Services"), ("gcp", "Google Cloud"), ("azure", "Microsoft Azure")]:
+        for pid, name in [
+            ("aws", "Amazon Web Services"),
+            ("gcp", "Google Cloud"),
+            ("azure", "Microsoft Azure"),
+            ("databricks", "Databricks"),
+        ]:
             conn.execute("INSERT OR IGNORE INTO providers (id, name) VALUES (?, ?)", (pid, name))
 
         # Insert regions

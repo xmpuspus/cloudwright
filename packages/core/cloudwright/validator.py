@@ -76,6 +76,20 @@ _BAA_ELIGIBLE = {
         "azure_cdn",
         "azure_dns",
     },
+    "databricks": {
+        "databricks_sql_warehouse",
+        "databricks_cluster",
+        "databricks_job",
+        "databricks_pipeline",
+        "databricks_model_serving",
+        "databricks_unity_catalog",
+        "databricks_vector_search",
+        "databricks_genie",
+        "databricks_notebook",
+        "databricks_secret_scope",
+        "databricks_dashboard",
+        "databricks_volume",
+    },
 }
 
 _DATA_STORE_SERVICES = {

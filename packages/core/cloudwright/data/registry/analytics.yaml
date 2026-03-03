@@ -26,7 +26,16 @@ services:
       pricing_formula: per_hour
       default_config: {dwu: 100, storage_gb: 100}
 
+  databricks:
+    databricks_sql_warehouse:
+      name: "Databricks SQL Warehouse"
+      description: "Serverless SQL compute for BI and analytics"
+      terraform_types: ["databricks_sql_endpoint"]
+      pricing_formula: per_dbu
+      default_config: {compute_type: sql_serverless, dbu_per_hour: 4.0}
+
 equivalences:
   - aws: redshift
     gcp: bigquery
     azure: synapse
+    databricks: databricks_sql_warehouse

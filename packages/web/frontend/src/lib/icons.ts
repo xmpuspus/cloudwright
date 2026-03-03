@@ -79,6 +79,14 @@ export const SERVICE_CATEGORY: Record<string, string> = {
 
   // Orchestration
   cloud_composer: "orchestration", logic_apps: "orchestration",
+
+  // Databricks
+  databricks_sql_warehouse: "analytics", databricks_cluster: "compute",
+  databricks_job: "orchestration", databricks_pipeline: "streaming",
+  databricks_model_serving: "ml", databricks_unity_catalog: "security",
+  databricks_vector_search: "database", databricks_genie: "analytics",
+  databricks_notebook: "compute", databricks_secret_scope: "security",
+  databricks_dashboard: "analytics", databricks_volume: "storage",
 };
 
 // SVG path data per category (viewBox 0 0 24 24, stroke-based)

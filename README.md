@@ -8,7 +8,7 @@ Cloudwright bridges the gap between a whiteboard sketch and deployable infrastru
   <img src="examples/cloudwright-demo.gif" alt="Cloudwright Web UI Demo" width="800">
 </p>
 
-<p align="center"><em>Multi-cloud architecture design from a single prompt — "Design an AI chatbot on GCP connecting to RDS and S3 in AWS. Keep it secure." The web UI generates the full architecture with cost estimates, boundary grouping, and interactive diagrams in under 40 seconds.</em></p>
+<p align="center"><em>HIPAA-compliant healthcare API on AWS — 12 components with VPC boundaries, cost breakdown ($2,263/mo), compliance validation (HIPAA 60%), and six export formats including Terraform and CloudFormation.</em></p>
 
 ```mermaid
 flowchart LR

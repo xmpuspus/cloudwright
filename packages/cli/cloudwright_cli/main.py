@@ -1,6 +1,7 @@
 import typer
 
 from cloudwright_cli import __version__
+from cloudwright_cli.commands.adr import adr
 from cloudwright_cli.commands.analyze_cmd import analyze
 from cloudwright_cli.commands.catalog_cmd import catalog_app
 from cloudwright_cli.commands.chat import chat
@@ -18,6 +19,7 @@ from cloudwright_cli.commands.modify_cmd import modify
 from cloudwright_cli.commands.policy import policy
 from cloudwright_cli.commands.refresh_cmd import refresh
 from cloudwright_cli.commands.score_cmd import score
+from cloudwright_cli.commands.security_cmd import security_scan
 from cloudwright_cli.commands.validate import validate
 
 
@@ -65,4 +67,6 @@ app.command()(analyze)
 app.command()(refresh)
 app.command()(lint)
 app.command()(databricks_validate)
+app.command(name="security")(security_scan)
+app.command(name="adr")(adr)
 app.add_typer(catalog_app, name="catalog")

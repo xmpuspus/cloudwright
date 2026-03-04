@@ -843,6 +843,118 @@ TEMPLATES: dict[str, dict] = {
         ],
         "keywords": ["databricks", "ml", "machine learning", "mlflow", "model serving", "notebook"],
     },
+    "databricks-cost-governance": {
+        "name": "Databricks Cost Governance",
+        "provider": "databricks",
+        "region": "us-east-1",
+        "components": [
+            {
+                "id": "unity_catalog",
+                "service": "databricks_unity_catalog",
+                "provider": "databricks",
+                "label": "Unity Catalog",
+                "tier": 4,
+                "config": {"encryption": True, "backup": True},
+            },
+            {
+                "id": "job_cluster",
+                "service": "databricks_job",
+                "provider": "databricks",
+                "label": "Job Cluster",
+                "tier": 3,
+                "config": {"compute_type": "jobs", "auto_scaling": True},
+            },
+            {
+                "id": "sql_warehouse",
+                "service": "databricks_sql_warehouse",
+                "provider": "databricks",
+                "label": "SQL Warehouse",
+                "tier": 3,
+                "config": {"instance_class": "Small", "auto_scaling": True, "auto_stop_mins": 10},
+            },
+            {
+                "id": "pipeline",
+                "service": "databricks_pipeline",
+                "provider": "databricks",
+                "label": "Delta Live Tables",
+                "tier": 3,
+                "config": {"auto_scaling": True},
+            },
+            {
+                "id": "secret_scope",
+                "service": "databricks_secret_scope",
+                "provider": "databricks",
+                "label": "Secret Scope",
+                "tier": 4,
+                "config": {},
+            },
+        ],
+        "connections": [
+            {
+                "source": "unity_catalog",
+                "target": "sql_warehouse",
+                "label": "governance",
+                "protocol": "HTTPS",
+                "port": 443,
+            },
+            {
+                "source": "unity_catalog",
+                "target": "pipeline",
+                "label": "governance",
+                "protocol": "HTTPS",
+                "port": 443,
+            },
+            {
+                "source": "pipeline",
+                "target": "sql_warehouse",
+                "label": "query",
+                "protocol": "HTTPS",
+                "port": 443,
+            },
+            {
+                "source": "job_cluster",
+                "target": "unity_catalog",
+                "label": "data access",
+                "protocol": "HTTPS",
+                "port": 443,
+            },
+            {
+                "source": "secret_scope",
+                "target": "job_cluster",
+                "label": "credentials",
+                "protocol": "HTTPS",
+                "port": 443,
+            },
+        ],
+        "rationale": [
+            {
+                "decision": "Job clusters over all-purpose",
+                "reason": "$0.15/DBU vs $0.40/DBU — 63% cost reduction for scheduled workloads",
+            },
+            {
+                "decision": "SQL Warehouse auto-stop at 10 minutes",
+                "reason": "Eliminates idle compute charges, typical saving 40-70% for batch BI",
+            },
+            {
+                "decision": "Secret Scope for credentials",
+                "reason": "Avoids hardcoded tokens in notebooks — free service with zero overhead",
+            },
+        ],
+        "suggestions": [
+            "Set cluster_log_conf to ship logs to S3/ADLS for cost attribution",
+            "Enable Databricks Budget Alerts for monthly spend limits",
+            "Use spot/preemptible instances for non-critical job clusters",
+        ],
+        "keywords": [
+            "databricks",
+            "cost",
+            "governance",
+            "job cluster",
+            "auto-stop",
+            "budget",
+            "optimization",
+        ],
+    },
 }
 
 # Keywords that indicate specific providers to help template selection

@@ -650,6 +650,42 @@ cloudwright policy spec.yaml --rules policy.yaml
 
 Severity levels: `deny` (exit code 1), `warn`, `info`.
 
+### Security Scanning
+
+Scans an ArchSpec for security anti-patterns — missing encryption, open ingress, no HTTPS, IAM wildcards, unmonitored production architectures, and more.
+
+```bash
+cloudwright security spec.yaml              # scan with default fail-on=high
+cloudwright security spec.yaml --fail-on critical
+cloudwright security spec.yaml --json       # JSON output for CI pipelines
+```
+
+Also scans exported Terraform HCL for `0.0.0.0/0` security groups, `"*"` IAM actions, and `publicly_accessible = true` databases:
+
+```python
+from cloudwright.security import SecurityScanner, scan_terraform
+
+# Scan ArchSpec
+report = SecurityScanner().scan(spec)
+for f in report.findings:
+    print(f"[{f.severity.upper()}] {f.message}")
+
+# Scan Terraform HCL output
+hcl = spec.export("terraform")
+report = scan_terraform(hcl)
+print(f"Passed: {report.passed}")
+```
+
+### Architecture Decision Records
+
+Generate an ADR (Architecture Decision Record) from any ArchSpec. Uses the MADR format with context, decision, consequences, and cost estimate.
+
+```bash
+cloudwright adr spec.yaml                          # print to stdout
+cloudwright adr spec.yaml --output docs/ADR-001.md
+cloudwright adr spec.yaml --title "Platform Choice" --decision "Adopt Databricks over AWS EMR"
+```
+
 ### Infrastructure Import
 
 Import existing infrastructure into ArchSpec format:
@@ -663,7 +699,7 @@ Auto-detects format from file extension and content. Plugin support for custom i
 
 ### Templates
 
-16 starter architectures across four providers:
+17 starter architectures across four providers:
 
 ```bash
 cloudwright init --list                              # show available templates
@@ -782,6 +818,8 @@ Components use a 5-tier system for vertical positioning: Edge (0), Ingress (1), 
 | `refresh` | Update catalog pricing data (`--provider`, `--dry-run`) |
 | `catalog search <query>` | Search instance catalog by specs |
 | `catalog compare <a> <b>` | Side-by-side instance comparison |
+| `security <spec>` | Scan for security anti-patterns (`--fail-on critical/high/medium`) |
+| `adr <spec>` | Generate Architecture Decision Record (`--output`, `--title`, `--decision`) |
 | `databricks-validate <spec>` | Validate Databricks components against workspace (`--host`, `--token`) |
 
 Global flags: `--json`, `--verbose / -v`, `--version / -V`.

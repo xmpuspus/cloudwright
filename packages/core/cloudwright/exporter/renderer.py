@@ -61,7 +61,8 @@ class DiagramRenderer:
         if not DiagramRenderer.is_available():
             raise RuntimeError("D2 binary not installed. Install: curl -fsSL https://d2lang.com/install.sh | sh")
 
-        d2_source = d2_render(spec)
+        # Icons fetch from Terrastruct CDN which is unreliable; skip for PNG
+        d2_source = d2_render(spec, show_icons=False)
         theme_id = _THEME_MAP.get(theme, "200")
 
         with tempfile.TemporaryDirectory() as tmp:

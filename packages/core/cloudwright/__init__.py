@@ -17,7 +17,7 @@ from cloudwright.spec import (
     ValidationResult,
 )
 
-__version__ = "0.2.27"
+__version__ = "0.3.0"
 
 __all__ = [
     "Alternative",
@@ -41,8 +41,12 @@ __all__ = [
     "DiffResult",
     "DriftReport",
     "get_timeline",
+    "import_spec",
     "LintWarning",
     "lint",
+    "SecurityFinding",
+    "SecurityReport",
+    "SecurityScanner",
     "ValidationCheck",
     "ValidationResult",
     "Validator",
@@ -99,4 +103,20 @@ def __getattr__(name: str):
         from cloudwright.evolution import diff_versions
 
         return diff_versions
+    if name == "import_spec":
+        from cloudwright.importer import import_spec
+
+        return import_spec
+    if name == "SecurityScanner":
+        from cloudwright.security import SecurityScanner
+
+        return SecurityScanner
+    if name == "SecurityFinding":
+        from cloudwright.security import SecurityFinding
+
+        return SecurityFinding
+    if name == "SecurityReport":
+        from cloudwright.security import SecurityReport
+
+        return SecurityReport
     raise AttributeError(f"module 'cloudwright' has no attribute {name!r}")

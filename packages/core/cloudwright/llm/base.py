@@ -24,3 +24,7 @@ class BaseLLM(ABC):
     @abstractmethod
     def generate_stream(self, messages: list[dict], system: str, max_tokens: int = 2000) -> Iterator[str]:
         """Stream generation using the capable model. Yields text chunks."""
+
+    def estimate_tokens(self, text: str) -> int:
+        """Rough token count estimate (~4 chars per token for English)."""
+        return len(text) // 4

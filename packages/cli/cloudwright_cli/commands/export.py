@@ -9,6 +9,8 @@ from cloudwright.exporter import FORMATS
 from rich.console import Console
 from rich.syntax import Syntax
 
+from cloudwright_cli.output import emit_error, emit_success, is_json_mode, validate_output_path
+
 console = Console()
 
 _SYNTAX_MAP = {
@@ -40,8 +42,13 @@ def export(
     """Export an architecture spec to Terraform, CloudFormation, Mermaid, SVG, PNG, SBOM, or AIBOM."""
     fmt = format.lower().strip()
     if fmt not in FORMATS and fmt != "cfn":
-        console.print(f"[red]Error:[/red] Unknown format {fmt!r}. Supported: {', '.join(FORMATS)}")
-        raise typer.Exit(1)
+        emit_error(ctx, ValueError(f"Unknown format {fmt!r}"), action=f"Use one of: {', '.join(FORMATS)}")
+
+    if output:
+        try:
+            validate_output_path(output)
+        except ValueError as e:
+            emit_error(ctx, e)
 
     spec = ArchSpec.from_file(spec_file)
 
@@ -62,10 +69,11 @@ def export(
         from cloudwright.exporter.renderer import DiagramRenderer
 
         if not DiagramRenderer.is_available():
-            console.print(
-                "[red]Error:[/red] D2 binary not found. Install: curl -fsSL https://d2lang.com/install.sh | sh"
+            emit_error(
+                ctx,
+                RuntimeError("D2 binary not found"),
+                action="Install: curl -fsSL https://d2lang.com/install.sh | sh",
             )
-            raise typer.Exit(1)
 
         with console.status("Rendering PNG via D2..."):
             data = DiagramRenderer().render_png(spec)
@@ -90,10 +98,8 @@ def export(
     with console.status(f"Exporting as {fmt}..."):
         content = spec.export(fmt, output=output_str, output_dir=output_dir_str)
 
-    if ctx.obj and ctx.obj.get("json"):
-        import json
-
-        print(json.dumps({"format": fmt, "content": content}, default=str))
+    if is_json_mode(ctx):
+        emit_success(ctx, {"format": fmt, "content": content})
         return
 
     if output:

@@ -15,9 +15,11 @@ from cloudwright_cli.commands.export import export
 from cloudwright_cli.commands.import_cmd import import_infra
 from cloudwright_cli.commands.init_cmd import init
 from cloudwright_cli.commands.lint_cmd import lint
+from cloudwright_cli.commands.mcp_cmd import mcp_serve
 from cloudwright_cli.commands.modify_cmd import modify
 from cloudwright_cli.commands.policy import policy
 from cloudwright_cli.commands.refresh_cmd import refresh
+from cloudwright_cli.commands.schema_cmd import schema
 from cloudwright_cli.commands.score_cmd import score
 from cloudwright_cli.commands.security_cmd import security_scan
 from cloudwright_cli.commands.validate import validate
@@ -44,10 +46,14 @@ def main(
     ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Verbose output"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Preview LLM operations without calling the API"),
+    stream: bool = typer.Option(False, "--stream", help="NDJSON streaming output (one JSON line per item)"),
 ) -> None:
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
     ctx.obj["json"] = json_output
+    ctx.obj["dry_run"] = dry_run
+    ctx.obj["stream"] = stream
 
 
 app.command()(design)
@@ -69,4 +75,6 @@ app.command()(lint)
 app.command()(databricks_validate)
 app.command(name="security")(security_scan)
 app.command(name="adr")(adr)
+app.command()(schema)
+app.command(name="mcp")(mcp_serve)
 app.add_typer(catalog_app, name="catalog")

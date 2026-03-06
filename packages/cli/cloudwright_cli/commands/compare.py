@@ -8,17 +8,20 @@ from cloudwright import Architect, ArchSpec
 from rich.console import Console
 from rich.table import Table
 
+from cloudwright_cli.output import emit_success, err_console, is_json_mode
+
 console = Console()
 
 
 def compare(
+    ctx: typer.Context,
     spec_file: Annotated[Path, typer.Argument(help="Path to spec YAML file", exists=True)],
     providers: Annotated[str, typer.Option(help="Comma-separated target providers")],
 ) -> None:
     """Compare an architecture across multiple cloud providers."""
     target_providers = [p.strip() for p in providers.split(",") if p.strip()]
     if not target_providers:
-        console.print("[red]Error:[/red] --providers requires at least one provider")
+        err_console.print("[red]Error:[/red] --providers requires at least one provider")
         raise typer.Exit(1)
 
     spec = ArchSpec.from_file(spec_file)
@@ -31,6 +34,26 @@ def compare(
     for alt in alts:
         if alt.spec:
             alt_map[alt.provider] = alt.spec
+
+    if is_json_mode(ctx):
+        origin_total = spec.cost_estimate.monthly_total if spec.cost_estimate else 0.0
+        data = {
+            "baseline": spec.provider,
+            "providers": {
+                spec.provider: {
+                    "monthly_total": origin_total,
+                    "components": [c.model_dump() for c in spec.components],
+                }
+            },
+        }
+        for alt in alts:
+            data["providers"][alt.provider] = {
+                "monthly_total": alt.monthly_total,
+                "key_differences": alt.key_differences,
+                "components": [c.model_dump() for c in alt.spec.components] if alt.spec else [],
+            }
+        emit_success(ctx, {"comparison": data})
+        return
 
     # Side-by-side service comparison
     table = Table(title=f"Provider Comparison — {spec.name}")

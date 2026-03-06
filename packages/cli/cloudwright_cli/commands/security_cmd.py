@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Annotated
 
@@ -8,6 +7,7 @@ import typer
 from rich.console import Console
 from rich.text import Text
 
+from cloudwright_cli.output import emit_stream, emit_success, is_json_mode, should_stream
 from cloudwright_cli.utils import handle_error
 
 console = Console()
@@ -29,21 +29,31 @@ def security_scan(
         spec = ArchSpec.from_file(spec_file)
         report = SecurityScanner().scan(spec)
 
-        if ctx.obj and ctx.obj.get("json"):
-            result = {
-                "passed": report.passed,
-                "findings": [
-                    {
+        if is_json_mode(ctx):
+            if should_stream(ctx):
+                for f in report.findings:
+                    emit_stream({
                         "severity": f.severity,
                         "rule": f.rule,
                         "component_id": f.component_id,
                         "message": f.message,
                         "remediation": f.remediation,
-                    }
-                    for f in report.findings
-                ],
-            }
-            print(json.dumps(result, indent=2))
+                    })
+            else:
+                result = {
+                    "passed": report.passed,
+                    "findings": [
+                        {
+                            "severity": f.severity,
+                            "rule": f.rule,
+                            "component_id": f.component_id,
+                            "message": f.message,
+                            "remediation": f.remediation,
+                        }
+                        for f in report.findings
+                    ],
+                }
+                emit_success(ctx, result)
             _maybe_exit(report, fail_on)
             return
 

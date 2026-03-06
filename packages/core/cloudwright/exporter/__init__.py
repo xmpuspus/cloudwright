@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from cloudwright.spec import ArchSpec
 
-FORMATS = ("terraform", "cloudformation", "mermaid", "d2", "svg", "png", "c4", "sbom", "aibom", "compliance")
+FORMATS = ("terraform", "cloudformation", "mermaid", "d2", "ascii", "svg", "png", "c4", "sbom", "aibom", "compliance")
 
 
 class ExporterPlugin(ABC):
@@ -68,6 +68,14 @@ def export_spec(spec: ArchSpec, fmt: str, output: str | None = None, output_dir:
 
     if fmt == "d2":
         from cloudwright.exporter.d2 import render
+
+        content = render(spec)
+        if output:
+            Path(output).write_text(content)
+        return content
+
+    if fmt in ("ascii", "text"):
+        from cloudwright.exporter.ascii import render
 
         content = render(spec)
         if output:

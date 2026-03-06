@@ -9,6 +9,8 @@ from rich.console import Console
 from rich.rule import Rule
 from rich.table import Table
 
+from cloudwright_cli.output import emit_success, is_json_mode
+
 console = Console()
 
 
@@ -24,10 +26,8 @@ def diff(
     with console.status("Computing diff..."):
         result = Differ().diff(a, b)
 
-    if ctx.obj and ctx.obj.get("json"):
-        import json
-
-        print(json.dumps(result.model_dump(), default=str))
+    if is_json_mode(ctx):
+        emit_success(ctx, {"diff": result.model_dump(exclude_none=True)})
         return
 
     console.print(Rule(f"[bold]Diff: {spec_a.name} → {spec_b.name}[/bold]"))

@@ -9,6 +9,8 @@ from cloudwright.cost import CostEngine
 from rich.console import Console
 from rich.table import Table
 
+from cloudwright_cli.output import emit_success, is_json_mode
+
 console = Console()
 
 
@@ -28,10 +30,8 @@ def cost(
         engine = CostEngine()
         spec.cost_estimate = engine.estimate(spec)
 
-    if ctx.obj and ctx.obj.get("json"):
-        import json
-
-        print(json.dumps({"estimate": spec.cost_estimate.model_dump()}, default=str))
+    if is_json_mode(ctx):
+        emit_success(ctx, {"estimate": spec.cost_estimate.model_dump(exclude_none=True)})
         return
 
     if compare:

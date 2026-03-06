@@ -11,6 +11,7 @@ from rich.panel import Panel
 from rich.rule import Rule
 from rich.table import Table
 
+from cloudwright_cli.output import emit_success, err_console, is_json_mode
 from cloudwright_cli.utils import handle_error
 
 console = Console()
@@ -23,25 +24,22 @@ def drift(
     fmt: Annotated[
         str, typer.Option("--format", "-f", help="Infrastructure format: auto, terraform, cloudformation")
     ] = "auto",
-    json_output: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
 ) -> None:
     """Compare design spec against deployed infrastructure to detect drift."""
     try:
         from cloudwright.drift import detect_drift
 
         if not Path(spec_file).exists():
-            console.print(f"[red]Error:[/red] Design spec not found: {spec_file}")
+            err_console.print(f"[red]Error:[/red] Design spec not found: {spec_file}")
             raise typer.Exit(1)
         if not Path(infra_file).exists():
-            console.print(f"[red]Error:[/red] Infrastructure file not found: {infra_file}")
+            err_console.print(f"[red]Error:[/red] Infrastructure file not found: {infra_file}")
             raise typer.Exit(1)
 
         with console.status("Detecting drift..."):
             report = detect_drift(spec_file, infra_file, infra_format=fmt)
 
-        if json_output:
-            import json
-
+        if is_json_mode(ctx):
             result = {
                 "drift_score": report.drift_score,
                 "drifted_components": report.drifted_components,
@@ -50,7 +48,7 @@ def drift(
                 "diff": report.diff.model_dump(),
                 "summary": report.summary,
             }
-            console.print_json(json.dumps(result, default=str))
+            emit_success(ctx, {"drift": result})
             return
 
         score_color = "green" if report.drift_score == 0 else "yellow" if report.drift_score < 0.3 else "red"

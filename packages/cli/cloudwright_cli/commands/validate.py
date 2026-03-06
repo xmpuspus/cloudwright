@@ -9,6 +9,8 @@ from rich.console import Console
 from rich.rule import Rule
 from rich.text import Text
 
+from cloudwright_cli.output import emit_stream, emit_success, err_console, is_json_mode, should_stream
+
 console = Console()
 
 
@@ -26,7 +28,7 @@ def validate(
 ) -> None:
     """Validate an architecture spec against compliance frameworks or well-architected principles."""
     if not compliance and not well_architected:
-        console.print("[yellow]Specify --compliance and/or --well-architected.[/yellow]")
+        err_console.print("[yellow]Specify --compliance and/or --well-architected.[/yellow]")
         raise typer.Exit(1)
 
     spec = ArchSpec.from_file(spec_file)
@@ -62,10 +64,19 @@ def validate(
             render_pdf(spec, r, str(out_path))
             console.print(f"[green]PDF compliance report written to {out_path}[/green]")
 
-    if ctx.obj and ctx.obj.get("json"):
-        import json
-
-        print(json.dumps({"results": [r.model_dump() for r in results]}, default=str))
+    if is_json_mode(ctx):
+        if should_stream(ctx):
+            for result in results:
+                for check in result.checks:
+                    emit_stream({
+                        "framework": result.framework,
+                        "check": check.name,
+                        "passed": check.passed,
+                        "detail": check.detail,
+                        "recommendation": check.recommendation,
+                    })
+        else:
+            emit_success(ctx, {"results": [r.model_dump(exclude_none=True) for r in results]})
         return
 
     any_failed = False

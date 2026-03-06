@@ -7,6 +7,34 @@ from typing import Any
 
 import yaml
 
+_USER_CONFIG_PATH = Path.home() / ".cloudwright" / "config.yaml"
+
+_DEFAULTS: dict[str, Any] = {
+    "llm_provider": None,
+    "default_provider": "aws",
+    "default_region": "us-east-1",
+    "compliance": [],
+    "model_overrides": {},
+}
+
+
+def load_merged_config() -> dict[str, Any]:
+    """Load config with precedence: project > user > defaults."""
+    config = dict(_DEFAULTS)
+
+    # Layer 1: user config (~/.cloudwright/config.yaml)
+    if _USER_CONFIG_PATH.exists():
+        user_cfg = yaml.safe_load(_USER_CONFIG_PATH.read_text()) or {}
+        config.update({k: v for k, v in user_cfg.items() if v is not None})
+
+    # Layer 2: project config (.cloudwright/config.yaml overrides user)
+    root = find_project_root()
+    if root:
+        project_cfg = load_project_config(root)
+        config.update({k: v for k, v in project_cfg.items() if v is not None})
+
+    return config
+
 
 def find_project_root(start: Path | None = None) -> Path | None:
     """Walk up from start (default: cwd) looking for .cloudwright/ directory."""

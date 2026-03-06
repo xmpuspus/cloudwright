@@ -6,6 +6,7 @@ from typing import Annotated
 import typer
 from rich.console import Console
 
+from cloudwright_cli.output import emit_dry_run, emit_error, validate_output_path
 from cloudwright_cli.utils import handle_error
 
 console = Console()
@@ -58,7 +59,26 @@ def adr(
     try:
         from cloudwright import ArchSpec
 
+        if output:
+            try:
+                validate_output_path(output)
+            except ValueError as e:
+                emit_error(ctx, e)
+
         spec = ArchSpec.from_file(spec_file)
+
+        if ctx.obj and ctx.obj.get("dry_run"):
+            from cloudwright.llm.anthropic import GENERATE_MODEL
+
+            spec_json = spec.model_dump_json(indent=2, exclude_none=True)
+            emit_dry_run(ctx, {
+                "model": GENERATE_MODEL,
+                "estimated_tokens": len(spec_json + _ADR_SYSTEM) // 4,
+                "max_tokens": 2000,
+                "system_prompt_preview": _ADR_SYSTEM,
+                "user_prompt_preview": f"Generate ADR for: {spec.name}",
+            })
+
         text = _generate_adr(spec, title=title, decision=decision)
 
         if output:

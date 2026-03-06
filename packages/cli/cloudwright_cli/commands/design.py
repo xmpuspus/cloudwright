@@ -13,6 +13,8 @@ from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.table import Table
 
+from cloudwright_cli.output import emit_dry_run, emit_error, emit_success, is_json_mode
+
 console = Console()
 
 
@@ -35,24 +37,37 @@ def design(
         compliance=compliance or [],
     )
 
+    # Dry-run: show what the LLM call would look like
+    if ctx.obj and ctx.obj.get("dry_run"):
+        from cloudwright.architect import _build_constraint_prompt
+        from cloudwright.llm.anthropic import GENERATE_MODEL
+
+        system = Architect._select_system_prompt(description)
+        if constraints:
+            system += _build_constraint_prompt(constraints)
+        emit_dry_run(ctx, {
+            "model": GENERATE_MODEL,
+            "estimated_tokens": len(system + description) // 4,
+            "max_tokens": 10000,
+            "system_prompt_preview": system[:200],
+            "user_prompt_preview": description,
+            "constraints": constraints.model_dump(exclude_none=True),
+        })
+
     try:
         architect = Architect()
     except RuntimeError as e:
-        console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1) from None
+        emit_error(ctx, e, action="Set ANTHROPIC_API_KEY or OPENAI_API_KEY")
 
     with console.status("Designing architecture..."):
         spec = architect.design(description, constraints=constraints)
-        # Set provider/region from CLI args if not overridden by LLM
         if spec.provider == "aws" and provider != "aws":
             spec = spec.model_copy(update={"provider": provider})
         if spec.region == "us-east-1" and region != "us-east-1":
             spec = spec.model_copy(update={"region": region})
 
-    if ctx.obj and ctx.obj.get("json"):
-        import json
-
-        print(json.dumps(spec.model_dump(), default=str))
+    if is_json_mode(ctx):
+        emit_success(ctx, {"spec": spec.model_dump(exclude_none=True), "yaml": spec.to_yaml()})
         return
 
     yaml_str = spec.to_yaml()

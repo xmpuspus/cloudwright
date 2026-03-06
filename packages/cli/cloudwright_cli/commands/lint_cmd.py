@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Annotated
 
@@ -11,6 +10,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
+from cloudwright_cli.output import emit_stream, emit_success, is_json_mode, should_stream
 from cloudwright_cli.utils import handle_error
 
 console = Console()
@@ -19,7 +19,6 @@ console = Console()
 def lint(
     ctx: typer.Context,
     spec_file: Annotated[Path, typer.Argument(help="Architecture spec YAML file", exists=True)],
-    output: Annotated[str, typer.Option(help="Output format: text, json")] = "text",
     strict: Annotated[bool, typer.Option(help="Fail on warnings too")] = False,
 ) -> None:
     """Detect architecture anti-patterns in a spec file."""
@@ -30,7 +29,17 @@ def lint(
         spec = ArchSpec.from_file(spec_file)
         warnings = run_lint(spec)
 
-        if output == "json":
+        if is_json_mode(ctx):
+            if should_stream(ctx):
+                for w in warnings:
+                    emit_stream({
+                        "rule": w.rule,
+                        "severity": w.severity,
+                        "component": w.component,
+                        "message": w.message,
+                        "recommendation": w.recommendation,
+                    })
+                return
             result = [
                 {
                     "rule": w.rule,
@@ -41,7 +50,7 @@ def lint(
                 }
                 for w in warnings
             ]
-            print(json.dumps(result, indent=2))
+            emit_success(ctx, {"warnings": result})
         else:
             if not warnings:
                 console.print(f"[green][PASS][/green] No anti-patterns detected in {spec.name}")

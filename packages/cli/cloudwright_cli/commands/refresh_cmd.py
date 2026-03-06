@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-import json
 from typing import Annotated
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
+from cloudwright_cli.output import emit_success, is_json_mode
 from cloudwright_cli.utils import handle_error
 
 console = Console()
@@ -46,9 +46,7 @@ def refresh(
                 dry_run=dry_run,
             )
 
-        json_mode = ctx.obj and ctx.obj.get("json")
-
-        if json_mode:
+        if is_json_mode(ctx):
             data = {
                 "total_fetched": summary.total_fetched,
                 "total_errors": summary.total_errors,
@@ -64,7 +62,7 @@ def refresh(
                     for r in summary.results
                 ],
             }
-            print(json.dumps(data, indent=2))
+            emit_success(ctx, {"refresh": data})
             return
 
         table = Table(show_header=True, header_style="bold")

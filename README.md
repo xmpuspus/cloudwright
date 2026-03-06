@@ -13,7 +13,7 @@ Cloudwright bridges the gap between a whiteboard sketch and deployable infrastru
   <img src="examples/cloudwright-demo.gif" alt="Cloudwright Web UI Demo" width="800">
 </p>
 
-<p align="center"><em>HIPAA-compliant healthcare API on AWS — 12 components with VPC boundaries, cost breakdown ($2,263/mo), compliance validation (HIPAA 60%), and six export formats including Terraform and CloudFormation.</em></p>
+<p align="center"><em>HIPAA-compliant healthcare API on AWS — 12 components with VPC boundaries, cost breakdown ($2,263/mo), compliance validation (HIPAA 60%), and eight export formats including Terraform, CloudFormation, and ASCII architecture diagrams.</em></p>
 
 ```mermaid
 flowchart LR
@@ -110,6 +110,13 @@ cloudwright export spec.yaml --format terraform -o ./infra
 
 # Compare cost across clouds
 cloudwright cost spec.yaml --compare gcp,azure
+
+# Security scan
+cloudwright security spec.yaml
+
+# Explore service configs and compliance checks
+cloudwright schema aws.ec2
+cloudwright schema hipaa
 
 # Interactive multi-turn design
 cloudwright chat
@@ -319,11 +326,11 @@ $ cloudwright cost api.yaml
 ┡━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
 │ api_gw    │ api_gateway │   $1.87 │                                         │
 │ auth      │ cognito     │   $0.00 │                                         │
-│ handler   │ lambda      │  $21.83 │                                         │
+│ handler   │ lambda      │   $1.03 │                                         │
 │ db        │ dynamodb    │  $25.00 │                                         │
-│ storage   │ s3          │  $23.00 │ 1000GB storage                          │
+│ storage   │ s3          │   $1.15 │ 50GB storage                            │
 ├───────────┼─────────────┼─────────┼─────────────────────────────────────────┤
-│           │             │  $71.70 │                                         │
+│           │             │  $29.05 │                                         │
 └───────────┴─────────────┴─────────┴─────────────────────────────────────────┘
 
 $ cloudwright export api.yaml --format terraform -o ./infra
@@ -405,14 +412,14 @@ $ cloudwright cost lakehouse.yaml
 ┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Component      ┃ Service                  ┃  Monthly ┃ Notes                   ┃
 ┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ unity_catalog  │ databricks_unity_catalog │    $0.00 │ Governance (included)   │
-│ sql_warehouse  │ databricks_sql_warehouse │  $300.00 │ SQL Serverless, 2 DBU/h │
-│ etl_pipeline   │ databricks_pipeline      │  $150.00 │ DLT Pro                 │
-│ volume         │ databricks_volume        │   $15.00 │ 100GB managed storage   │
-│ model_serving  │ databricks_model_serving │  $200.00 │ GPU inference endpoint  │
-│ dashboard      │ databricks_dashboard     │    $0.00 │ AI/BI (included)        │
-├────────────────┼──────────────────────────┼──────────┼─────────────────────────┤
-│                │                          │  $665.00 │                         │
+│ unity_catalog │ databricks_unity_catalog │     $0.00 │                      │
+│ sql_warehouse │ databricks_sql_warehouse │ $1,606.00 │ Small, 100GB storage │
+│ dlt_pipeline  │ databricks_pipeline      │   $438.00 │                      │
+│ volume        │ databricks_volume        │    $23.00 │ 1000GB storage       │
+│ model_serving │ databricks_model_serving │   $511.00 │                      │
+│ dashboard     │ databricks_dashboard     │     $0.00 │                      │
+├───────────────┼──────────────────────────┼───────────┼──────────────────────┤
+│               │                          │ $2,578.00 │                      │
 └────────────────┴──────────────────────────┴──────────┴─────────────────────────┘
 
 $ cloudwright export lakehouse.yaml --format terraform -o ./infra
@@ -526,7 +533,7 @@ Exit code 1 on failures, making it CI-friendly.
 
 ### Infrastructure Export
 
-Seven export formats from a single ArchSpec:
+Eight export formats from a single ArchSpec:
 
 | Format | Flag | Description |
 |---|---|---|
@@ -534,6 +541,7 @@ Seven export formats from a single ArchSpec:
 | CloudFormation | `cloudformation` | YAML template with Parameters and Outputs |
 | Mermaid | `mermaid` | Tier-grouped flowchart for docs and GitHub |
 | D2 | `d2` | D2 diagram language with provider badges |
+| ASCII Diagram | `ascii` | Terminal-friendly architecture diagram with tier grouping |
 | CycloneDX SBOM | `sbom` | CycloneDX 1.5 service bill of materials |
 | OWASP AIBOM | `aibom` | AI bill of materials documenting LLM usage and risks |
 | Compliance Report | `compliance` | Audit-ready markdown with check details and evidence |
@@ -541,6 +549,7 @@ Seven export formats from a single ArchSpec:
 ```bash
 cloudwright export spec.yaml --format terraform -o ./infra
 cloudwright export spec.yaml --format mermaid
+cloudwright export spec.yaml --format ascii       # terminal architecture diagram
 cloudwright export spec.yaml --format sbom -o sbom.json
 ```
 
@@ -652,6 +661,10 @@ Severity levels: `deny` (exit code 1), `warn`, `info`.
 
 ### Security Scanning
 
+<p align="center">
+  <img src="examples/cloudwright-security-demo.gif" alt="Security Scanning Demo" width="720">
+</p>
+
 Scans an ArchSpec for security anti-patterns — missing encryption, open ingress, no HTTPS, IAM wildcards, unmonitored production architectures, and more.
 
 ```bash
@@ -674,6 +687,50 @@ for f in report.findings:
 hcl = spec.export("terraform")
 report = scan_terraform(hcl)
 print(f"Passed: {report.passed}")
+```
+
+### Schema Introspection
+
+<p align="center">
+  <img src="examples/cloudwright-schema-demo.gif" alt="Schema Introspection Demo" width="720">
+</p>
+
+Explore available cloud services, their configuration fields, cross-cloud equivalents, and compliance framework checks — all without an API key.
+
+```bash
+cloudwright schema aws.ec2        # service config fields, pricing, cross-cloud equivalents
+cloudwright schema hipaa           # compliance checks, categories, severities
+cloudwright schema gcp.cloud_sql   # GCP Cloud SQL configuration
+```
+
+Service mode shows default config, pricing formula, cross-cloud equivalences, and feature parity gaps across providers. Compliance mode shows all checks organized by category with severity levels.
+
+### MCP Server
+
+<p align="center">
+  <img src="examples/cloudwright-mcp-showcase.gif" alt="Claude Code using Cloudwright MCP" width="720">
+</p>
+
+Expose cloudwright functions as [Model Context Protocol](https://modelcontextprotocol.io/) tools for external AI agents. 18 tools across 6 groups: design, cost, validate, analyze, export, and session.
+
+```bash
+pip install cloudwright-ai-mcp
+cloudwright mcp                              # start MCP server (all tools, stdio)
+cloudwright mcp --tools design,cost          # only design and cost tools
+cloudwright mcp --transport sse              # SSE transport for HTTP clients
+```
+
+Add to your Claude Desktop `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "cloudwright": {
+      "command": "cloudwright",
+      "args": ["mcp"]
+    }
+  }
+}
 ```
 
 ### Architecture Decision Records
@@ -724,6 +781,40 @@ cloudwright chat --web
 ```
 
 10 API endpoints: design, modify, cost, validate, export, diff, catalog search, catalog compare, chat, health.
+
+### Structured Output and Streaming
+
+<p align="center">
+  <img src="examples/cloudwright-dryrun-demo.gif" alt="Dry-Run and Streaming Demo" width="720">
+</p>
+
+All commands support machine-readable output with consistent JSON envelopes:
+
+```bash
+cloudwright --json cost spec.yaml          # {"data": {"estimate": {...}}}
+cloudwright --json security spec.yaml      # {"data": {"passed": false, "findings": [...]}}
+```
+
+Errors use a separate envelope: `{"error": {"code": "...", "message": "...", "action": "..."}}`. Data goes to stdout, diagnostics to stderr.
+
+NDJSON streaming emits one JSON object per line for incremental consumption:
+
+```bash
+cloudwright --stream --json validate spec.yaml --compliance hipaa
+# {"framework":"HIPAA","check":"encryption_at_rest","passed":false,...}
+# {"framework":"HIPAA","check":"encryption_in_transit","passed":true,...}
+```
+
+### Dry-Run Mode
+
+Preview LLM operations without burning API credits:
+
+```bash
+cloudwright --dry-run design "3-tier web app on AWS"
+# Shows model name, estimated tokens, prompt preview — no API call
+```
+
+Supported on all LLM-powered commands: `design`, `modify`, `adr`.
 
 ### Plugin System
 
@@ -820,9 +911,11 @@ Components use a 5-tier system for vertical positioning: Edge (0), Ingress (1), 
 | `catalog compare <a> <b>` | Side-by-side instance comparison |
 | `security <spec>` | Scan for security anti-patterns (`--fail-on critical/high/medium`) |
 | `adr <spec>` | Generate Architecture Decision Record (`--output`, `--title`, `--decision`) |
+| `schema <query>` | Introspect service configs (`aws.ec2`) or compliance frameworks (`hipaa`) |
+| `mcp` | Start MCP server for AI agent integration (`--tools`, `--transport`) |
 | `databricks-validate <spec>` | Validate Databricks components against workspace (`--host`, `--token`) |
 
-Global flags: `--json`, `--verbose / -v`, `--version / -V`.
+Global flags: `--json`, `--verbose / -v`, `--version / -V`, `--dry-run`, `--stream`.
 
 ## Python API
 
@@ -905,20 +998,20 @@ Full results: [benchmark/results/benchmark_report.md](benchmark/results/benchmar
 ```
 cloudwright/
   packages/
-    core/       pip install cloudwright-ai        Models, architect, catalog, cost, validators, exporters
-    cli/        pip install 'cloudwright-ai[cli]'     Typer CLI with Rich formatting
-    web/        pip install 'cloudwright-ai[web]'     FastAPI + React web UI
-  catalog/                                      Service catalog JSON (compute, database, storage, networking)
-  benchmark/                                    54 use cases + evaluation framework
+    core/       pip install cloudwright-ai             Models, architect, catalog, cost, validators, exporters
+    cli/        pip install 'cloudwright-ai[cli]'      Typer CLI with Rich formatting
+    web/        pip install 'cloudwright-ai[web]'      FastAPI + React web UI
+    mcp/        pip install cloudwright-ai-mcp          MCP server (18 tools for AI agents)
+  skills/                                         Agent skill files (23 files, 5 layers)
+  catalog/                                        Service catalog JSON (compute, database, storage, networking)
+  benchmark/                                      54 use cases + evaluation framework
 ```
 
 ## Development
 
 ```bash
 git clone https://github.com/xmpuspus/cloudwright
-pip install -e packages/core
-pip install -e packages/cli
-pip install -e packages/web
+pip install -e packages/core -e packages/cli -e packages/web -e packages/mcp
 ```
 
 ```bash

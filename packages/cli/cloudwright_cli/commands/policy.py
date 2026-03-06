@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Annotated
 
@@ -10,6 +9,8 @@ from cloudwright.cost import CostEngine
 from cloudwright.policy import PolicyEngine
 from rich.console import Console
 from rich.table import Table
+
+from cloudwright_cli.output import emit_success, err_console, is_json_mode
 
 console = Console()
 
@@ -31,9 +32,8 @@ def policy(
 
         result = engine.evaluate_from_file(spec, rules, cost_estimate=cost_estimate)
 
-        json_mode = ctx.obj.get("json", False) if ctx.obj else False
-        if json_mode:
-            print(json.dumps(result.model_dump(), default=str))
+        if is_json_mode(ctx):
+            emit_success(ctx, {"evaluation": result.model_dump(exclude_none=True)})
             if not result.passed:
                 raise typer.Exit(1)
             return
@@ -78,11 +78,11 @@ def policy(
     except typer.Exit:
         raise
     except FileNotFoundError as e:
-        console.print(f"[red]Error:[/red] File not found: {e}")
+        err_console.print(f"[red]Error:[/red] File not found: {e}")
         raise typer.Exit(1)
     except Exception as e:
         verbose = ctx.obj.get("verbose", False) if ctx.obj else False
-        console.print(f"[red]Error:[/red] {e}")
+        err_console.print(f"[red]Error:[/red] {e}")
         if verbose:
-            console.print_exception()
+            err_console.print_exception()
         raise typer.Exit(1)

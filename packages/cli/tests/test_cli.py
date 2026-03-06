@@ -212,20 +212,23 @@ class TestJsonOutput:
     def test_json_flag_cost(self, spec_file: Path):
         result = runner.invoke(app, ["--json", "cost", str(spec_file)])
         assert result.exit_code == 0
-        data = json.loads(result.output)
-        assert "estimate" in data
+        envelope = json.loads(result.output)
+        assert "data" in envelope
+        assert "estimate" in envelope["data"]
 
     def test_json_flag_validate(self, spec_file: Path):
         result = runner.invoke(app, ["--json", "validate", str(spec_file), "--compliance", "hipaa"])
         assert result.exit_code == 0
-        data = json.loads(result.output)
+        envelope = json.loads(result.output)
+        data = envelope["data"]
         assert "results" in data
         assert isinstance(data["results"], list)
 
     def test_json_flag_export_terraform(self, spec_file: Path):
         result = runner.invoke(app, ["--json", "export", str(spec_file), "-f", "terraform"])
         assert result.exit_code == 0
-        data = json.loads(result.output)
+        envelope = json.loads(result.output)
+        data = envelope["data"]
         assert data["format"] == "terraform"
         assert "content" in data
         assert len(data["content"]) > 0
@@ -234,13 +237,15 @@ class TestJsonOutput:
         a, b = spec_pair
         result = runner.invoke(app, ["--json", "diff", str(a), str(b)])
         assert result.exit_code == 0
-        data = json.loads(result.output)
-        assert isinstance(data, dict)
+        envelope = json.loads(result.output)
+        assert "data" in envelope
+        assert isinstance(envelope["data"], dict)
 
     def test_json_flag_catalog_search(self):
         result = runner.invoke(app, ["--json", "catalog", "search", "4 vcpu 16gb"])
         assert result.exit_code == 0
-        data = json.loads(result.output)
+        envelope = json.loads(result.output)
+        data = envelope["data"]
         assert "results" in data
         assert isinstance(data["results"], list)
 
@@ -252,14 +257,15 @@ class TestJsonOutput:
             MockArch.return_value.design.return_value = mock_spec
             result = runner.invoke(app, ["--json", "design", "test webapp"])
         assert result.exit_code == 0
-        data = json.loads(result.output)
-        assert "name" in data
-        assert "provider" in data
+        envelope = json.loads(result.output)
+        data = envelope["data"]
+        assert "spec" in data
 
     def test_json_flag_catalog_compare(self):
         result = runner.invoke(app, ["--json", "catalog", "compare", "m5.large", "m5.xlarge"])
         assert result.exit_code == 0
-        data = json.loads(result.output)
+        envelope = json.loads(result.output)
+        data = envelope["data"]
         assert "comparison" in data
 
 

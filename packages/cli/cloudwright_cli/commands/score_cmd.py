@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from typing import Annotated
 
 import typer
@@ -10,6 +9,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from cloudwright_cli.output import emit_success, is_json_mode
 from cloudwright_cli.utils import handle_error
 
 console = Console()
@@ -36,8 +36,8 @@ def score(
         scorer = Scorer()
         result = scorer.score(spec)
 
-        if ctx.obj and ctx.obj.get("json"):
-            print(json.dumps(result.to_dict(), indent=2))
+        if is_json_mode(ctx):
+            emit_success(ctx, {"score": result.to_dict()})
             return
 
         border = "green" if result.overall >= 70 else "yellow" if result.overall >= 50 else "red"

@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cloudwright-ai-mcp"
+dynamic = ["version"]
+description = "MCP server for Cloudwright architecture intelligence"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{name = "Xavier Puspus"}]
+dependencies = [
+    "cloudwright-ai>=0.3.0,<1",
+    "mcp>=1.12,<2",
+]
+
+[project.urls]
+Homepage = "https://github.com/xmpuspus/cloudwright"
+
+[tool.hatch.version]
+path = "cloudwright_mcp/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["cloudwright_mcp"]

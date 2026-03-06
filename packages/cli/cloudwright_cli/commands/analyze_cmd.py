@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from typing import Annotated
 
 import typer
@@ -11,6 +10,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.tree import Tree
 
+from cloudwright_cli.output import emit_error, emit_success, is_json_mode
 from cloudwright_cli.utils import handle_error
 
 console = Console()
@@ -31,15 +31,17 @@ def analyze(
         if component:
             valid_ids = {c.id for c in spec.components}
             if component not in valid_ids:
-                console.print(f"[red]Error:[/red] Component '{component}' not found in spec.")
-                console.print(f"[dim]Available components: {', '.join(sorted(valid_ids))}[/dim]")
-                raise typer.Exit(1)
+                emit_error(
+                    ctx,
+                    ValueError(f"Component '{component}' not found in spec"),
+                    action=f"Available: {', '.join(sorted(valid_ids))}",
+                )
 
         analyzer = Analyzer()
         result = analyzer.analyze(spec, component_id=component)
 
-        if ctx.obj and ctx.obj.get("json"):
-            print(json.dumps(result.to_dict(), indent=2))
+        if is_json_mode(ctx):
+            emit_success(ctx, {"analysis": result.to_dict()})
             return
 
         spof_text = ", ".join(result.spofs) if result.spofs else "None"

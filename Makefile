@@ -1,7 +1,7 @@
 .PHONY: install test lint format build clean
 
 install:
-	pip install -e packages/core -e packages/cli -e packages/web
+	pip install -e packages/core -e packages/cli -e packages/web -e packages/mcp
 	pip install pytest pytest-timeout pytest-cov ruff
 
 test:
@@ -21,8 +21,9 @@ build:
 	python -m build packages/core
 	python -m build packages/cli
 	python -m build packages/web
+	python -m build packages/mcp
 
 clean:
-	rm -rf packages/core/dist packages/cli/dist packages/web/dist
+	rm -rf packages/core/dist packages/cli/dist packages/web/dist packages/mcp/dist
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true

@@ -10,6 +10,7 @@ from typing import Annotated
 import typer
 from rich.console import Console
 
+from cloudwright_cli.output import emit_success, is_json_mode, validate_output_path
 from cloudwright_cli.utils import handle_error
 
 console = Console()
@@ -45,15 +46,14 @@ def import_infra(
         if name:
             spec = spec.model_copy(update={"name": name})
 
-        json_mode = ctx.obj and ctx.obj.get("json")
-
-        if json_mode:
-            print(json.dumps(json.loads(spec.to_json()), indent=2))
+        if is_json_mode(ctx):
+            emit_success(ctx, {"spec": json.loads(spec.to_json())})
             return
 
         content = spec.to_yaml()
 
         if output:
+            validate_output_path(output)
             Path(output).write_text(content)
             n_comps = len(spec.components)
             n_conns = len(spec.connections)

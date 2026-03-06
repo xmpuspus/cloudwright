@@ -10,6 +10,7 @@ import yaml
 from rich.console import Console
 from rich.table import Table
 
+from cloudwright_cli.output import validate_output_path
 from cloudwright_cli.utils import handle_error
 
 console = Console()
@@ -116,6 +117,7 @@ def init(
             (proj_dir / "config.yaml").write_text(yaml.dump(config, default_flow_style=False, sort_keys=False))
         else:
             output_path = Path(output)
+            validate_output_path(output_path)
 
         output_path.write_text(yaml.dump(spec_data, default_flow_style=False, sort_keys=False, allow_unicode=True))
 

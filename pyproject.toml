@@ -14,6 +14,7 @@ dependencies = [
     "cloudwright @ {root:uri}/packages/core",
     "cloudwright-cli @ {root:uri}/packages/cli",
     "cloudwright-web @ {root:uri}/packages/web",
+    "cloudwright-mcp @ {root:uri}/packages/mcp",
 ]
 
 [tool.ruff]

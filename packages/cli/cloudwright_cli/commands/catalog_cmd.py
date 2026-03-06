@@ -8,6 +8,8 @@ from cloudwright import Catalog
 from rich.console import Console
 from rich.table import Table
 
+from cloudwright_cli.output import emit_success, err_console
+
 console = Console()
 
 catalog_app = typer.Typer(
@@ -68,9 +70,7 @@ def catalog_search(
     # Resolve ctx.obj through parent chain when invoked via sub-app
     obj = ctx.obj or (ctx.parent.obj if ctx.parent else None)
     if obj and obj.get("json"):
-        import json
-
-        print(json.dumps({"results": results}, default=str))
+        emit_success(ctx, {"results": results})
         return
 
     if not results:
@@ -108,7 +108,7 @@ def catalog_compare(
 ) -> None:
     """Compare two or more cloud instances side by side."""
     if len(instances) < 2:
-        console.print("[red]Error:[/red] Provide at least 2 instance names to compare.")
+        err_console.print("[red]Error:[/red] Provide at least 2 instance names to compare.")
         raise typer.Exit(1)
 
     with console.status("Fetching instance details..."):
@@ -118,10 +118,8 @@ def catalog_compare(
     # Resolve ctx.obj through parent chain when invoked via sub-app
     obj = ctx.obj or (ctx.parent.obj if ctx.parent else None)
     if obj and obj.get("json"):
-        import json
-
         inst_map = {r.get("name", r.get("id", "")): r for r in results}
-        print(json.dumps({"comparison": inst_map}, default=str))
+        emit_success(ctx, {"comparison": inst_map})
         return
 
     if not results:

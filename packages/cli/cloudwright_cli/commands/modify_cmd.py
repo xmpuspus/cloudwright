@@ -12,6 +12,7 @@ from rich.rule import Rule
 from rich.syntax import Syntax
 from rich.table import Table
 
+from cloudwright_cli.output import emit_dry_run, emit_success, err_console, is_json_mode, validate_output_path
 from cloudwright_cli.utils import handle_error
 
 console = Console()
@@ -23,7 +24,6 @@ def modify(
     instruction: Annotated[str, typer.Argument(help="Natural language modification instruction")],
     output: Annotated[str | None, typer.Option("--output", "-o", help="Output file (default: overwrite input)")] = None,
     dry_run: Annotated[bool, typer.Option("--dry-run", help="Show changes without writing")] = False,
-    json_output: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
 ) -> None:
     """Modify an ArchSpec with natural language and show the diff."""
     try:
@@ -33,7 +33,7 @@ def modify(
 
         spec_path = Path(spec_file)
         if not spec_path.exists():
-            console.print(f"[red]Error:[/red] Spec file not found: {spec_file}")
+            err_console.print(f"[red]Error:[/red] Spec file not found: {spec_file}")
             raise typer.Exit(1)
 
         original = ArchSpec.from_file(spec_path)
@@ -43,8 +43,20 @@ def modify(
         try:
             architect = Architect()
         except RuntimeError as e:
-            console.print(f"[red]Error:[/red] {e}")
+            err_console.print(f"[red]Error:[/red] {e}")
             raise typer.Exit(1) from None
+
+        if ctx.obj and ctx.obj.get("dry_run"):
+            from cloudwright.llm.anthropic import GENERATE_MODEL
+
+            spec_text = original.to_yaml()
+            emit_dry_run(ctx, {
+                "model": GENERATE_MODEL,
+                "estimated_tokens": len(spec_text + instruction) // 4,
+                "max_tokens": 8000,
+                "user_prompt_preview": f"Modify: {instruction}",
+                "constraints": {"spec_file": spec_file, "instruction": instruction},
+            })
 
         with console.status("Applying modification..."):
             modified = architect.modify(original, instruction)
@@ -60,15 +72,12 @@ def modify(
 
         diff_result = Differ().diff(original_costed, modified_costed)
 
-        if json_output:
-            import json
-
-            result = {
+        if is_json_mode(ctx):
+            emit_success(ctx, {
                 "original": original.model_dump(),
                 "modified": modified.model_dump(),
                 "diff": diff_result.model_dump(),
-            }
-            console.print_json(json.dumps(result, default=str))
+            })
             return
 
         console.print(Rule("[bold]Changes[/bold]"))
@@ -119,6 +128,7 @@ def modify(
 
         if not dry_run:
             out_path = Path(output) if output else spec_path
+            validate_output_path(out_path)
             out_path.write_text(modified.to_yaml())
             console.print(f"\n[green]Written to {out_path}[/green]")
         else:

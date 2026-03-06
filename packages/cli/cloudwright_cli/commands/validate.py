@@ -68,13 +68,15 @@ def validate(
         if should_stream(ctx):
             for result in results:
                 for check in result.checks:
-                    emit_stream({
-                        "framework": result.framework,
-                        "check": check.name,
-                        "passed": check.passed,
-                        "detail": check.detail,
-                        "recommendation": check.recommendation,
-                    })
+                    emit_stream(
+                        {
+                            "framework": result.framework,
+                            "check": check.name,
+                            "passed": check.passed,
+                            "detail": check.detail,
+                            "recommendation": check.recommendation,
+                        }
+                    )
         else:
             emit_success(ctx, {"results": [r.model_dump(exclude_none=True) for r in results]})
         return

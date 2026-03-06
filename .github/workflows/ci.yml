@@ -33,6 +33,7 @@ jobs:
           pip install -e packages/core
           pip install -e packages/cli
           pip install -e packages/web
+          pip install -e packages/mcp
           pip install pytest pytest-timeout pytest-cov
       - name: Run core tests
         run: pytest packages/core/tests/ -x -q --timeout=30 -m "not slow"
@@ -66,6 +67,8 @@ jobs:
         run: python -m build packages/cli
       - name: Build web wheel
         run: python -m build packages/web
+      - name: Build MCP wheel
+        run: python -m build packages/mcp
       - name: Verify web package name
         run: |
           python -c "

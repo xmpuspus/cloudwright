@@ -32,13 +32,15 @@ def security_scan(
         if is_json_mode(ctx):
             if should_stream(ctx):
                 for f in report.findings:
-                    emit_stream({
-                        "severity": f.severity,
-                        "rule": f.rule,
-                        "component_id": f.component_id,
-                        "message": f.message,
-                        "remediation": f.remediation,
-                    })
+                    emit_stream(
+                        {
+                            "severity": f.severity,
+                            "rule": f.rule,
+                            "component_id": f.component_id,
+                            "message": f.message,
+                            "remediation": f.remediation,
+                        }
+                    )
             else:
                 result = {
                     "passed": report.passed,

@@ -45,14 +45,17 @@ def design(
         system = Architect._select_system_prompt(description)
         if constraints:
             system += _build_constraint_prompt(constraints)
-        emit_dry_run(ctx, {
-            "model": GENERATE_MODEL,
-            "estimated_tokens": len(system + description) // 4,
-            "max_tokens": 10000,
-            "system_prompt_preview": system[:200],
-            "user_prompt_preview": description,
-            "constraints": constraints.model_dump(exclude_none=True),
-        })
+        emit_dry_run(
+            ctx,
+            {
+                "model": GENERATE_MODEL,
+                "estimated_tokens": len(system + description) // 4,
+                "max_tokens": 10000,
+                "system_prompt_preview": system[:200],
+                "user_prompt_preview": description,
+                "constraints": constraints.model_dump(exclude_none=True),
+            },
+        )
 
     try:
         architect = Architect()

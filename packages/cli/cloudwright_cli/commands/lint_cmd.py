@@ -32,13 +32,15 @@ def lint(
         if is_json_mode(ctx):
             if should_stream(ctx):
                 for w in warnings:
-                    emit_stream({
-                        "rule": w.rule,
-                        "severity": w.severity,
-                        "component": w.component,
-                        "message": w.message,
-                        "recommendation": w.recommendation,
-                    })
+                    emit_stream(
+                        {
+                            "rule": w.rule,
+                            "severity": w.severity,
+                            "component": w.component,
+                            "message": w.message,
+                            "recommendation": w.recommendation,
+                        }
+                    )
                 return
             result = [
                 {

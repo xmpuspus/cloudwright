@@ -21,8 +21,7 @@ def mcp_serve(
         from rich.console import Console
 
         Console(stderr=True).print(
-            "[red]Error:[/red] cloudwright-ai-mcp not installed.\n"
-            "  Install: pip install cloudwright-ai-mcp"
+            "[red]Error:[/red] cloudwright-ai-mcp not installed.\n  Install: pip install cloudwright-ai-mcp"
         )
         raise typer.Exit(1) from None
 

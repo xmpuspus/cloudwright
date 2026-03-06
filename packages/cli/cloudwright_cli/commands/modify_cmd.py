@@ -50,13 +50,16 @@ def modify(
             from cloudwright.llm.anthropic import GENERATE_MODEL
 
             spec_text = original.to_yaml()
-            emit_dry_run(ctx, {
-                "model": GENERATE_MODEL,
-                "estimated_tokens": len(spec_text + instruction) // 4,
-                "max_tokens": 8000,
-                "user_prompt_preview": f"Modify: {instruction}",
-                "constraints": {"spec_file": spec_file, "instruction": instruction},
-            })
+            emit_dry_run(
+                ctx,
+                {
+                    "model": GENERATE_MODEL,
+                    "estimated_tokens": len(spec_text + instruction) // 4,
+                    "max_tokens": 8000,
+                    "user_prompt_preview": f"Modify: {instruction}",
+                    "constraints": {"spec_file": spec_file, "instruction": instruction},
+                },
+            )
 
         with console.status("Applying modification..."):
             modified = architect.modify(original, instruction)
@@ -73,11 +76,14 @@ def modify(
         diff_result = Differ().diff(original_costed, modified_costed)
 
         if is_json_mode(ctx):
-            emit_success(ctx, {
-                "original": original.model_dump(),
-                "modified": modified.model_dump(),
-                "diff": diff_result.model_dump(),
-            })
+            emit_success(
+                ctx,
+                {
+                    "original": original.model_dump(),
+                    "modified": modified.model_dump(),
+                    "diff": diff_result.model_dump(),
+                },
+            )
             return
 
         console.print(Rule("[bold]Changes[/bold]"))

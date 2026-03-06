@@ -47,8 +47,7 @@ def _show_service(ctx: typer.Context, query: str) -> None:
     if not svc_def:
         available = [s.service_key for s in registry.list_services(provider)[:15]]
         raise ValueError(
-            f"Service '{service_key}' not found for provider '{provider}'. "
-            f"Available: {', '.join(available)}"
+            f"Service '{service_key}' not found for provider '{provider}'. Available: {', '.join(available)}"
         )
 
     equivalents = {}
@@ -80,7 +79,9 @@ def _show_service(ctx: typer.Context, query: str) -> None:
         Panel(
             f"[bold]{svc_def.name}[/bold] ({provider}.{service_key})\n"
             f"Category: {svc_def.category}  |  Pricing: {svc_def.pricing_formula}\n"
-            f"{svc_def.description}" if svc_def.description else "",
+            f"{svc_def.description}"
+            if svc_def.description
+            else "",
             title="Service Schema",
         )
     )
@@ -147,10 +148,7 @@ def _show_compliance(ctx: typer.Context, framework: str) -> None:
     data = {
         "framework": result.framework,
         "total_checks": len(result.checks),
-        "checks": [
-            {"name": c.name, "category": c.category, "severity": c.severity}
-            for c in result.checks
-        ],
+        "checks": [{"name": c.name, "category": c.category, "severity": c.severity} for c in result.checks],
     }
 
     if is_json_mode(ctx):

@@ -71,13 +71,16 @@ def adr(
             from cloudwright.llm.anthropic import GENERATE_MODEL
 
             spec_json = spec.model_dump_json(indent=2, exclude_none=True)
-            emit_dry_run(ctx, {
-                "model": GENERATE_MODEL,
-                "estimated_tokens": len(spec_json + _ADR_SYSTEM) // 4,
-                "max_tokens": 2000,
-                "system_prompt_preview": _ADR_SYSTEM,
-                "user_prompt_preview": f"Generate ADR for: {spec.name}",
-            })
+            emit_dry_run(
+                ctx,
+                {
+                    "model": GENERATE_MODEL,
+                    "estimated_tokens": len(spec_json + _ADR_SYSTEM) // 4,
+                    "max_tokens": 2000,
+                    "system_prompt_preview": _ADR_SYSTEM,
+                    "user_prompt_preview": f"Generate ADR for: {spec.name}",
+                },
+            )
 
         text = _generate_adr(spec, title=title, decision=decision)
 

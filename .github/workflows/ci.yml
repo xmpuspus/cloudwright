@@ -41,6 +41,9 @@ jobs:
         run: pytest packages/web/tests/ -x -q --timeout=60
       - name: Run CLI tests
         run: pytest packages/cli/tests/ -x -q --timeout=30
+      - name: Run MCP tests
+        run: pytest packages/mcp/tests/ -x -q --timeout=30
+        if: hashFiles('packages/mcp/tests/') != ''
 
   build:
     runs-on: ubuntu-latest
@@ -69,6 +72,16 @@ jobs:
         run: python -m build packages/web
       - name: Build MCP wheel
         run: python -m build packages/mcp
+      - name: Verify MCP package name
+        run: |
+          python -c "
+          import zipfile, glob
+          whl = glob.glob('packages/mcp/dist/*.whl')[0]
+          with zipfile.ZipFile(whl) as z:
+              names = z.namelist()
+              assert any('cloudwright_mcp' in n for n in names), f'cloudwright_mcp not found in wheel: {names}'
+              print('cloudwright_mcp package found in wheel')
+          "
       - name: Verify web package name
         run: |
           python -c "

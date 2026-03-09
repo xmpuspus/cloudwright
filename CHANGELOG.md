@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Workload profiles for cost estimation (small, medium, large, enterprise) — injects production-realistic sizing defaults before pricing formulas run
+- `--workload-profile` / `-w` flag on `cost` command
+- Shell completion callbacks for workload profiles and pricing tiers
+- 20 new CloudFormation resource types (IAM, VPC, CloudWatch, Kinesis, StepFunctions, SecretsManager, KMS, ECR, MSK, EventBridge)
+- 50 hardcoded Terraform resource type mappings (AWS, GCP, Azure) as fallback when registry lookup fails
+- Post-import encryption defaults for databases and storage services
+- MCP package build and publish steps in CI/CD workflow
+- MCP package metadata (readme, keywords, classifiers, URLs)
+
+### Fixed
+
+- Cost estimates 10-100x too low for production workloads (workload profiles fix formula input defaults)
+- Import pipeline ~20% failure rate on unrecognized resource types (expanded type maps)
+- MCP package not included in publish workflow
+
+## [0.3.2] - 2026-03-06
+
+### Fixed
+
+- Extras version pins updated for core 0.3.2
+
+## [0.3.1] - 2026-03-05
+
+### Added
+
+- ASCII exporter for terminal-friendly architecture diagrams
+- MCP (Model Context Protocol) server package for Claude Code integration
+- Structured CLI output with `--stream` NDJSON mode
+- Skills system for CLI extensibility
+
+## [0.3.0] - 2026-03-04
+
+### Added
+
+- Security scanner (`cloudwright security`) with 6 checks: missing encryption, open ingress, no HTTPS, IAM wildcards, missing backups, no monitoring
+- `scan_terraform()` for HCL static analysis
+- ADR generator (`cloudwright adr`) with LLM-powered and deterministic fallback modes
+- Databricks cost governance template (job clusters, SQL Warehouse auto-stop, Secret Scope)
+
+### Fixed
+
+- PNG renderer CDN 403 errors (disabled icon fetching)
+
 ## [0.2.27] - 2026-03-04
 
 ### Added

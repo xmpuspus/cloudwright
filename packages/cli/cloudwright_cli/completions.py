@@ -24,6 +24,26 @@ def complete_compliance(incomplete: str) -> list[tuple[str, str]]:
     return [(f, h) for f, h in frameworks if f.startswith(incomplete)]
 
 
+def complete_pricing_tier(incomplete: str) -> list[tuple[str, str]]:
+    tiers = [
+        ("on_demand", "Standard on-demand pricing"),
+        ("reserved_1yr", "1-year reserved (40% savings)"),
+        ("reserved_3yr", "3-year reserved (60% savings)"),
+        ("spot", "Spot/preemptible (70% savings)"),
+    ]
+    return [(t, h) for t, h in tiers if t.startswith(incomplete)]
+
+
+def complete_workload_profile(incomplete: str) -> list[tuple[str, str]]:
+    profiles = [
+        ("small", "Startup/dev — low traffic, minimal redundancy"),
+        ("medium", "Production — moderate traffic, multi-AZ databases"),
+        ("large", "Scale — high traffic, large clusters and storage"),
+        ("enterprise", "Enterprise — very high traffic, full redundancy"),
+    ]
+    return [(p, h) for p, h in profiles if p.startswith(incomplete)]
+
+
 def complete_export_format(incomplete: str) -> list[tuple[str, str]]:
     formats = [
         ("terraform", "HashiCorp Terraform HCL"),

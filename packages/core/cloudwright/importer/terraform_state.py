@@ -81,6 +81,81 @@ _TIER = {
     "managed_disks": 4,
 }
 
+_HARDCODED_TF_MAP: dict[str, str] = {
+    # AWS
+    "aws_instance": "ec2",
+    "aws_launch_template": "ec2",
+    "aws_autoscaling_group": "ec2",
+    "aws_ecs_cluster": "ecs",
+    "aws_ecs_service": "ecs",
+    "aws_ecs_task_definition": "ecs",
+    "aws_eks_cluster": "eks",
+    "aws_eks_node_group": "eks",
+    "aws_lambda_function": "lambda",
+    "aws_db_instance": "rds",
+    "aws_rds_cluster": "aurora",
+    "aws_dynamodb_table": "dynamodb",
+    "aws_s3_bucket": "s3",
+    "aws_lb": "alb",
+    "aws_alb": "alb",
+    "aws_lb_target_group": "alb",
+    "aws_cloudfront_distribution": "cloudfront",
+    "aws_route53_zone": "route53",
+    "aws_api_gateway_rest_api": "api_gateway",
+    "aws_apigatewayv2_api": "api_gateway",
+    "aws_wafv2_web_acl": "waf",
+    "aws_cognito_user_pool": "cognito",
+    "aws_elasticache_cluster": "elasticache",
+    "aws_elasticache_replication_group": "elasticache",
+    "aws_sqs_queue": "sqs",
+    "aws_sns_topic": "sns",
+    "aws_kinesis_stream": "kinesis",
+    "aws_redshift_cluster": "redshift",
+    "aws_sagemaker_endpoint": "sagemaker",
+    "aws_nat_gateway": "nat_gateway",
+    "aws_iam_role": "iam",
+    "aws_iam_policy": "iam",
+    "aws_kms_key": "kms",
+    "aws_secretsmanager_secret": "secrets_manager",
+    "aws_ecr_repository": "ecr",
+    "aws_msk_cluster": "msk",
+    "aws_sfn_state_machine": "step_functions",
+    "aws_cloudwatch_log_group": "cloudwatch",
+    "aws_cloudtrail": "cloudtrail",
+    "aws_ebs_volume": "ebs",
+    # GCP
+    "google_compute_instance": "compute_engine",
+    "google_container_cluster": "gke",
+    "google_container_node_pool": "gke",
+    "google_cloud_run_service": "cloud_run",
+    "google_cloudfunctions_function": "cloud_functions",
+    "google_cloudfunctions2_function": "cloud_functions",
+    "google_sql_database_instance": "cloud_sql",
+    "google_storage_bucket": "cloud_storage",
+    "google_compute_backend_service": "cloud_load_balancing",
+    "google_pubsub_topic": "pub_sub",
+    "google_bigquery_dataset": "bigquery",
+    "google_redis_instance": "memorystore",
+    "google_spanner_instance": "spanner",
+    "google_compute_address": "compute_engine",
+    # Azure
+    "azurerm_virtual_machine": "virtual_machines",
+    "azurerm_linux_virtual_machine": "virtual_machines",
+    "azurerm_windows_virtual_machine": "virtual_machines",
+    "azurerm_kubernetes_cluster": "aks",
+    "azurerm_function_app": "azure_functions",
+    "azurerm_mssql_server": "azure_sql",
+    "azurerm_mssql_database": "azure_sql",
+    "azurerm_cosmosdb_account": "cosmos_db",
+    "azurerm_storage_account": "blob_storage",
+    "azurerm_redis_cache": "azure_cache",
+    "azurerm_application_gateway": "app_gateway",
+    "azurerm_lb": "azure_lb",
+    "azurerm_cdn_profile": "azure_cdn",
+    "azurerm_servicebus_namespace": "service_bus",
+    "azurerm_eventhub_namespace": "event_hubs",
+}
+
 _REGISTRY_DIR = Path(__file__).parent.parent / "data" / "registry"
 
 
@@ -120,7 +195,8 @@ class TerraformStateImporter:
     """Parses Terraform state files (v3 and v4) into ArchSpec."""
 
     def __init__(self) -> None:
-        self._tf_map = _build_terraform_map()
+        self._tf_map = dict(_HARDCODED_TF_MAP)  # start with hardcoded fallbacks
+        self._tf_map.update(_build_terraform_map())  # registry overrides take precedence
 
     @property
     def format_name(self) -> str:

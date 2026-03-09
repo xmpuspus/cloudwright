@@ -166,7 +166,7 @@ class TestInlineTemplate:
             "AWSTemplateFormatVersion": "2010-09-09",
             "Resources": {
                 "CustomResource": {"Type": "Custom::MyThing", "Properties": {}},
-                "IamRole": {"Type": "AWS::IAM::Role", "Properties": {}},
+                "UnknownWidget": {"Type": "AWS::Foo::Bar", "Properties": {}},
                 "Web": {"Type": "AWS::EC2::Instance", "Properties": {}},
             },
         }
@@ -174,6 +174,6 @@ class TestInlineTemplate:
         p.write_text(json.dumps(template))
 
         spec = import_spec(str(p), fmt="cloudformation")
-        # Only ec2 should be imported
+        # Custom::* and unknown AWS types should be skipped
         assert len(spec.components) == 1
         assert spec.components[0].service == "ec2"

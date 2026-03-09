@@ -23,6 +23,8 @@ jobs:
         run: python -m build packages/cli
       - name: Build web
         run: python -m build packages/web
+      - name: Build MCP
+        run: python -m build packages/mcp
 
       - name: Publish core to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -38,3 +40,8 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: packages/web/dist/
+
+      - name: Publish MCP to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: packages/mcp/dist/

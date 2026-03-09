@@ -21,14 +21,33 @@ def cost(
     pricing_tier: Annotated[
         str | None, typer.Option(help="Pricing tier (on_demand, reserved_1yr, reserved_3yr, spot)")
     ] = None,
+    workload_profile: Annotated[
+        str | None,
+        typer.Option(
+            "--workload-profile",
+            "-w",
+            help="Workload sizing profile (small, medium, large, enterprise). "
+            "Sets realistic defaults for request volumes, storage, node counts, and data transfer.",
+        ),
+    ] = None,
 ) -> None:
     """Show cost breakdown for an architecture spec."""
+    if workload_profile:
+        from cloudwright.cost import VALID_WORKLOAD_PROFILES
+
+        if workload_profile not in VALID_WORKLOAD_PROFILES:
+            console.print(
+                f"[red]Invalid workload profile:[/red] {workload_profile!r}. "
+                f"Choose from: {', '.join(sorted(VALID_WORKLOAD_PROFILES))}"
+            )
+            raise typer.Exit(1)
+
     spec = ArchSpec.from_file(spec_file)
 
     # Compute cost estimate if not present
     if not spec.cost_estimate:
         engine = CostEngine()
-        spec.cost_estimate = engine.estimate(spec)
+        spec.cost_estimate = engine.estimate(spec, workload_profile=workload_profile)
 
     if is_json_mode(ctx):
         emit_success(ctx, {"estimate": spec.cost_estimate.model_dump(exclude_none=True)})

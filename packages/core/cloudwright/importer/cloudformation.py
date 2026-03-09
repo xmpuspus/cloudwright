@@ -61,6 +61,34 @@ _CFN_TYPE_MAP: dict[str, str] = {
     # ML
     "AWS::SageMaker::Endpoint": "sagemaker",
     "AWS::SageMaker::Model": "sagemaker",
+    # IAM
+    "AWS::IAM::Role": "iam",
+    "AWS::IAM::Policy": "iam",
+    "AWS::IAM::InstanceProfile": "iam",
+    # Networking
+    "AWS::EC2::VPC": "vpc",
+    "AWS::EC2::Subnet": "vpc",
+    "AWS::EC2::SecurityGroup": "vpc",
+    "AWS::EC2::NatGateway": "nat_gateway",
+    "AWS::EC2::InternetGateway": "vpc",
+    "AWS::EC2::RouteTable": "vpc",
+    # Monitoring
+    "AWS::CloudWatch::Alarm": "cloudwatch",
+    "AWS::Logs::LogGroup": "cloudwatch",
+    "AWS::CloudTrail::Trail": "cloudtrail",
+    # Kinesis
+    "AWS::Kinesis::Stream": "kinesis",
+    # Step Functions
+    "AWS::StepFunctions::StateMachine": "step_functions",
+    # Secrets
+    "AWS::SecretsManager::Secret": "secrets_manager",
+    "AWS::KMS::Key": "kms",
+    # ECR
+    "AWS::ECR::Repository": "ecr",
+    # MSK
+    "AWS::MSK::Cluster": "msk",
+    # EventBridge (additional)
+    "AWS::Scheduler::Schedule": "eventbridge",
 }
 
 _TIER = {
@@ -70,10 +98,15 @@ _TIER = {
     "route53": 1,
     "api_gateway": 1,
     "cognito": 1,
+    "iam": 1,
+    "vpc": 1,
+    "nat_gateway": 1,
     "ec2": 2,
     "lambda": 2,
     "ecs": 2,
     "eks": 2,
+    "step_functions": 2,
+    "sagemaker": 2,
     "rds": 3,
     "aurora": 3,
     "dynamodb": 3,
@@ -82,8 +115,15 @@ _TIER = {
     "sns": 3,
     "eventbridge": 3,
     "redshift": 3,
+    "kinesis": 3,
+    "msk": 3,
     "s3": 4,
     "ebs": 4,
+    "cloudwatch": 4,
+    "cloudtrail": 4,
+    "secrets_manager": 4,
+    "kms": 4,
+    "ecr": 4,
 }
 
 

@@ -30,6 +30,25 @@ class ImporterPlugin(ABC):
         ...
 
 
+def _apply_import_defaults(spec: "ArchSpec") -> "ArchSpec":
+    _ENCRYPT_SERVICES = {"rds", "aurora", "cloud_sql", "azure_sql", "s3", "cloud_storage", "blob_storage"}
+
+    updated = []
+    changed = False
+    for comp in spec.components:
+        if comp.service in _ENCRYPT_SERVICES and not comp.config.get("encryption"):
+            new_config = dict(comp.config)
+            new_config["encryption"] = True
+            updated.append(comp.model_copy(update={"config": new_config}))
+            changed = True
+        else:
+            updated.append(comp)
+
+    if changed:
+        return spec.model_copy(update={"components": updated})
+    return spec
+
+
 def import_spec(path: str, fmt: str = "auto", design_spec: "ArchSpec | None" = None) -> ArchSpec:
     """Import an ArchSpec from an infrastructure state file.
 
@@ -46,12 +65,14 @@ def import_spec(path: str, fmt: str = "auto", design_spec: "ArchSpec | None" = N
     if fmt == "terraform":
         from cloudwright.importer.terraform_state import TerraformStateImporter
 
-        return TerraformStateImporter().do_import(path, design_spec=design_spec)
+        spec = TerraformStateImporter().do_import(path, design_spec=design_spec)
+        return _apply_import_defaults(spec)
 
     if fmt in ("cloudformation", "cfn"):
         from cloudwright.importer.cloudformation import CloudFormationImporter
 
-        return CloudFormationImporter().do_import(path, design_spec=design_spec)
+        spec = CloudFormationImporter().do_import(path, design_spec=design_spec)
+        return _apply_import_defaults(spec)
 
     raise ValueError(f"Unknown import format: {fmt!r}. Supported: terraform, cloudformation")
 

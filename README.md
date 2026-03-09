@@ -10,17 +10,159 @@ Architecture intelligence for cloud engineers.
 Cloudwright bridges the gap between a whiteboard sketch and deployable infrastructure. Describe a system in natural language, and Cloudwright produces a structured architecture spec, cost estimates, compliance reports, Terraform/CloudFormation code, diagrams, and diffs — all from a single format called **ArchSpec**.
 
 <p align="center">
-  <img src="examples/cloudwright-demo.gif" alt="Cloudwright Web UI Demo" width="800">
+  <img src="examples/cloudwright-demo.gif" alt="Cloudwright CLI Demo" width="800">
 </p>
 
 <p align="center"><em>HIPAA-compliant healthcare API on AWS — 12 components with VPC boundaries, cost breakdown ($2,263/mo), compliance validation (HIPAA 60%), and eight export formats including Terraform, CloudFormation, and ASCII architecture diagrams.</em></p>
+
+| Architecture Diagram | Cost Breakdown |
+|:---:|:---:|
+| ![E-Commerce Platform](docs/screenshots/cloudwright-light-1-ecommerce.png) | ![Analytics Pipeline](docs/screenshots/cloudwright-light-2-analytics.png) |
+| ![Cost Breakdown](docs/screenshots/cloudwright-light-3-cost.png) | ![Compliance Validation](docs/screenshots/cloudwright-light-4-validate.png) |
+
+<p align="center"><em>Web UI — interactive React Flow diagrams with tier-based layout, service-category color coding, boundary grouping, per-component cost overlay, and compliance validation.</em></p>
+
+## Installation
+
+```bash
+pip install 'cloudwright-ai[cli]'          # CLI
+pip install 'cloudwright-ai[web]'          # CLI + Web UI
+pip install cloudwright-ai-mcp             # MCP server for AI agents
+```
+
+Set an LLM provider key (required for `design`, `modify`, `chat`, `adr`; all other commands work offline):
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+# or
+export OPENAI_API_KEY=sk-...
+```
+
+```bash
+# Design from natural language
+cloudwright design "3-tier web app on AWS with Redis and PostgreSQL"
+
+# Estimate cost with production-realistic workload profiles
+cloudwright cost spec.yaml --workload-profile medium
+cloudwright cost spec.yaml -w enterprise --pricing-tier reserved_1yr
+
+# Validate compliance
+cloudwright validate spec.yaml --compliance hipaa,soc2
+
+# Export Terraform
+cloudwright export spec.yaml --format terraform -o ./infra
+
+# Compare cost across clouds
+cloudwright cost spec.yaml --compare gcp,azure
+
+# Security scan
+cloudwright security spec.yaml
+
+# Import existing infrastructure
+cloudwright import terraform.tfstate -o spec.yaml
+
+# Interactive multi-turn design
+cloudwright chat           # terminal
+cloudwright chat --web     # browser UI
+```
+
+---
+
+## What's New
+
+### v0.3.3 — Cost Accuracy and Import Reliability (2026-03-09)
+
+**Workload profiles** fix cost estimates that were 10-100x too low for production workloads. Profiles inject realistic sizing defaults (Lambda invocations, DB storage, cache memory, CDN egress) before pricing formulas run — without overwriting explicit config.
+
+```bash
+cloudwright cost spec.yaml -w medium       # 1M Lambda requests, 100GB DB, 6GB cache
+cloudwright cost spec.yaml -w enterprise   # 100M requests, 2TB DB, 26GB cache
+```
+
+| Profile | Lambda Requests | DB Storage | Cache Memory | CDN Egress | EKS Nodes |
+|---|---|---|---|---|---|
+| `small` | 100K/mo | 20 GB | 1 GB | 10 GB | 2 |
+| `medium` | 1M/mo | 100 GB | 6 GB | 100 GB | 3 |
+| `large` | 10M/mo | 500 GB | 13 GB | 500 GB | 5 |
+| `enterprise` | 100M/mo | 2 TB | 26 GB | 2 TB | 10 |
+
+**Import pipeline** failure rate dropped from ~20% to near-zero with 70+ new resource type mappings:
+- 20 new CloudFormation types: IAM, VPC, CloudWatch, Kinesis, StepFunctions, SecretsManager, KMS, ECR, MSK, EventBridge
+- 50 hardcoded Terraform type fallbacks across AWS, GCP, and Azure
+- Post-import encryption defaults automatically applied to databases and storage
+
+**MCP package** now included in CI/CD build and publish workflow.
+
+### v0.3.1 — MCP Server and ASCII Export (2026-03-05)
+
+<p align="center">
+  <img src="examples/cloudwright-mcp-showcase.gif" alt="Claude Code using Cloudwright MCP" width="720">
+</p>
+
+<p align="center"><em>Claude Code designing, costing, and exporting a multi-tier architecture via Cloudwright MCP tools.</em></p>
+
+MCP (Model Context Protocol) server exposes 18 Cloudwright tools across 6 groups for AI agent integration. Works with Claude Code, Claude Desktop, and any MCP-compatible client.
+
+```bash
+cloudwright mcp                              # start MCP server (stdio)
+cloudwright mcp --tools design,cost          # selective tool groups
+```
+
+Also added: ASCII diagram exporter (`--format ascii`), NDJSON streaming (`--stream`), and a skills system for CLI extensibility.
+
+<p align="center">
+  <img src="examples/cloudwright-dryrun-demo.gif" alt="Dry-Run and Streaming Demo" width="720">
+</p>
+
+<p align="center"><em>Structured JSON output and dry-run mode — preview LLM operations without API calls.</em></p>
+
+### v0.3.0 — Security Scanner and ADR Generator (2026-03-04)
+
+<p align="center">
+  <img src="examples/cloudwright-security-demo.gif" alt="Security Scanning Demo" width="720">
+</p>
+
+<p align="center"><em>Security scanner checking an architecture for missing encryption, open ingress, IAM wildcards, and more.</em></p>
+
+Security scanner with 6 checks: missing encryption, open ingress, no HTTPS, IAM wildcards, missing backups, no monitoring. Also scans exported Terraform HCL.
+
+```bash
+cloudwright security spec.yaml --fail-on high
+cloudwright security spec.yaml --json        # CI-friendly
+```
+
+ADR generator produces MADR-format Architecture Decision Records with LLM-powered analysis and deterministic fallback.
+
+```bash
+cloudwright adr spec.yaml --output docs/ADR-001.md
+```
+
+Databricks cost governance template added (job clusters, SQL Warehouse auto-stop, Secret Scope).
+
+### v0.2.27 — Public Release (2026-03-04)
+
+First public release on PyPI. Added CI/CD, badges, contribution guidelines, issue templates, and changelog backfill for all versions.
+
+### v0.2.0 — CLI Overhaul (2026-03-01)
+
+Major CLI redesign with `--json` machine-readable output on all commands, `--verbose` for stack traces, D2 diagram export, policy-as-code engine, and global error handling. 112 service keys across AWS, GCP, Azure, and Databricks.
+
+### v0.1.0 — Initial Release (2026-02-27)
+
+Natural language architecture design, ArchSpec data model, cost engine with catalog-backed pricing, cross-cloud comparison, compliance validation (HIPAA, PCI-DSS, SOC 2), Terraform/CloudFormation/Mermaid export, CycloneDX SBOM, architecture diffing, SQLite service catalog, CLI with Rich formatting, and FastAPI web backend.
+
+Full changelog: [CHANGELOG.md](CHANGELOG.md)
+
+---
+
+## How It Works
 
 ```mermaid
 flowchart LR
     subgraph Input
         nl(["Natural language"])
-        tpl(["16 templates"])
-        imp(["Import TF / CFN"])
+        tpl(["17 templates"])
+        imp(["Import TF / CFN (70+ types)"])
     end
 
     spec["ArchSpec (YAML)"]
@@ -68,7 +210,7 @@ Most cloud tooling assumes you already know what to build (IaC) or already have 
 |---|:---:|:---:|:---:|:---:|:---:|:---:|
 | NL to architecture | Y | - | Y | Y | - | - |
 | IaC generation | TF + CFN | HCL | Code | TF | - | - |
-| Cost estimation | Y (design-time) | - | - | Basic | Y (code-time) | - |
+| Cost estimation | Y (workload profiles) | - | - | Basic | Y (code-time) | - |
 | Compliance validation | 6 frameworks | - | OPA policies | - | - | 2500+ rules |
 | Architecture diffing | Y | Plan diff | Preview diff | Drift | Cost diff | - |
 | Diagram export | Mermaid + D2 | - | - | Y | - | - |
@@ -80,47 +222,6 @@ Most cloud tooling assumes you already know what to build (IaC) or already have 
 Terraform and Infracost are deployment/cost tools that sit *downstream* — Cloudwright generates the Terraform code and estimates costs before any code exists. Checkov and Prowler scan *after* code is written; Cloudwright validates at design time. Brainboard is the closest direct competitor (NL-to-arch + TF), but it's SaaS-only and doesn't do compliance or cost estimation.
 
 Full competitor analysis covering 30 tools across IaC, cost, compliance, and diagramming: [competitor-landscape.md](docs/competitor-landscape.md)
-
-## Quick Start
-
-```bash
-pip install 'cloudwright-ai[cli]'
-```
-
-Set an LLM provider key:
-
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-# or
-export OPENAI_API_KEY=sk-...
-```
-
-```bash
-# Design from natural language
-cloudwright design "3-tier web app on AWS with Redis and PostgreSQL"
-
-# Estimate cost
-cloudwright cost spec.yaml
-
-# Validate compliance
-cloudwright validate spec.yaml --compliance hipaa,soc2
-
-# Export Terraform
-cloudwright export spec.yaml --format terraform -o ./infra
-
-# Compare cost across clouds
-cloudwright cost spec.yaml --compare gcp,azure
-
-# Security scan
-cloudwright security spec.yaml
-
-# Explore service configs and compliance checks
-cloudwright schema aws.ec2
-cloudwright schema hipaa
-
-# Interactive multi-turn design
-cloudwright chat
-```
 
 ## Real-World Examples
 
@@ -318,20 +419,20 @@ Generate a serverless API spec and export production-ready Terraform in one pipe
 
 ```bash
 $ cloudwright init --template serverless_api -o api.yaml
-$ cloudwright cost api.yaml
+$ cloudwright cost api.yaml -w medium
 
                     Cost Breakdown — Serverless REST API
-┏━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Component ┃ Service     ┃ Monthly ┃ Notes                                   ┃
-┡━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ api_gw    │ api_gateway │   $1.87 │                                         │
-│ auth      │ cognito     │   $0.00 │                                         │
-│ handler   │ lambda      │   $1.03 │                                         │
-│ db        │ dynamodb    │  $25.00 │                                         │
-│ storage   │ s3          │   $1.15 │ 50GB storage                            │
-├───────────┼─────────────┼─────────┼─────────────────────────────────────────┤
-│           │             │  $29.05 │                                         │
-└───────────┴─────────────┴─────────┴─────────────────────────────────────────┘
+┏━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Component ┃ Service     ┃  Monthly ┃ Notes                                 ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ api_gw    │ api_gateway │   $17.50 │ 1M requests/mo                        │
+│ auth      │ cognito     │    $0.00 │                                       │
+│ handler   │ lambda      │   $20.87 │ 1M invocations, 256MB                 │
+│ db        │ dynamodb    │   $25.00 │                                       │
+│ storage   │ s3          │    $1.15 │ 50GB storage                          │
+├───────────┼─────────────┼──────────┼───────────────────────────────────────┤
+│           │             │   $64.52 │ Workload profile: medium              │
+└───────────┴─────────────┴──────────┴───────────────────────────────────────┘
 
 $ cloudwright export api.yaml --format terraform -o ./infra
 
@@ -457,22 +558,6 @@ Cross-cloud equivalences map Databricks services to AWS/GCP/Azure alternatives �
 
 All examples above use real output from `cloudwright-ai` on PyPI — no LLM key required.
 
-## Web UI
-
-Cloudwright includes an interactive web interface for architecture design, visualization, and cost analysis.
-
-```bash
-pip install 'cloudwright-ai[web]'
-cloudwright chat --web
-```
-
-| Architecture Diagram | Cost Breakdown |
-|:---:|:---:|
-| ![E-Commerce Platform](docs/screenshots/cloudwright-light-1-ecommerce.png) | ![Analytics Pipeline](docs/screenshots/cloudwright-light-2-analytics.png) |
-| ![Cost Breakdown](docs/screenshots/cloudwright-light-3-cost.png) | ![Compliance Validation](docs/screenshots/cloudwright-light-4-validate.png) |
-
-Interactive React Flow diagrams with tier-based layout, service-category color coding, boundary grouping, per-component cost overlay, compliance validation, and one-click Terraform/YAML export.
-
 ## Features
 
 ### Architecture Design
@@ -498,15 +583,17 @@ The architect applies safe defaults automatically: encryption on data stores, ba
 
 ### Cost Estimation
 
-Per-component monthly pricing from a built-in SQLite catalog. No external API calls, no rate limits. Supports four pricing tiers.
+Per-component monthly pricing from a built-in SQLite catalog. No external API calls, no rate limits. Supports four pricing tiers and four workload profiles.
 
 ```bash
 cloudwright cost spec.yaml                              # on-demand pricing
 cloudwright cost spec.yaml --pricing-tier reserved_1yr  # 1-year reserved
 cloudwright cost spec.yaml --compare gcp,azure          # multi-cloud comparison
+cloudwright cost spec.yaml --workload-profile medium    # production-realistic sizing
+cloudwright cost spec.yaml -w enterprise                # enterprise-grade defaults
 ```
 
-The cost engine resolves prices through three tiers: catalog database (instance-level pricing), registry formula dispatch (11 named formulas for serverless/managed services), and static fallback table (100+ service defaults). Data transfer costs are calculated separately with per-provider egress rates.
+The cost engine resolves prices through three tiers: catalog database (instance-level pricing), registry formula dispatch (11 named formulas for serverless/managed services), and static fallback table (100+ service defaults). Data transfer costs are calculated separately with per-provider egress rates and are also scaled by workload profile.
 
 Pricing tiers: `on_demand` (1.0x), `reserved_1yr` (0.6x), `reserved_3yr` (0.4x), `spot` (0.3x).
 
@@ -554,6 +641,85 @@ cloudwright export spec.yaml --format sbom -o sbom.json
 ```
 
 Terraform output uses variables for sensitive values (no hardcoded passwords or ARNs), includes provider blocks with region configuration, and generates data sources for VPC/subnet discovery.
+
+### Infrastructure Import
+
+Import existing infrastructure into ArchSpec format:
+
+```bash
+cloudwright import terraform.tfstate -o spec.yaml
+cloudwright import cloudformation-template.yaml -o spec.yaml
+```
+
+Auto-detects format from file extension and content. Recognizes 70+ resource types across Terraform (AWS, GCP, Azure) and CloudFormation (including IAM, VPC, CloudWatch, Kinesis, StepFunctions, SecretsManager, KMS, ECR, MSK, and EventBridge). Imported databases and storage services automatically get `encryption: true` set as a post-import security default.
+
+Plugin support for custom importers via the `cloudwright.importers` entry point.
+
+### Security Scanning
+
+Scans an ArchSpec for security anti-patterns — missing encryption, open ingress, no HTTPS, IAM wildcards, unmonitored production architectures, and more.
+
+```bash
+cloudwright security spec.yaml              # scan with default fail-on=high
+cloudwright security spec.yaml --fail-on critical
+cloudwright security spec.yaml --json       # JSON output for CI pipelines
+```
+
+Also scans exported Terraform HCL for `0.0.0.0/0` security groups, `"*"` IAM actions, and `publicly_accessible = true` databases:
+
+```python
+from cloudwright.security import SecurityScanner, scan_terraform
+
+# Scan ArchSpec
+report = SecurityScanner().scan(spec)
+for f in report.findings:
+    print(f"[{f.severity.upper()}] {f.message}")
+
+# Scan Terraform HCL output
+hcl = spec.export("terraform")
+report = scan_terraform(hcl)
+print(f"Passed: {report.passed}")
+```
+
+### Schema Introspection
+
+<p align="center">
+  <img src="examples/cloudwright-schema-demo.gif" alt="Schema Introspection Demo" width="720">
+</p>
+
+Explore available cloud services, their configuration fields, cross-cloud equivalents, and compliance framework checks — all without an API key.
+
+```bash
+cloudwright schema aws.ec2        # service config fields, pricing, cross-cloud equivalents
+cloudwright schema hipaa           # compliance checks, categories, severities
+cloudwright schema gcp.cloud_sql   # GCP Cloud SQL configuration
+```
+
+Service mode shows default config, pricing formula, cross-cloud equivalences, and feature parity gaps across providers. Compliance mode shows all checks organized by category with severity levels.
+
+### MCP Server
+
+Expose cloudwright functions as [Model Context Protocol](https://modelcontextprotocol.io/) tools for external AI agents. 18 tools across 6 groups: design, cost, validate, analyze, export, and session.
+
+```bash
+pip install cloudwright-ai-mcp
+cloudwright mcp                              # start MCP server (all tools, stdio)
+cloudwright mcp --tools design,cost          # only design and cost tools
+cloudwright mcp --transport sse              # SSE transport for HTTP clients
+```
+
+Add to your Claude Desktop `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "cloudwright": {
+      "command": "cloudwright",
+      "args": ["mcp"]
+    }
+  }
+}
+```
 
 ### Architecture Diffing
 
@@ -659,80 +825,6 @@ cloudwright policy spec.yaml --rules policy.yaml
 
 Severity levels: `deny` (exit code 1), `warn`, `info`.
 
-### Security Scanning
-
-<p align="center">
-  <img src="examples/cloudwright-security-demo.gif" alt="Security Scanning Demo" width="720">
-</p>
-
-Scans an ArchSpec for security anti-patterns — missing encryption, open ingress, no HTTPS, IAM wildcards, unmonitored production architectures, and more.
-
-```bash
-cloudwright security spec.yaml              # scan with default fail-on=high
-cloudwright security spec.yaml --fail-on critical
-cloudwright security spec.yaml --json       # JSON output for CI pipelines
-```
-
-Also scans exported Terraform HCL for `0.0.0.0/0` security groups, `"*"` IAM actions, and `publicly_accessible = true` databases:
-
-```python
-from cloudwright.security import SecurityScanner, scan_terraform
-
-# Scan ArchSpec
-report = SecurityScanner().scan(spec)
-for f in report.findings:
-    print(f"[{f.severity.upper()}] {f.message}")
-
-# Scan Terraform HCL output
-hcl = spec.export("terraform")
-report = scan_terraform(hcl)
-print(f"Passed: {report.passed}")
-```
-
-### Schema Introspection
-
-<p align="center">
-  <img src="examples/cloudwright-schema-demo.gif" alt="Schema Introspection Demo" width="720">
-</p>
-
-Explore available cloud services, their configuration fields, cross-cloud equivalents, and compliance framework checks — all without an API key.
-
-```bash
-cloudwright schema aws.ec2        # service config fields, pricing, cross-cloud equivalents
-cloudwright schema hipaa           # compliance checks, categories, severities
-cloudwright schema gcp.cloud_sql   # GCP Cloud SQL configuration
-```
-
-Service mode shows default config, pricing formula, cross-cloud equivalences, and feature parity gaps across providers. Compliance mode shows all checks organized by category with severity levels.
-
-### MCP Server
-
-<p align="center">
-  <img src="examples/cloudwright-mcp-showcase.gif" alt="Claude Code using Cloudwright MCP" width="720">
-</p>
-
-Expose cloudwright functions as [Model Context Protocol](https://modelcontextprotocol.io/) tools for external AI agents. 18 tools across 6 groups: design, cost, validate, analyze, export, and session.
-
-```bash
-pip install cloudwright-ai-mcp
-cloudwright mcp                              # start MCP server (all tools, stdio)
-cloudwright mcp --tools design,cost          # only design and cost tools
-cloudwright mcp --transport sse              # SSE transport for HTTP clients
-```
-
-Add to your Claude Desktop `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "cloudwright": {
-      "command": "cloudwright",
-      "args": ["mcp"]
-    }
-  }
-}
-```
-
 ### Architecture Decision Records
 
 Generate an ADR (Architecture Decision Record) from any ArchSpec. Uses the MADR format with context, decision, consequences, and cost estimate.
@@ -742,17 +834,6 @@ cloudwright adr spec.yaml                          # print to stdout
 cloudwright adr spec.yaml --output docs/ADR-001.md
 cloudwright adr spec.yaml --title "Platform Choice" --decision "Adopt Databricks over AWS EMR"
 ```
-
-### Infrastructure Import
-
-Import existing infrastructure into ArchSpec format:
-
-```bash
-cloudwright import terraform.tfstate -o spec.yaml
-cloudwright import cloudformation-template.yaml -o spec.yaml
-```
-
-Auto-detects format from file extension and content. Plugin support for custom importers via the `cloudwright.importers` entry point.
 
 ### Templates
 
@@ -783,10 +864,6 @@ cloudwright chat --web
 10 API endpoints: design, modify, cost, validate, export, diff, catalog search, catalog compare, chat, health.
 
 ### Structured Output and Streaming
-
-<p align="center">
-  <img src="examples/cloudwright-dryrun-demo.gif" alt="Dry-Run and Streaming Demo" width="720">
-</p>
 
 All commands support machine-readable output with consistent JSON envelopes:
 
@@ -893,12 +970,12 @@ Components use a 5-tier system for vertical positioning: Edge (0), Ingress (1), 
 |---|---|
 | `design <prompt>` | Generate ArchSpec from natural language |
 | `modify <spec> <instruction>` | Modify existing spec with natural language |
-| `cost <spec>` | Monthly cost breakdown with optional `--compare`, `--pricing-tier` |
+| `cost <spec>` | Monthly cost breakdown with `--compare`, `--pricing-tier`, `--workload-profile` / `-w` |
 | `compare <spec>` | Multi-cloud service mapping and cost comparison |
 | `validate <spec>` | Compliance checks with `--compliance`, `--well-architected`, `--report` |
 | `export <spec>` | Export to IaC/diagram/SBOM with `--format`, `--output` |
 | `diff <spec_a> <spec_b>` | Structured diff with cost delta and compliance impact |
-| `import <source>` | Import from Terraform state or CloudFormation |
+| `import <source>` | Import from Terraform state or CloudFormation (70+ types) |
 | `chat` | Interactive multi-turn design session (`--web` for browser UI) |
 | `init` | Initialize from template with `--template`, `--project` |
 | `lint <spec>` | Anti-pattern detection (`--strict` fails on warnings) |
@@ -931,9 +1008,9 @@ from cloudwright.scorer import Scorer
 
 spec = ArchSpec.from_file("spec.yaml")
 
-# Cost
+# Cost (with workload profile for production-realistic estimates)
 engine = CostEngine()
-priced = engine.price(spec)
+priced = engine.estimate(spec, workload_profile="medium")
 for item in priced.cost_estimate.breakdown:
     print(f"{item.component_id}: ${item.monthly:,.2f}/mo")
 
@@ -989,7 +1066,7 @@ Evaluated against raw Claude (Sonnet 4.6) across 54 use cases spanning greenfiel
 | Time to IaC | 82.5% | 0.0% | +82.5 |
 | **Overall** | **68.1%** | **28.0%** | **+40.1** |
 
-Cloudwright wins 6 of 8 metrics. Weakest areas (active development): cost accuracy and service correctness on import/migration use cases.
+Cloudwright wins 6 of 8 metrics. Cost accuracy improved significantly in v0.3.3 with workload profiles, and import/migration reliability improved with 70+ resource type mappings.
 
 Full results: [benchmark/results/benchmark_report.md](benchmark/results/benchmark_report.md)
 

@@ -44,11 +44,40 @@ interface Message {
   content: string;
   spec?: ArchSpec;
   yaml?: string;
+  suggestions?: string[];
 }
 
 type LoadingStage = "idle" | "generating" | "modifying" | "costing" | "done";
 
 const API_BASE = "/api";
+
+const ALL_SUGGESTIONS = [
+  "Add caching layer",
+  "Reduce cost",
+  "Increase redundancy",
+  "Add monitoring",
+  "Add security",
+];
+
+function pickSuggestions(spec: ArchSpec): string[] {
+  const labels = spec.components.map((c) => c.label.toLowerCase());
+  const services = spec.components.map((c) => c.service.toLowerCase());
+  const hasCache = labels.some((l) => l.includes("cache") || l.includes("redis") || l.includes("elasticache")) ||
+    services.some((s) => s.includes("cache") || s.includes("redis"));
+  const hasMonitor = labels.some((l) => l.includes("monitor") || l.includes("cloudwatch") || l.includes("grafana")) ||
+    services.some((s) => s.includes("cloudwatch") || s.includes("monitor"));
+  const hasSecurity = labels.some((l) => l.includes("waf") || l.includes("firewall") || l.includes("security")) ||
+    services.some((s) => s.includes("waf") || s.includes("shield"));
+
+  return ALL_SUGGESTIONS
+    .filter((s) => {
+      if (s === "Add caching layer" && hasCache) return false;
+      if (s === "Add monitoring" && hasMonitor) return false;
+      if (s === "Add security" && hasSecurity) return false;
+      return true;
+    })
+    .slice(0, 3);
+}
 
 function renderMarkdown(text: string): React.ReactNode[] {
   return text.split(/(\*\*.*?\*\*)/g).map((part, i) =>
@@ -261,6 +290,7 @@ function App() {
         content: `${verb} **${spec.name}** with ${spec.components.length} components on ${spec.provider.toUpperCase()}.${spec.cost_estimate ? ` Estimated cost: $${spec.cost_estimate.monthly_total.toFixed(2)}/mo.` : ""}`,
         spec,
         yaml: finalYaml,
+        suggestions: pickSuggestions(spec),
       };
       setMessages((prev) => [...prev, assistantMsg]);
       setActiveTab("diagram");
@@ -319,7 +349,15 @@ function App() {
           </div>
           {currentSpec && (
             <button
-              onClick={() => { setCurrentSpec(null); setMessages([]); setValidationSummary(null); }}
+              onClick={() => {
+                if (!window.confirm("Discard current session and start fresh?")) return;
+                try {
+                  localStorage.setItem("cloudwright_last_session", JSON.stringify(messages));
+                } catch { /* storage may be full or unavailable */ }
+                setCurrentSpec(null);
+                setMessages([]);
+                setValidationSummary(null);
+              }}
               style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#ffffff", color: "#64748b", cursor: "pointer", fontSize: 12, fontWeight: 500 }}
             >
               New
@@ -336,19 +374,45 @@ function App() {
             </div>
           )}
           {messages.map((msg, i) => (
-            <div
-              key={i}
-              style={{
-                marginBottom: 12,
-                padding: "10px 14px",
-                borderRadius: 8,
-                background: msg.role === "user" ? "#2563eb" : "#f1f5f9",
-                color: msg.role === "user" ? "#ffffff" : "#1e293b",
-                fontSize: 14,
-                lineHeight: 1.5,
-              }}
-            >
-              {renderMarkdown(msg.content)}
+            <div key={i} style={{ marginBottom: 12 }}>
+              <div
+                style={{
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  background: msg.role === "user" ? "#2563eb" : "#f1f5f9",
+                  color: msg.role === "user" ? "#ffffff" : "#1e293b",
+                  fontSize: 14,
+                  lineHeight: 1.5,
+                }}
+              >
+                {renderMarkdown(msg.content)}
+              </div>
+              {msg.role === "assistant" && msg.spec && msg.suggestions && msg.suggestions.length > 0 && (
+                <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+                  {msg.suggestions.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => {
+                        setInput(s);
+                        inputRef.current?.focus();
+                      }}
+                      disabled={loadingStage !== "idle"}
+                      style={{
+                        padding: "4px 10px",
+                        borderRadius: 12,
+                        border: "1px solid #cbd5e1",
+                        background: "#ffffff",
+                        color: "#2563eb",
+                        cursor: loadingStage !== "idle" ? "not-allowed" : "pointer",
+                        fontSize: 12,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
           {loadingStage !== "idle" && (
@@ -522,7 +586,7 @@ function App() {
 
                         setMessages((prev) => [...prev,
                           { role: "user", content: instruction },
-                          { role: "assistant", content: `Modified **${spec.name}** with ${spec.components.length} components on ${spec.provider.toUpperCase()}.${spec.cost_estimate ? ` Estimated cost: $${spec.cost_estimate.monthly_total.toFixed(2)}/mo.` : ""}`, spec, yaml: data.yaml },
+                          { role: "assistant", content: `Modified **${spec.name}** with ${spec.components.length} components on ${spec.provider.toUpperCase()}.${spec.cost_estimate ? ` Estimated cost: $${spec.cost_estimate.monthly_total.toFixed(2)}/mo.` : ""}`, spec, yaml: data.yaml, suggestions: pickSuggestions(spec) },
                         ]);
                       } catch (err) {
                         setMessages((prev) => [...prev,

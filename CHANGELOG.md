@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.5] - 2026-03-14
+
+### Added
+
+- Token-level streaming in CLI via Rich Live display and Web via SSE `/api/chat/stream` endpoint
+- Session persistence: `SessionStore` class with save/load/list/delete, CLI `/save-session`, `/load-session`, `/sessions` commands, `--resume SESSION_ID` flag
+- Per-turn and cumulative usage tracking (input/output tokens, estimated cost) across all interfaces
+- Context window management with automatic history trimming at 50 turns
+- Spec diff integration — modifications show added/removed/changed components via existing `Differ` class
+- Clarification-first routing for ambiguous single-word inputs (skips LLM, asks for more detail)
+- Few-shot examples in design and modify system prompts to reduce JSON parsing failures
+- `--debug` flag for CLI chat (shows prompts, responses, timing, token counts)
+- `/help` and `/?` commands in CLI chat showing all available slash commands
+- Rate limiting in Web API (30 requests/minute per IP, sliding window)
+- Structured error responses in Web API with `code`, `message`, `suggestion` fields
+- Thread-safe singletons for web server concurrency (double-checked locking)
+- Suggestion buttons in React frontend (context-aware based on current spec)
+- Confirmation dialog on "New" button with auto-save to localStorage
+- MCP session TTL (1 hour), max sessions (100), automatic cleanup of expired sessions
+- `chat_delete_session` MCP tool
+- Usage and cumulative usage in MCP `chat_send` and `chat_list_sessions` responses
+- Per-call `timeout` parameter on all LLM methods (`generate`, `generate_fast`, `generate_stream`)
+- Expanded retry logic with jitter: RateLimitError, APIConnectionError, InternalServerError, APITimeoutError
+- Configurable max retries via `CLOUDWRIGHT_LLM_MAX_RETRIES` environment variable
+- Actionable error messages in CLI chat (missing API key, rate limit, timeout, JSON parse failure)
+- 44 Playwright browser tests covering every README feature: page layout, architecture design, diagram rendering, cost breakdown, compliance validation, export panel, spec YAML, modify tab, suggestion buttons, multi-turn chat, streaming indicators, confirmation dialogs, summary bar, download buttons, and all API endpoints
+- 21 new test files: unit, integration, e2e (real LLM), behavioral, API, and browser tests
+- `SessionStore` exported from `cloudwright` package
+
+### Changed
+
+- `ConversationSession.send()` now tracks usage in `last_usage` and `cumulative_usage` properties
+- `ConversationSession.modify()` now computes spec diff in `last_diff` property
+- CLI chat rewritten to use `ConversationSession` directly instead of `Architect`
+- Web `/api/chat` response now includes `usage` field
+- MCP `chat_list_sessions` response now includes `created_at` and `usage` per session
+
 ## [0.3.4] - 2026-03-09
 
 ### Changed

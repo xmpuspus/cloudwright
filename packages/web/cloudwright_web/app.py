@@ -7,7 +7,9 @@ import hashlib
 import json
 import logging
 import multiprocessing
+import threading
 import time
+from collections import deque
 from pathlib import Path
 from typing import Literal
 
@@ -51,27 +53,91 @@ app.add_middleware(
 _architect: Architect | None = None
 _catalog: Catalog | None = None
 _cost_engine: CostEngine | None = None
+_architect_lock = threading.Lock()
+_catalog_lock = threading.Lock()
+_cost_engine_lock = threading.Lock()
 
 
 def get_architect() -> Architect:
     global _architect
     if _architect is None:
-        _architect = Architect()
+        with _architect_lock:
+            if _architect is None:
+                _architect = Architect()
     return _architect
 
 
 def get_catalog() -> Catalog:
     global _catalog
     if _catalog is None:
-        _catalog = Catalog()
+        with _catalog_lock:
+            if _catalog is None:
+                _catalog = Catalog()
     return _catalog
 
 
 def get_cost_engine() -> CostEngine:
     global _cost_engine
     if _cost_engine is None:
-        _cost_engine = CostEngine()
+        with _cost_engine_lock:
+            if _cost_engine is None:
+                _cost_engine = CostEngine()
     return _cost_engine
+
+
+# --- Rate limiter ---
+
+
+class _RateLimiter:
+    """Simple in-memory per-IP rate limiter."""
+
+    def __init__(self, max_requests: int = 30, window_seconds: int = 60):
+        self._max = max_requests
+        self._window = window_seconds
+        self._buckets: dict[str, deque] = {}
+        self._lock = threading.Lock()
+
+    def is_allowed(self, ip: str) -> tuple[bool, int]:
+        """Returns (allowed, retry_after_seconds)."""
+        now = time.time()
+        cutoff = now - self._window
+        with self._lock:
+            if ip not in self._buckets:
+                self._buckets[ip] = deque()
+            bucket = self._buckets[ip]
+            while bucket and bucket[0] < cutoff:
+                bucket.popleft()
+            if len(bucket) >= self._max:
+                retry_after = int(self._window - (now - bucket[0])) + 1 if bucket else int(self._window) + 1
+                return False, retry_after
+            bucket.append(now)
+            return True, 0
+
+
+_rate_limiter = _RateLimiter(max_requests=30, window_seconds=60)
+
+
+# --- Error response helper ---
+
+
+def _error_response(code: str, message: str, suggestion: str, status_code: int = 400) -> JSONResponse:
+    return JSONResponse(
+        status_code=status_code,
+        content={"code": code, "message": message, "suggestion": suggestion},
+    )
+
+
+def _check_rate_limit(request: Request):
+    ip = request.client.host if request.client else "unknown"
+    allowed, retry_after = _rate_limiter.is_allowed(ip)
+    if not allowed:
+        return _error_response(
+            "rate_limited",
+            "Too many requests",
+            f"Wait {retry_after} seconds before retrying",
+            status_code=429,
+        )
+    return None
 
 
 # --- Spec cache ---
@@ -200,13 +266,18 @@ def health():
 
 
 @app.post("/api/design")
-async def design(req: DesignRequest):
+async def design(req: DesignRequest, request: Request):
+    if (err := _check_rate_limit(request)):
+        return err
     try:
         architect = get_architect()
         constraints = None
         if req.budget_monthly or req.compliance:
             constraints = Constraints(budget_monthly=req.budget_monthly, compliance=req.compliance)
-        spec = await asyncio.to_thread(architect.design, req.description, constraints)
+        try:
+            spec = await asyncio.wait_for(asyncio.to_thread(architect.design, req.description, constraints), timeout=120)
+        except asyncio.TimeoutError:
+            return _error_response("llm_timeout", "Request timed out", "Try a simpler architecture description", 504)
         try:
             cost_estimate = await asyncio.to_thread(get_cost_engine().estimate, spec)
             spec = spec.model_copy(update={"cost_estimate": cost_estimate})
@@ -215,12 +286,12 @@ async def design(req: DesignRequest):
         return {"spec": spec.model_dump(exclude_none=True), "yaml": spec.to_yaml()}
     except RuntimeError as e:
         if "No LLM provider" in str(e):
-            raise HTTPException(status_code=503, detail=str(e)) from e
+            return _error_response("missing_api_key", str(e), "Set an LLM provider API key in your environment", 503)
         log.exception("Design endpoint failed")
-        raise HTTPException(status_code=500, detail="Internal server error") from e
-    except Exception as e:
+        return _error_response("internal_error", "Internal server error", "Check server logs for details", 500)
+    except Exception:
         log.exception("Design endpoint failed")
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        return _error_response("internal_error", "Internal server error", "Check server logs for details", 500)
 
 
 @app.post("/api/design/stream")
@@ -267,15 +338,20 @@ async def design_stream(req: DesignRequest):
 
 
 @app.post("/api/modify")
-async def modify(req: ModifyRequest):
+async def modify(req: ModifyRequest, request: Request):
+    if (err := _check_rate_limit(request)):
+        return err
     try:
         architect = get_architect()
         spec = ArchSpec.model_validate(req.spec)
-        updated = await asyncio.to_thread(architect.modify, spec, req.instruction)
+        try:
+            updated = await asyncio.wait_for(asyncio.to_thread(architect.modify, spec, req.instruction), timeout=120)
+        except asyncio.TimeoutError:
+            return _error_response("llm_timeout", "Request timed out", "Try a simpler architecture description", 504)
         return {"spec": updated.model_dump(exclude_none=True), "yaml": updated.to_yaml()}
-    except Exception as e:
+    except Exception:
         log.exception("Modify endpoint failed")
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        return _error_response("internal_error", "Internal server error", "Check server logs for details", 500)
 
 
 @app.post("/api/modify/stream")
@@ -480,7 +556,9 @@ def get_icon(provider: str, service: str):
 
 
 @app.post("/api/chat")
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, request: Request):
+    if (err := _check_rate_limit(request)):
+        return err
     try:
         from cloudwright.architect import ConversationSession
 
@@ -490,23 +568,98 @@ async def chat(req: ChatRequest):
         for msg in req.history:
             session.history.append({"role": msg.role, "content": msg.content})
 
-        text, spec = await asyncio.to_thread(session.send, req.message)
+        try:
+            text, spec = await asyncio.wait_for(asyncio.to_thread(session.send, req.message), timeout=120)
+        except asyncio.TimeoutError:
+            return _error_response("llm_timeout", "Request timed out", "Try a simpler architecture description", 504)
+
         if spec is None and not req.history:
-            spec = await asyncio.to_thread(architect.design, req.message)
-            text = f"Architecture: {spec.name}"
-        result: dict = {"reply": text, "history": session.history}
+            try:
+                spec = await asyncio.wait_for(asyncio.to_thread(architect.design, req.message), timeout=120)
+                text = f"Architecture: {spec.name}"
+            except asyncio.TimeoutError:
+                return _error_response("llm_timeout", "Request timed out", "Try a simpler architecture description", 504)
+
+        result: dict = {
+            "reply": text,
+            "history": session.history,
+            "usage": session.last_usage,
+        }
         if spec:
             result["spec"] = spec.model_dump(exclude_none=True)
             result["yaml"] = spec.to_yaml()
         return result
     except RuntimeError as e:
         if "No LLM provider" in str(e):
-            raise HTTPException(status_code=503, detail=str(e)) from e
+            return _error_response("missing_api_key", str(e), "Set an LLM provider API key in your environment", 503)
         log.exception("Chat endpoint failed")
-        raise HTTPException(status_code=500, detail="Internal server error") from e
-    except Exception as e:
+        return _error_response("internal_error", "Internal server error", "Check server logs for details", 500)
+    except Exception:
         log.exception("Chat endpoint failed")
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        return _error_response("internal_error", "Internal server error", "Check server logs for details", 500)
+
+
+@app.post("/api/chat/stream")
+async def chat_stream(req: ChatRequest, request: Request):
+    if (err := _check_rate_limit(request)):
+        return err
+
+    async def event_generator():
+        from cloudwright.architect import ConversationSession
+
+        architect = get_architect()
+        session = ConversationSession(llm=architect.llm)
+
+        for msg in req.history:
+            session.history.append({"role": msg.role, "content": msg.content})
+
+        try:
+            # Run the streaming iterator in a thread, yielding SSE token events
+            queue: asyncio.Queue = asyncio.Queue()
+            loop = asyncio.get_event_loop()
+
+            def _run_stream():
+                try:
+                    for chunk in session.send_stream(req.message):
+                        loop.call_soon_threadsafe(queue.put_nowait, ("token", chunk))
+                    loop.call_soon_threadsafe(queue.put_nowait, ("done", None))
+                except Exception as exc:
+                    loop.call_soon_threadsafe(queue.put_nowait, ("error", str(exc)))
+
+            thread = threading.Thread(target=_run_stream, daemon=True)
+            thread.start()
+
+            deadline = time.time() + 120
+            while True:
+                remaining = deadline - time.time()
+                if remaining <= 0:
+                    yield f"data: {json.dumps({'stage': 'error', 'code': 'llm_timeout', 'message': 'Request timed out', 'suggestion': 'Try a simpler architecture description'})}\n\n"
+                    return
+                try:
+                    kind, payload = await asyncio.wait_for(queue.get(), timeout=min(remaining, 5))
+                except asyncio.TimeoutError:
+                    continue
+
+                if kind == "token":
+                    yield f"data: {json.dumps({'stage': 'token', 'data': payload})}\n\n"
+                elif kind == "error":
+                    yield f"data: {json.dumps({'stage': 'error', 'message': payload})}\n\n"
+                    return
+                else:  # done
+                    spec = session.current_spec
+                    done_event: dict = {
+                        "stage": "done",
+                        "usage": session.last_usage,
+                    }
+                    if spec:
+                        done_event["data"] = spec.model_dump(exclude_none=True)
+                        done_event["yaml"] = spec.to_yaml()
+                    yield f"data: {json.dumps(done_event)}\n\n"
+                    return
+        except Exception as e:
+            yield f"data: {json.dumps({'stage': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
 # Serve frontend static files if they exist

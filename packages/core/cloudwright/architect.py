@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import logging
 import re
+import time
+from collections.abc import Iterator
 
 from cloudwright.llm import get_llm
 from cloudwright.llm.base import BaseLLM
@@ -15,6 +17,7 @@ from cloudwright.spec import (
     Component,
     Connection,
     Constraints,
+    DiffResult,
 )
 
 log = logging.getLogger(__name__)
@@ -213,7 +216,17 @@ For ALL architectures, ensure component configs include:
 - ALWAYS include node_type in config for ElastiCache/Memorystore (e.g. cache.r5.large)
 - Include storage_gb on all database and storage components
 - Include count on compute components when multiple instances needed
-{_MODEL_VERSION_GUIDANCE}"""
+{_MODEL_VERSION_GUIDANCE}
+
+EXAMPLES:
+
+User: "Simple web app on AWS"
+Response:
+{{"name": "Simple Web App", "provider": "aws", "region": "us-east-1", "components": [{{"id": "alb", "service": "alb", "provider": "aws", "label": "Load Balancer", "tier": 1, "config": {{}}}}, {{"id": "web", "service": "ec2", "provider": "aws", "label": "Web Server", "tier": 2, "config": {{"instance_type": "t3.medium", "auto_scaling": true}}}}, {{"id": "db", "service": "rds", "provider": "aws", "label": "PostgreSQL", "tier": 3, "config": {{"engine": "postgres", "instance_class": "db.t3.medium", "multi_az": true, "encryption": true}}}}], "connections": [{{"source": "alb", "target": "web", "label": "HTTP/80"}}, {{"source": "web", "target": "db", "label": "TCP/5432"}}], "rationale": [{{"decision": "ALB for load balancing", "reason": "Handles HTTP routing and health checks"}}], "suggestions": ["Add ElastiCache for session caching", "Add CloudFront CDN", "Add S3 for static assets"]}}
+
+User: "Serverless API"
+Response:
+{{"name": "Serverless API", "provider": "aws", "region": "us-east-1", "components": [{{"id": "apigw", "service": "api_gateway", "provider": "aws", "label": "API Gateway", "tier": 0, "config": {{}}}}, {{"id": "fn", "service": "lambda", "provider": "aws", "label": "API Handler", "tier": 2, "config": {{"memory_mb": 512, "runtime": "python3.12"}}}}, {{"id": "table", "service": "dynamodb", "provider": "aws", "label": "Data Store", "tier": 3, "config": {{"encryption": true}}}}], "connections": [{{"source": "apigw", "target": "fn", "label": "invoke"}}, {{"source": "fn", "target": "table", "label": "read/write"}}], "rationale": [{{"decision": "Serverless stack", "reason": "Zero idle cost, auto-scaling"}}], "suggestions": ["Add Cognito for auth", "Add SQS for async processing", "Add S3 for file uploads"]}}"""
 
 _MODIFY_SYSTEM = f"""You modify an existing cloud architecture based on user instructions.
 
@@ -222,7 +235,13 @@ Return the COMPLETE updated architecture JSON in the same format — never retur
 Preserve all existing component IDs unless explicitly removing or renaming them.
 Apply the requested change precisely without unnecessary restructuring.
 Respond with ONLY the JSON object — no markdown, no explanation.
-{_MODEL_VERSION_GUIDANCE}"""
+{_MODEL_VERSION_GUIDANCE}
+
+EXAMPLE:
+Current architecture has components: alb, web, db.
+Modification: "Add a Redis cache between web and db"
+Response:
+{{"name": "Web App with Cache", "provider": "aws", "region": "us-east-1", "components": [{{"id": "alb", "service": "alb", "provider": "aws", "label": "Load Balancer", "tier": 1, "config": {{}}}}, {{"id": "web", "service": "ec2", "provider": "aws", "label": "Web Server", "tier": 2, "config": {{"instance_type": "t3.medium"}}}}, {{"id": "cache", "service": "elasticache", "provider": "aws", "label": "Redis Cache", "tier": 3, "config": {{"engine": "redis", "node_type": "cache.t3.medium"}}}}, {{"id": "db", "service": "rds", "provider": "aws", "label": "PostgreSQL", "tier": 3, "config": {{"engine": "postgres", "instance_class": "db.t3.medium"}}}}], "connections": [{{"source": "alb", "target": "web", "label": "HTTP/80"}}, {{"source": "web", "target": "cache", "label": "TCP/6379"}}, {{"source": "web", "target": "db", "label": "TCP/5432"}}]}}"""
 
 
 _CHAT_SYSTEM = f"""You are a cloud architecture assistant. You help design and refine architectures through conversation.
@@ -469,18 +488,75 @@ _DEFAULT_CONNECTION_PROTOCOLS: list[tuple[tuple[int, int], str, int]] = [
 class ConversationSession:
     """Multi-turn architecture design conversation with history tracking."""
 
-    def __init__(self, llm: BaseLLM | None = None, constraints: Constraints | None = None):
+    # Per-model pricing (USD per 1K tokens)
+    _PRICING = {
+        "claude-sonnet-4-6": {"input": 0.003, "output": 0.015},
+        "claude-haiku-4-5-20251001": {"input": 0.0008, "output": 0.004},
+        "gpt-5.2": {"input": 0.003, "output": 0.015},
+        "gpt-5-mini": {"input": 0.0004, "output": 0.0016},
+    }
+    _DEFAULT_PRICING = {"input": 0.003, "output": 0.015}
+
+    def __init__(
+        self,
+        llm: BaseLLM | None = None,
+        constraints: Constraints | None = None,
+        max_history_turns: int = 50,
+        session_id: str | None = None,
+        auto_save: bool = False,
+    ):
         self.llm = llm or get_llm()
         self.constraints = constraints
         self.history: list[dict] = []
         self.current_spec: ArchSpec | None = None
         self._error_hints: list[str] = []
+        self.max_history_turns = max_history_turns
+        self.session_id = session_id
+        self.auto_save = auto_save
+        self.cumulative_usage: dict = {"input_tokens": 0, "output_tokens": 0, "total_cost": 0.0}
+        self.last_usage: dict = {}
+        self.last_diff: DiffResult | None = None
+        self._created_at: float = time.time()
+
+    _CLOUD_KEYWORDS = {
+        "aws", "gcp", "azure", "cloud", "kubernetes", "k8s", "docker", "serverless",
+        "lambda", "ec2", "s3", "rds", "vpc", "api", "web", "app", "database", "server",
+        "microservice", "container", "terraform", "deploy", "databricks", "ecs", "eks",
+        "gke", "fargate", "cloudfront", "alb", "cdn", "redis", "postgres", "mysql",
+        "dynamodb", "sqs", "sns", "kafka", "tier", "architecture", "infra",
+    }
+
+    def _needs_clarification(self, message: str) -> bool:
+        words = message.lower().split()
+        if len(words) >= 2:
+            return False
+        if self.constraints is not None:
+            return False
+        if len(self.history) > 0:
+            return False
+        if self.current_spec is not None:
+            return False
+        return not any(w in self._CLOUD_KEYWORDS for w in words)
 
     def send(self, message: str) -> tuple[str, ArchSpec | None]:
         """Send a user message and get response + optionally updated spec."""
+        if self._needs_clarification(message):
+            clarification = (
+                "Could you tell me more about what you'd like to build? For example:\n"
+                "- '3-tier web app on AWS'\n"
+                "- 'Serverless API with DynamoDB'\n"
+                "- 'Migrate our EC2 setup to Kubernetes'\n\n"
+                "Include details like provider (AWS/GCP/Azure), scale, and any compliance requirements."
+            )
+            self.history.append({"role": "user", "content": message})
+            self.history.append({"role": "assistant", "content": clarification})
+            return clarification, None
+
+        self._trim_history()
         self.history.append({"role": "user", "content": message})
         system = self._build_system_with_hints(_CHAT_SYSTEM)
-        text, _usage = self.llm.generate(self.history, system, max_tokens=10000)
+        text, usage = self.llm.generate(self.history, system, max_tokens=10000)
+        self._track_usage(usage)
         self.history.append({"role": "assistant", "content": text})
 
         spec = self._try_parse_spec(text)
@@ -489,23 +565,53 @@ class ConversationSession:
                 spec = spec.model_copy(update={"constraints": self.constraints})
             self.current_spec = spec
 
+        self._auto_save()
         return text, spec
+
+    def send_stream(self, message: str) -> Iterator[str]:
+        """Stream a response token-by-token. Yields text chunks.
+
+        After iteration completes, check ``current_spec`` for any parsed spec
+        and ``last_diff`` for changes.
+        """
+        self._trim_history()
+        self.history.append({"role": "user", "content": message})
+        system = self._build_system_with_hints(_CHAT_SYSTEM)
+
+        accumulated = []
+        for chunk in self.llm.generate_stream(self.history, system, max_tokens=10000):
+            accumulated.append(chunk)
+            yield chunk
+
+        full_text = "".join(accumulated)
+        self.history.append({"role": "assistant", "content": full_text})
+
+        spec = self._try_parse_spec(full_text)
+        if spec is not None:
+            if self.constraints:
+                spec = spec.model_copy(update={"constraints": self.constraints})
+            self.current_spec = spec
+
+        self._auto_save()
 
     def modify(self, instruction: str) -> ArchSpec:
         """Modify the current spec with a natural language instruction."""
         if self.current_spec is None:
             raise ValueError("No current architecture to modify. Use send() to create one first.")
 
+        old_spec = self.current_spec
         current_json = _slim_for_modify(self.current_spec)
         prompt = f"Current architecture:\n{current_json}\n\nModification: {instruction}"
 
+        self._trim_history()
         self.history.append({"role": "user", "content": prompt})
         system = self._build_system_with_hints(_MODIFY_SYSTEM)
 
         max_tokens = 10000
 
         try:
-            text, _usage = self.llm.generate(self.history, system, max_tokens=max_tokens)
+            text, usage = self.llm.generate(self.history, system, max_tokens=max_tokens)
+            self._track_usage(usage)
             self.history.append({"role": "assistant", "content": text})
             data = _extract_json(text)
         except (ValueError, json.JSONDecodeError) as first_err:
@@ -517,7 +623,8 @@ class ConversationSession:
                     "content": "You must respond with ONLY a valid JSON object. No markdown, no explanation.",
                 }
             )
-            text, _usage = self.llm.generate(self.history, system, max_tokens=max_tokens)
+            text, usage = self.llm.generate(self.history, system, max_tokens=max_tokens)
+            self._track_usage(usage)
             self.history.append({"role": "assistant", "content": text})
             data = _extract_json(text)
 
@@ -542,7 +649,115 @@ class ConversationSession:
             updated = updated.model_copy(update={"cost_estimate": self.current_spec.cost_estimate})
 
         self.current_spec = updated
+
+        # Compute diff against previous spec
+        from cloudwright.differ import Differ
+
+        self.last_diff = Differ().diff(old_spec, updated)
+
+        self._auto_save()
         return updated
+
+    def _track_usage(self, usage: dict) -> None:
+        """Accumulate token usage and estimate cost."""
+        self.last_usage = dict(usage)
+        inp = usage.get("input_tokens", 0)
+        out = usage.get("output_tokens", 0)
+        self.cumulative_usage["input_tokens"] += inp
+        self.cumulative_usage["output_tokens"] += out
+        cost = self._estimate_cost(inp, out)
+        self.last_usage["estimated_cost"] = cost
+        self.cumulative_usage["total_cost"] += cost
+
+    def _estimate_cost(self, input_tokens: int, output_tokens: int) -> float:
+        pricing = self._DEFAULT_PRICING
+        # Try to detect model from LLM class
+        for model_id, prices in self._PRICING.items():
+            llm_module = type(self.llm).__module__
+            if "anthropic" in llm_module and "sonnet" in model_id:
+                pricing = prices
+                break
+            if "openai" in llm_module and "gpt-5.2" in model_id:
+                pricing = prices
+                break
+        return round((input_tokens / 1000) * pricing["input"] + (output_tokens / 1000) * pricing["output"], 6)
+
+    def get_usage_summary(self) -> dict:
+        """Return cumulative token usage and cost for this session."""
+        return {
+            "input_tokens": self.cumulative_usage["input_tokens"],
+            "output_tokens": self.cumulative_usage["output_tokens"],
+            "total_cost": round(self.cumulative_usage["total_cost"], 4),
+            "turn_count": len([m for m in self.history if m["role"] == "user"]),
+        }
+
+    def estimate_context_tokens(self) -> int:
+        """Estimate the total token count of the current history."""
+        total = 0
+        for msg in self.history:
+            total += self.llm.estimate_tokens(msg.get("content", ""))
+        return total
+
+    def _trim_history(self) -> None:
+        """Trim history when it exceeds max_history_turns (pairs of user+assistant)."""
+        turn_count = sum(1 for m in self.history if m["role"] == "user")
+        if turn_count <= self.max_history_turns:
+            return
+        # Keep the most recent turns, summarize the oldest
+        trim_count = turn_count - self.max_history_turns
+        messages_to_trim = trim_count * 2  # user + assistant pairs
+        if messages_to_trim >= len(self.history):
+            return
+        trimmed = self.history[:messages_to_trim]
+        summary_parts = []
+        for msg in trimmed:
+            role = msg["role"]
+            content = msg.get("content", "")[:200]
+            summary_parts.append(f"{role}: {content}")
+        summary_text = "Earlier conversation summary:\n" + "\n".join(summary_parts)
+        self.history = [{"role": "user", "content": summary_text}] + self.history[messages_to_trim:]
+
+    def to_dict(self) -> dict:
+        """Serialize session state for persistence."""
+        return {
+            "session_id": self.session_id,
+            "history": self.history,
+            "current_spec": self.current_spec.model_dump(exclude_none=True) if self.current_spec else None,
+            "constraints": self.constraints.model_dump() if self.constraints else None,
+            "cumulative_usage": self.cumulative_usage,
+            "_error_hints": self._error_hints,
+            "max_history_turns": self.max_history_turns,
+            "created_at": self._created_at,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict, llm: BaseLLM | None = None) -> ConversationSession:
+        """Restore a session from serialized state."""
+        constraints = Constraints(**data["constraints"]) if data.get("constraints") else None
+        session = cls(
+            llm=llm,
+            constraints=constraints,
+            max_history_turns=data.get("max_history_turns", 50),
+            session_id=data.get("session_id"),
+        )
+        session.history = data.get("history", [])
+        if data.get("current_spec"):
+            session.current_spec = ArchSpec.model_validate(data["current_spec"])
+        session.cumulative_usage = data.get("cumulative_usage", {"input_tokens": 0, "output_tokens": 0, "total_cost": 0.0})
+        session._error_hints = data.get("_error_hints", [])
+        session._created_at = data.get("created_at", time.time())
+        return session
+
+    def _auto_save(self) -> None:
+        """Auto-save session if enabled."""
+        if not self.auto_save or not self.session_id:
+            return
+        try:
+            from cloudwright.session_store import SessionStore
+
+            SessionStore().save(self.session_id, self)
+        except Exception:
+            log.warning("Auto-save failed for session %s", self.session_id)
 
     def _try_parse_spec(self, text: str) -> ArchSpec | None:
         """Try to extract an ArchSpec from LLM response. Returns None if not parseable."""

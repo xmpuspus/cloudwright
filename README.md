@@ -70,6 +70,42 @@ cloudwright chat --web     # browser UI
 
 ## What's New
 
+### v0.3.5 — Conversational UX and Observability (2026-03-14)
+
+<p align="center">
+  <img src="examples/cloudwright-v035-demo.gif" alt="Cloudwright v0.3.5 Web UI Demo" width="720">
+</p>
+
+<p align="center"><em>Web UI — natural language design with streaming SSE, suggestion buttons, cost estimation, architecture diagram with tier boundaries, and multi-turn modification via suggestions.</em></p>
+
+Major upgrade to the conversational experience across CLI, Web, and MCP. Token-level streaming, session persistence, usage tracking, and structured error handling.
+
+**Streaming.** Token-level streaming in CLI (Rich Live display) and Web (SSE `/api/chat/stream`). Responses render incrementally instead of blocking until complete.
+
+**Session persistence.** Save and resume conversations across sessions. CLI: `/save-session`, `/load-session`, `/sessions`, `--resume SESSION_ID`. SDK: `SessionStore` class with `save()`, `load()`, `list_sessions()`, `delete()`.
+
+**Usage tracking.** Per-turn and cumulative token counts with cost estimation. Displayed after every response in CLI, included in API responses and SSE done events.
+
+```bash
+cloudwright chat                    # streaming by default
+cloudwright chat --resume my-sess   # resume saved session
+cloudwright chat --debug            # show prompts, timing, token counts
+```
+
+**Also added:**
+- Context window management — automatic history trimming at 50 turns
+- Spec diff display after modifications (added/removed/changed components)
+- Clarification routing for ambiguous single-word inputs
+- Rate limiting (30 req/min per IP) and structured error responses in Web API
+- Thread-safe singletons for web server concurrency
+- Suggestion buttons and confirmation dialogs in React frontend
+- MCP session TTL (1hr), max 100 sessions, auto-cleanup
+- Expanded LLM retry logic with jitter (rate limit, connection, 5xx, timeout)
+- Per-call timeout parameter on all LLM methods
+- Few-shot examples in system prompts to reduce JSON parsing failures
+- 44 Playwright browser tests covering every README feature (design, cost, validate, export, spec, modify, suggestions, multi-turn, streaming, confirmation dialogs, API endpoints)
+- 1,144 tests total (1,084 unit/integration + 28 e2e/behavioral + 44 browser, all with real LLM)
+
 ### v0.3.3 — Cost Accuracy and Import Reliability (2026-03-09)
 
 **Workload profiles** fix cost estimates that were 10-100x too low for production workloads. Profiles inject realistic sizing defaults (Lambda invocations, DB storage, cache memory, CDN egress) before pricing formulas run — without overwriting explicit config.

@@ -17,7 +17,7 @@ from cloudwright.spec import (
     ValidationResult,
 )
 
-__version__ = "0.3.4"
+__version__ = "0.3.5"
 
 __all__ = [
     "Alternative",
@@ -47,6 +47,7 @@ __all__ = [
     "SecurityFinding",
     "SecurityReport",
     "SecurityScanner",
+    "SessionStore",
     "ValidationCheck",
     "ValidationResult",
     "Validator",
@@ -107,6 +108,10 @@ def __getattr__(name: str):
         from cloudwright.importer import import_spec
 
         return import_spec
+    if name == "SessionStore":
+        from cloudwright.session_store import SessionStore
+
+        return SessionStore
     if name == "SecurityScanner":
         from cloudwright.security import SecurityScanner
 

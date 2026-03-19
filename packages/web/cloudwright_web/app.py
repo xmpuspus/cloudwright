@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import Literal
 
 from cloudwright import ArchSpec, Constraints
-from cloudwright_web import __version__
 from cloudwright.architect import Architect
 from cloudwright.catalog import Catalog
 from cloudwright.cost import CostEngine
@@ -27,6 +26,8 @@ from fastapi.responses import FileResponse, JSONResponse, Response, StreamingRes
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
+
+from cloudwright_web import __version__
 
 log = logging.getLogger(__name__)
 

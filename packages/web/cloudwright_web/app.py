@@ -269,7 +269,7 @@ def health():
 
 @app.post("/api/design")
 async def design(req: DesignRequest, request: Request):
-    if (err := _check_rate_limit(request)):
+    if err := _check_rate_limit(request):
         return err
     try:
         architect = get_architect()
@@ -277,7 +277,9 @@ async def design(req: DesignRequest, request: Request):
         if req.budget_monthly or req.compliance:
             constraints = Constraints(budget_monthly=req.budget_monthly, compliance=req.compliance)
         try:
-            spec = await asyncio.wait_for(asyncio.to_thread(architect.design, req.description, constraints), timeout=120)
+            spec = await asyncio.wait_for(
+                asyncio.to_thread(architect.design, req.description, constraints), timeout=120
+            )
         except asyncio.TimeoutError:
             return _error_response("llm_timeout", "Request timed out", "Try a simpler architecture description", 504)
         try:
@@ -341,7 +343,7 @@ async def design_stream(req: DesignRequest):
 
 @app.post("/api/modify")
 async def modify(req: ModifyRequest, request: Request):
-    if (err := _check_rate_limit(request)):
+    if err := _check_rate_limit(request):
         return err
     try:
         architect = get_architect()
@@ -559,7 +561,7 @@ def get_icon(provider: str, service: str):
 
 @app.post("/api/chat")
 async def chat(req: ChatRequest, request: Request):
-    if (err := _check_rate_limit(request)):
+    if err := _check_rate_limit(request):
         return err
     try:
         from cloudwright.architect import ConversationSession
@@ -580,7 +582,9 @@ async def chat(req: ChatRequest, request: Request):
                 spec = await asyncio.wait_for(asyncio.to_thread(architect.design, req.message), timeout=120)
                 text = f"Architecture: {spec.name}"
             except asyncio.TimeoutError:
-                return _error_response("llm_timeout", "Request timed out", "Try a simpler architecture description", 504)
+                return _error_response(
+                    "llm_timeout", "Request timed out", "Try a simpler architecture description", 504
+                )
 
         result: dict = {
             "reply": text,
@@ -603,7 +607,7 @@ async def chat(req: ChatRequest, request: Request):
 
 @app.post("/api/chat/stream")
 async def chat_stream(req: ChatRequest, request: Request):
-    if (err := _check_rate_limit(request)):
+    if err := _check_rate_limit(request):
         return err
 
     async def event_generator():

@@ -27,13 +27,19 @@ class AnthropicLLM(BaseLLM):
     def __init__(self, api_key: str | None = None):
         self.client = anthropic.Anthropic(api_key=api_key or os.environ.get("ANTHROPIC_API_KEY"), timeout=180.0)
 
-    def generate(self, messages: list[dict], system: str, max_tokens: int = 2000, timeout: float | None = None) -> tuple[str, dict]:
+    def generate(
+        self, messages: list[dict], system: str, max_tokens: int = 2000, timeout: float | None = None
+    ) -> tuple[str, dict]:
         return self._call(GENERATE_MODEL, messages, system, max_tokens, timeout)
 
-    def generate_fast(self, messages: list[dict], system: str, max_tokens: int = 2000, timeout: float | None = None) -> tuple[str, dict]:
+    def generate_fast(
+        self, messages: list[dict], system: str, max_tokens: int = 2000, timeout: float | None = None
+    ) -> tuple[str, dict]:
         return self._call(FAST_MODEL, messages, system, max_tokens, timeout)
 
-    def generate_stream(self, messages: list[dict], system: str, max_tokens: int = 2000, timeout: float | None = None) -> Iterator[str]:
+    def generate_stream(
+        self, messages: list[dict], system: str, max_tokens: int = 2000, timeout: float | None = None
+    ) -> Iterator[str]:
         system_block = [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
         kwargs = dict(model=GENERATE_MODEL, max_tokens=max_tokens, system=system_block, messages=messages)
         if timeout is not None:
@@ -42,7 +48,9 @@ class AnthropicLLM(BaseLLM):
             for text in stream.text_stream:
                 yield text
 
-    def _call(self, model: str, messages: list[dict], system: str, max_tokens: int, timeout: float | None = None) -> tuple[str, dict]:
+    def _call(
+        self, model: str, messages: list[dict], system: str, max_tokens: int, timeout: float | None = None
+    ) -> tuple[str, dict]:
         # Cache the system prompt across calls — Anthropic caches for 5 minutes
         system_block = [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
         kwargs = dict(model=model, max_tokens=max_tokens, system=system_block, messages=messages)

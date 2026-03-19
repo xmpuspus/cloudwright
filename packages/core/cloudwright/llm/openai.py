@@ -27,15 +27,21 @@ class OpenAILLM(BaseLLM):
     def __init__(self, api_key: str | None = None):
         self.client = openai.OpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"), timeout=180.0)
 
-    def generate(self, messages: list[dict], system: str, max_tokens: int = 2000, timeout: float | None = None) -> tuple[str, dict]:
+    def generate(
+        self, messages: list[dict], system: str, max_tokens: int = 2000, timeout: float | None = None
+    ) -> tuple[str, dict]:
         full_messages = [{"role": "system", "content": system}] + messages
         return self._call(GENERATE_MODEL, full_messages, max_tokens, timeout)
 
-    def generate_fast(self, messages: list[dict], system: str, max_tokens: int = 2000, timeout: float | None = None) -> tuple[str, dict]:
+    def generate_fast(
+        self, messages: list[dict], system: str, max_tokens: int = 2000, timeout: float | None = None
+    ) -> tuple[str, dict]:
         full_messages = [{"role": "system", "content": system}] + messages
         return self._call(FAST_MODEL, full_messages, max_tokens, timeout)
 
-    def generate_stream(self, messages: list[dict], system: str, max_tokens: int = 2000, timeout: float | None = None) -> Iterator[str]:
+    def generate_stream(
+        self, messages: list[dict], system: str, max_tokens: int = 2000, timeout: float | None = None
+    ) -> Iterator[str]:
         full_messages = [{"role": "system", "content": system}] + messages
         kwargs = dict(model=GENERATE_MODEL, max_tokens=max_tokens, messages=full_messages, stream=True)
         if timeout is not None:
@@ -46,7 +52,9 @@ class OpenAILLM(BaseLLM):
             if content:
                 yield content
 
-    def _call(self, model: str, messages: list[dict], max_tokens: int, timeout: float | None = None) -> tuple[str, dict]:
+    def _call(
+        self, model: str, messages: list[dict], max_tokens: int, timeout: float | None = None
+    ) -> tuple[str, dict]:
         kwargs = dict(model=model, max_tokens=max_tokens, messages=messages)
         if timeout is not None:
             kwargs["timeout"] = timeout

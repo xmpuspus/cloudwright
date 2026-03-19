@@ -97,7 +97,10 @@ class TestChatStreamEndpoint:
                     "/api/chat/stream",
                     json={
                         "message": "add a cache",
-                        "history": [{"role": "user", "content": "first msg"}, {"role": "assistant", "content": "got it"}],
+                        "history": [
+                            {"role": "user", "content": "first msg"},
+                            {"role": "assistant", "content": "got it"},
+                        ],
                     },
                 )
 

@@ -519,11 +519,46 @@ class ConversationSession:
         self._created_at: float = time.time()
 
     _CLOUD_KEYWORDS = {
-        "aws", "gcp", "azure", "cloud", "kubernetes", "k8s", "docker", "serverless",
-        "lambda", "ec2", "s3", "rds", "vpc", "api", "web", "app", "database", "server",
-        "microservice", "container", "terraform", "deploy", "databricks", "ecs", "eks",
-        "gke", "fargate", "cloudfront", "alb", "cdn", "redis", "postgres", "mysql",
-        "dynamodb", "sqs", "sns", "kafka", "tier", "architecture", "infra",
+        "aws",
+        "gcp",
+        "azure",
+        "cloud",
+        "kubernetes",
+        "k8s",
+        "docker",
+        "serverless",
+        "lambda",
+        "ec2",
+        "s3",
+        "rds",
+        "vpc",
+        "api",
+        "web",
+        "app",
+        "database",
+        "server",
+        "microservice",
+        "container",
+        "terraform",
+        "deploy",
+        "databricks",
+        "ecs",
+        "eks",
+        "gke",
+        "fargate",
+        "cloudfront",
+        "alb",
+        "cdn",
+        "redis",
+        "postgres",
+        "mysql",
+        "dynamodb",
+        "sqs",
+        "sns",
+        "kafka",
+        "tier",
+        "architecture",
+        "infra",
     }
 
     def _needs_clarification(self, message: str) -> bool:
@@ -743,7 +778,9 @@ class ConversationSession:
         session.history = data.get("history", [])
         if data.get("current_spec"):
             session.current_spec = ArchSpec.model_validate(data["current_spec"])
-        session.cumulative_usage = data.get("cumulative_usage", {"input_tokens": 0, "output_tokens": 0, "total_cost": 0.0})
+        session.cumulative_usage = data.get(
+            "cumulative_usage", {"input_tokens": 0, "output_tokens": 0, "total_cost": 0.0}
+        )
         session._error_hints = data.get("_error_hints", [])
         session._created_at = data.get("created_at", time.time())
         return session

@@ -264,8 +264,7 @@ class TestStructuredErrorResponses:
         import asyncio
         from unittest.mock import patch
 
-        with patch("cloudwright_web.app.get_architect"), \
-             patch("asyncio.wait_for", side_effect=asyncio.TimeoutError()):
+        with patch("cloudwright_web.app.get_architect"), patch("asyncio.wait_for", side_effect=asyncio.TimeoutError()):
             resp = client.post("/api/design", json={"description": "simple web app on AWS"})
 
         assert resp.status_code == 504

@@ -13,11 +13,15 @@ def _make_spec_json(name="Test App"):
         {"id": "web", "service": "ec2", "provider": "aws", "label": "Web", "tier": 2, "config": {}},
         {"id": "db", "service": "rds", "provider": "aws", "label": "DB", "tier": 3, "config": {}},
     ]
-    return json.dumps({
-        "name": name, "provider": "aws", "region": "us-east-1",
-        "components": components,
-        "connections": [{"source": "web", "target": "db", "label": "SQL"}],
-    })
+    return json.dumps(
+        {
+            "name": name,
+            "provider": "aws",
+            "region": "us-east-1",
+            "components": components,
+            "connections": [{"source": "web", "target": "db", "label": "SQL"}],
+        }
+    )
 
 
 def _mock_llm(responses):
@@ -53,8 +57,11 @@ def test_usage_tracked_after_modify():
     llm = _mock_llm([updated_json])
     session = ConversationSession(llm=llm)
     from cloudwright.spec import ArchSpec, Component, Connection
+
     session.current_spec = ArchSpec(
-        name="Base App", provider="aws", region="us-east-1",
+        name="Base App",
+        provider="aws",
+        region="us-east-1",
         components=[
             Component(id="web", service="ec2", provider="aws", label="Web", tier=2, config={}),
             Component(id="db", service="rds", provider="aws", label="DB", tier=3, config={}),

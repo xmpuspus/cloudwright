@@ -63,12 +63,8 @@ def test_cumulative_usage_grows_and_cost_is_positive():
 
     session.modify("Add an SNS topic for event notifications")
     after_second = session.get_usage_summary()
-    assert after_second["input_tokens"] > after_first["input_tokens"], (
-        "input tokens must grow after second LLM call"
-    )
-    assert after_second["total_cost"] > after_first["total_cost"], (
-        "total cost must grow after second LLM call"
-    )
+    assert after_second["input_tokens"] > after_first["input_tokens"], "input tokens must grow after second LLM call"
+    assert after_second["total_cost"] > after_first["total_cost"], "total cost must grow after second LLM call"
 
     assert after_second["turn_count"] >= 2, "turn_count should reflect both user messages"
 
@@ -84,9 +80,7 @@ def test_streaming_then_follow_up_preserves_spec():
     """Stream a design, then send a follow-up with send(); spec stays consistent."""
     session = ConversationSession()
 
-    chunks = list(session.send_stream(
-        "Design a microservices platform on GCP with Cloud Run and Cloud SQL"
-    ))
+    chunks = list(session.send_stream("Design a microservices platform on GCP with Cloud Run and Cloud SQL"))
     assert len(chunks) > 0, "streaming should yield chunks"
     streamed_spec = session.current_spec
     assert streamed_spec is not None, "streaming should produce a spec"
@@ -94,9 +88,7 @@ def test_streaming_then_follow_up_preserves_spec():
     _text, follow_spec = session.send("What are the main cost drivers in this architecture?")
     # The spec should not disappear after a follow-up question
     assert session.current_spec is not None, "spec must survive a follow-up turn"
-    assert session.current_spec.provider == streamed_spec.provider, (
-        "provider must remain consistent"
-    )
+    assert session.current_spec.provider == streamed_spec.provider, "provider must remain consistent"
 
 
 # ---------------------------------------------------------------------------
@@ -111,9 +103,7 @@ def test_session_save_load_then_continue(tmp_path):
     store = SessionStore(base_dir=tmp_path)
     session = ConversationSession(session_id="behavioral-roundtrip")
 
-    _text, spec = session.send(
-        "Design a data pipeline on AWS with S3, Glue, and Redshift"
-    )
+    _text, spec = session.send("Design a data pipeline on AWS with S3, Glue, and Redshift")
     assert spec is not None
 
     store.save("behavioral-roundtrip", session)
@@ -128,9 +118,7 @@ def test_session_save_load_then_continue(tmp_path):
     # Continue from the loaded session — it must have enough context to modify
     spec_continued = loaded.modify("Add a Lambda function to trigger the Glue job on S3 events")
     assert spec_continued is not None, "modify should succeed from loaded session"
-    assert len(spec_continued.components) >= len(spec.components), (
-        "components should not regress after modification"
-    )
+    assert len(spec_continued.components) >= len(spec.components), "components should not regress after modification"
 
 
 # ---------------------------------------------------------------------------
@@ -150,15 +138,11 @@ def test_context_tokens_grow_with_turns():
 
     session.modify("Add CloudWatch dashboards for monitoring")
     tokens_after_2 = session.estimate_context_tokens()
-    assert tokens_after_2 > tokens_after_1, (
-        "context token count must grow as history expands"
-    )
+    assert tokens_after_2 > tokens_after_1, "context token count must grow as history expands"
 
     session.send("What compliance controls should I add for SOC 2?")
     tokens_after_3 = session.estimate_context_tokens()
-    assert tokens_after_3 > tokens_after_2, (
-        "context token count must grow with each additional turn"
-    )
+    assert tokens_after_3 > tokens_after_2, "context token count must grow with each additional turn"
 
 
 # ---------------------------------------------------------------------------
@@ -182,9 +166,7 @@ def test_modify_produces_meaningful_diff():
 
     has_changes = len(diff.added) > 0 or len(diff.changed) > 0
     assert has_changes, "diff should reflect added components (added or changed must be non-empty)"
-    assert isinstance(diff.summary, str) and len(diff.summary) > 0, (
-        "diff.summary should be a non-empty string"
-    )
+    assert isinstance(diff.summary, str) and len(diff.summary) > 0, "diff.summary should be a non-empty string"
 
 
 # ---------------------------------------------------------------------------

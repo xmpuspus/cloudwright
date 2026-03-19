@@ -257,9 +257,7 @@ def _run_terminal_chat(resume: str | None = None, debug: bool = False) -> None:
                 console.print("[yellow]Request timed out, try a simpler request.[/yellow]")
                 continue
             if isinstance(stream_err, RuntimeError) and "No LLM provider" in str(stream_err):
-                console.print(
-                    "[red]No LLM provider configured.[/red] Set ANTHROPIC_API_KEY or OPENAI_API_KEY."
-                )
+                console.print("[red]No LLM provider configured.[/red] Set ANTHROPIC_API_KEY or OPENAI_API_KEY.")
                 continue
             try:
                 _, _ = session.send(text)

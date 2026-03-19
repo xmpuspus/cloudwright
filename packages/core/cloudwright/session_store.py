@@ -44,14 +44,16 @@ class SessionStore:
             try:
                 data = json.loads(path.read_text())
                 turn_count = sum(1 for m in data.get("history", []) if m.get("role") == "user")
-                sessions.append({
-                    "session_id": path.stem,
-                    "created_at": data.get("created_at"),
-                    "saved_at": data.get("saved_at"),
-                    "turn_count": turn_count,
-                    "has_spec": data.get("current_spec") is not None,
-                    "spec_name": data.get("current_spec", {}).get("name") if data.get("current_spec") else None,
-                })
+                sessions.append(
+                    {
+                        "session_id": path.stem,
+                        "created_at": data.get("created_at"),
+                        "saved_at": data.get("saved_at"),
+                        "turn_count": turn_count,
+                        "has_spec": data.get("current_spec") is not None,
+                        "spec_name": data.get("current_spec", {}).get("name") if data.get("current_spec") else None,
+                    }
+                )
             except (json.JSONDecodeError, OSError):
                 log.warning("Skipping corrupt session file: %s", path)
         return sessions

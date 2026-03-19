@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Literal
 
 from cloudwright import ArchSpec, Constraints
+from cloudwright_web import __version__
 from cloudwright.architect import Architect
 from cloudwright.catalog import Catalog
 from cloudwright.cost import CostEngine
@@ -29,7 +30,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 log = logging.getLogger(__name__)
 
-app = FastAPI(title="Cloudwright", version="0.2.27", description="Architecture intelligence for cloud engineers")
+app = FastAPI(title="Cloudwright", version=__version__, description="Architecture intelligence for cloud engineers")
 
 
 class PathTraversalMiddleware(BaseHTTPMiddleware):
@@ -616,7 +617,7 @@ async def chat_stream(req: ChatRequest, request: Request):
         try:
             # Run the streaming iterator in a thread, yielding SSE token events
             queue: asyncio.Queue = asyncio.Queue()
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
 
             def _run_stream():
                 try:

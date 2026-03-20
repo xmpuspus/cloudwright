@@ -70,7 +70,13 @@ cloudwright chat --web     # browser UI
 
 ## What's New
 
-### v0.4.0 — Security Hardening and Export Enhancements (2026-03-20)
+### v0.4.0 -- Security Hardening and Export Enhancements (2026-03-20)
+
+<p align="center">
+  <img src="examples/cloudwright-v040-demo.gif" alt="Cloudwright v0.4.0 Web UI Demo" width="720">
+</p>
+
+<p align="center"><em>Web UI -- interactive architecture design with LLM-generated suggestions, FedRAMP/GDPR validation, SVG/PNG export, and self-contained HTML reports.</em></p>
 
 Security hardening, structured logging, and new export capabilities across all packages.
 

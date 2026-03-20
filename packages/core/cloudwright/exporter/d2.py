@@ -68,6 +68,7 @@ def _render_node(c, indent: str, show_icons: bool) -> list[str]:
 
 def render(spec: "ArchSpec", *, theme: str = "dark", show_boundaries: bool = True, show_icons: bool = True) -> str:
     lines: list[str] = []
+    lines.append("# Designed with Cloudwright (https://github.com/xmpuspus/cloudwright)")
     lines.append(f"# {spec.name}")
     lines.append("")
     lines.append("vars: {")

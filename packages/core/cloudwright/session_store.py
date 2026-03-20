@@ -4,12 +4,19 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
 from pathlib import Path
 
 log = logging.getLogger(__name__)
 
 _DEFAULT_DIR = Path.home() / ".cloudwright" / "sessions"
+_SAFE_ID = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+
+def _validate_session_id(session_id: str) -> None:
+    if not _SAFE_ID.match(session_id):
+        raise ValueError("Invalid session_id")
 
 
 class SessionStore:
@@ -21,6 +28,7 @@ class SessionStore:
 
     def save(self, session_id: str, session) -> Path:
         """Persist a ConversationSession to disk."""
+        _validate_session_id(session_id)
         data = session.to_dict()
         data["saved_at"] = time.time()
         path = self.base_dir / f"{session_id}.json"
@@ -29,6 +37,7 @@ class SessionStore:
 
     def load(self, session_id: str, llm=None):
         """Load a ConversationSession from disk."""
+        _validate_session_id(session_id)
         from cloudwright.architect import ConversationSession
 
         path = self.base_dir / f"{session_id}.json"
@@ -60,6 +69,7 @@ class SessionStore:
 
     def delete(self, session_id: str) -> bool:
         """Delete a saved session. Returns True if deleted."""
+        _validate_session_id(session_id)
         path = self.base_dir / f"{session_id}.json"
         if path.exists():
             path.unlink()

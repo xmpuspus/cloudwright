@@ -10,6 +10,9 @@ from collections.abc import Iterator
 import openai
 
 from cloudwright.llm.base import BaseLLM
+from cloudwright.logging import get_logger
+
+log = get_logger(__name__)
 
 GENERATE_MODEL = "gpt-5.2"
 FAST_MODEL = "gpt-5-mini"
@@ -61,12 +64,22 @@ class OpenAILLM(BaseLLM):
         delay = 1.0
         for attempt in range(_MAX_RETRIES):
             try:
+                start = time.perf_counter()
                 response = self.client.chat.completions.create(**kwargs)
+                content = response.choices[0].message.content
+                if content is None:
+                    raise ValueError("LLM returned empty response")
                 usage = {
                     "input_tokens": response.usage.prompt_tokens,
                     "output_tokens": response.usage.completion_tokens,
                 }
-                return response.choices[0].message.content, usage
+                log.info(
+                    "llm_call",
+                    model=model,
+                    duration_ms=round((time.perf_counter() - start) * 1000),
+                    tokens=usage["input_tokens"] + usage["output_tokens"],
+                )
+                return content, usage
             except _RETRYABLE:
                 if attempt == _MAX_RETRIES - 1:
                     raise

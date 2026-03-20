@@ -7,6 +7,7 @@ import hashlib
 import json
 import logging
 import multiprocessing
+import os
 import threading
 import time
 from collections import deque
@@ -44,12 +45,29 @@ class PathTraversalMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(PathTraversalMiddleware)
 
+_cors_origins = os.environ.get("CLOUDWRIGHT_CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=[o.strip() for o in _cors_origins],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "X-API-Key"],
 )
+
+# --- Optional API key auth ---
+
+_API_KEY = os.environ.get("CLOUDWRIGHT_API_KEY")
+
+
+def _check_api_key(request: Request):
+    """Validate API key if CLOUDWRIGHT_API_KEY is set. No-op otherwise."""
+    if not _API_KEY:
+        return None
+    provided = request.headers.get("x-api-key", "")
+    if provided != _API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
+    return None
+
 
 # Lazy singletons
 _architect: Architect | None = None
@@ -269,6 +287,7 @@ def health():
 
 @app.post("/api/design")
 async def design(req: DesignRequest, request: Request):
+    _check_api_key(request)
     if err := _check_rate_limit(request):
         return err
     try:
@@ -286,7 +305,7 @@ async def design(req: DesignRequest, request: Request):
             cost_estimate = await asyncio.to_thread(get_cost_engine().estimate, spec)
             spec = spec.model_copy(update={"cost_estimate": cost_estimate})
         except Exception:
-            pass
+            log.warning("Cost estimation failed in design endpoint", exc_info=True)
         return {"spec": spec.model_dump(exclude_none=True), "yaml": spec.to_yaml()}
     except RuntimeError as e:
         if "No LLM provider" in str(e):
@@ -299,8 +318,11 @@ async def design(req: DesignRequest, request: Request):
 
 
 @app.post("/api/design/stream")
-async def design_stream(req: DesignRequest):
+async def design_stream(req: DesignRequest, request: Request):
     """Stream architecture generation via Server-Sent Events."""
+    _check_api_key(request)
+    if err := _check_rate_limit(request):
+        return err
 
     async def event_generator():
         architect = get_architect()
@@ -324,6 +346,7 @@ async def design_stream(req: DesignRequest):
             spec = spec.model_copy(update={"cost_estimate": cost_estimate})
             yield f"data: {json.dumps({'stage': 'costed', 'cost_estimate': cost_estimate.model_dump()})}\n\n"
         except Exception:
+            log.warning("Cost estimation failed in design stream", exc_info=True)
             yield f"data: {json.dumps({'stage': 'costed', 'cost_estimate': None})}\n\n"
 
         yield f"data: {json.dumps({'stage': 'validating', 'message': 'Running validation...'})}\n\n"
@@ -334,6 +357,7 @@ async def design_stream(req: DesignRequest):
             passed = sum(1 for c in checks if c.passed)
             yield f"data: {json.dumps({'stage': 'validated', 'passed': passed, 'total': len(checks)})}\n\n"
         except Exception:
+            log.warning("Validation failed in design stream", exc_info=True)
             yield f"data: {json.dumps({'stage': 'validated', 'passed': None, 'total': None})}\n\n"
 
         yield f"data: {json.dumps({'stage': 'done', 'spec': spec.model_dump(exclude_none=True), 'yaml': spec.to_yaml()})}\n\n"
@@ -343,6 +367,7 @@ async def design_stream(req: DesignRequest):
 
 @app.post("/api/modify")
 async def modify(req: ModifyRequest, request: Request):
+    _check_api_key(request)
     if err := _check_rate_limit(request):
         return err
     try:
@@ -359,8 +384,11 @@ async def modify(req: ModifyRequest, request: Request):
 
 
 @app.post("/api/modify/stream")
-async def modify_stream(req: ModifyRequest):
+async def modify_stream(req: ModifyRequest, request: Request):
     """Stream architecture modification via Server-Sent Events."""
+    _check_api_key(request)
+    if err := _check_rate_limit(request):
+        return err
 
     async def event_generator():
         architect = get_architect()
@@ -382,6 +410,7 @@ async def modify_stream(req: ModifyRequest):
             updated = updated.model_copy(update={"cost_estimate": cost_estimate})
             yield f"data: {json.dumps({'stage': 'costed', 'cost_estimate': cost_estimate.model_dump()})}\n\n"
         except Exception:
+            log.warning("Cost estimation failed in modify stream", exc_info=True)
             yield f"data: {json.dumps({'stage': 'costed', 'cost_estimate': None})}\n\n"
 
         yield f"data: {json.dumps({'stage': 'done', 'spec': updated.model_dump(exclude_none=True), 'yaml': updated.to_yaml()})}\n\n"
@@ -561,6 +590,7 @@ def get_icon(provider: str, service: str):
 
 @app.post("/api/chat")
 async def chat(req: ChatRequest, request: Request):
+    _check_api_key(request)
     if err := _check_rate_limit(request):
         return err
     try:
@@ -607,6 +637,7 @@ async def chat(req: ChatRequest, request: Request):
 
 @app.post("/api/chat/stream")
 async def chat_stream(req: ChatRequest, request: Request):
+    _check_api_key(request)
     if err := _check_rate_limit(request):
         return err
 

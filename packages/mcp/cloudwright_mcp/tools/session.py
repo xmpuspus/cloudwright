@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 import time
 import uuid
 
@@ -7,16 +8,18 @@ from mcp.server.fastmcp import FastMCP
 
 _sessions: dict[str, object] = {}
 _session_created: dict[str, float] = {}
+_lock = threading.Lock()
 _SESSION_TTL = 3600
 _MAX_SESSIONS = 100
 
 
 def _cleanup_expired() -> None:
     now = time.time()
-    expired = [sid for sid, ts in _session_created.items() if now - ts > _SESSION_TTL]
-    for sid in expired:
-        _sessions.pop(sid, None)
-        _session_created.pop(sid, None)
+    with _lock:
+        expired = [sid for sid, ts in _session_created.items() if now - ts > _SESSION_TTL]
+        for sid in expired:
+            _sessions.pop(sid, None)
+            _session_created.pop(sid, None)
 
 
 def register(mcp: FastMCP) -> None:
@@ -32,17 +35,17 @@ def register(mcp: FastMCP) -> None:
 
         _cleanup_expired()
 
-        # Evict oldest if at capacity
-        while len(_sessions) >= _MAX_SESSIONS and _session_created:
-            oldest = min(_session_created, key=_session_created.get)
-            _sessions.pop(oldest, None)
-            _session_created.pop(oldest, None)
-
         constraints = Constraints(budget_monthly=budget_monthly, compliance=compliance or [])
         session = ConversationSession(constraints=constraints)
         session_id = uuid.uuid4().hex[:12]
-        _sessions[session_id] = session
-        _session_created[session_id] = time.time()
+        with _lock:
+            # Evict oldest if at capacity
+            while len(_sessions) >= _MAX_SESSIONS and _session_created:
+                oldest = min(_session_created, key=_session_created.get)
+                _sessions.pop(oldest, None)
+                _session_created.pop(oldest, None)
+            _sessions[session_id] = session
+            _session_created[session_id] = time.time()
         return {"session_id": session_id}
 
     @mcp.tool()
@@ -83,8 +86,9 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool()
     def chat_delete_session(session_id: str) -> dict:
         """Delete a conversation session."""
-        if session_id in _sessions:
-            _sessions.pop(session_id, None)
-            _session_created.pop(session_id, None)
-            return {"deleted": True}
+        with _lock:
+            if session_id in _sessions:
+                _sessions.pop(session_id, None)
+                _session_created.pop(session_id, None)
+                return {"deleted": True}
         return {"error": f"Session {session_id!r} not found."}

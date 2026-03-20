@@ -12,6 +12,7 @@ const FORMATS = [
   { key: "d2", label: "D2", ext: "d2", lang: "d2", desc: "D2 diagram language" },
   { key: "sbom", label: "SBOM", ext: "json", lang: "json", desc: "CycloneDX Software BOM" },
   { key: "aibom", label: "AIBOM", ext: "json", lang: "json", desc: "OWASP AI Bill of Materials" },
+  { key: "html", label: "HTML Report", ext: "html", lang: "html", desc: "Self-contained shareable report" },
 ];
 
 function FormatIcon({ format }: { format: string }) {

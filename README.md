@@ -70,6 +70,28 @@ cloudwright chat --web     # browser UI
 
 ## What's New
 
+### v0.4.0 — Security Hardening and Export Enhancements (2026-03-20)
+
+Security hardening, structured logging, and new export capabilities across all packages.
+
+**Security.** SessionStore path traversal guard, optional API key auth (`CLOUDWRIGHT_API_KEY`), rate limiting on all streaming endpoints, LLM empty response handling, MCP session thread safety. Silent `except: pass` patterns replaced with logged warnings.
+
+**HTML Report export.** New `--format html` produces a self-contained, shareable HTML file with embedded Mermaid diagram, cost breakdown, component inventory, and compliance summary. Opens in any browser, shareable via email/Slack/Gist.
+
+```bash
+cloudwright export spec.yaml --format html -o report.html
+```
+
+**Web UI improvements.** FedRAMP and GDPR added to validation panel (all 6 frameworks now available). SVG/PNG diagram export buttons wired. Modify tab now uses SSE streaming. LLM-generated suggestion buttons replace static fallback list. CORS origins configurable via `CLOUDWRIGHT_CORS_ORIGINS`.
+
+**Observability.** Structured logging with structlog (JSON or console output via `CLOUDWRIGHT_LOG_FORMAT`). LLM call timing instrumentation. Rate limit hits logged.
+
+**Attribution.** All exported diagrams and IaC now include "Designed with Cloudwright" attribution with project URL.
+
+**Also added:** `.env.example` for easy setup, `CHANGELOG.md` with full version history, CI coverage reporting, action version alignment.
+
+1,202 tests (973 core + 121 web + 99 CLI + 9 MCP), all passing with zero skips.
+
 ### v0.3.5 — Conversational UX and Observability (2026-03-14)
 
 <p align="center">

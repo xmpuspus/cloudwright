@@ -65,7 +65,10 @@ def _node_syntax(node_id: str, label: str, shape: str) -> str:
 
 
 def render(spec: "ArchSpec") -> str:
-    lines: list[str] = ["flowchart TD"]
+    lines: list[str] = [
+        "%% Designed with Cloudwright (https://github.com/xmpuspus/cloudwright)",
+        "flowchart TD",
+    ]
     lines.append(_CLASSDEFS)
 
     use_boundaries = bool(spec.boundaries)

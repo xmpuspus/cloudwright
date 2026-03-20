@@ -195,7 +195,7 @@ def render(spec: "ArchSpec") -> str:
 
     template: dict[str, Any] = {
         "AWSTemplateFormatVersion": "2010-09-09",
-        "Description": spec.name,
+        "Description": f"{spec.name} - Designed with Cloudwright (https://github.com/xmpuspus/cloudwright)",
         "Parameters": {
             "Environment": {
                 "Type": "String",

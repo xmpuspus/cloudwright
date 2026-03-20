@@ -13,6 +13,7 @@ interface ArchSpec {
   components: Component[];
   connections: Connection[];
   cost_estimate?: CostEstimate;
+  metadata?: { suggestions?: string[] };
 }
 
 interface Component {
@@ -60,6 +61,11 @@ const ALL_SUGGESTIONS = [
 ];
 
 function pickSuggestions(spec: ArchSpec): string[] {
+  // Prefer LLM-generated suggestions from spec metadata when available
+  if (spec.metadata?.suggestions && spec.metadata.suggestions.length > 0) {
+    return spec.metadata.suggestions.slice(0, 3);
+  }
+
   const labels = spec.components.map((c) => c.label.toLowerCase());
   const services = spec.components.map((c) => c.service.toLowerCase());
   const hasCache = labels.some((l) => l.includes("cache") || l.includes("redis") || l.includes("elasticache")) ||
@@ -560,6 +566,13 @@ function App() {
           {activeTab === "modify" && currentSpec && (
             <div style={{ padding: 32, maxWidth: 800 }}>
               <h2 style={{ fontSize: 18, marginBottom: 16, color: "#0f172a" }}>Modify Architecture</h2>
+              {loadingStage !== "idle" && (
+                <div style={{ marginBottom: 12, fontSize: 13, color: "#64748b" }}>
+                  {loadingStage === "modifying" && "Modifying architecture..."}
+                  {loadingStage === "costing" && "Estimating cost & validating..."}
+                  {loadingStage === "done" && "Finalizing..."}
+                </div>
+              )}
               <div style={{ display: "flex", gap: 8 }}>
                 <input
                   value={modifyInput}
@@ -569,24 +582,65 @@ function App() {
                       const instruction = modifyInput;
                       setModifyInput("");
                       setLoadingStage("modifying");
+
+                      let finalSpec: ArchSpec | null = null;
+                      let finalYaml = "";
+                      let streamSucceeded = false;
+
                       try {
-                        const res = await fetch(`${API_BASE}/modify`, {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ spec: currentSpec, instruction }),
-                        });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.detail || "Modification failed");
-                        const rawSpec = data.spec as ArchSpec;
+                        try {
+                          await streamDesignOrModify(true, { spec: currentSpec, instruction }, {
+                            onStage: (stage) => {
+                              if (stage === "generating") setLoadingStage("modifying");
+                              else if (stage === "costing" || stage === "validating") setLoadingStage("costing");
+                            },
+                            onSpec: (spec) => {
+                              setCurrentSpec(spec);
+                              finalSpec = spec;
+                              setLoadingStage("costing");
+                            },
+                            onCost: (estimate) => {
+                              if (estimate && finalSpec) {
+                                finalSpec = { ...finalSpec, cost_estimate: estimate };
+                                setCurrentSpec(finalSpec);
+                              }
+                            },
+                            onValidation: (passed, total) => {
+                              if (passed !== null) setValidationSummary({ passed, total: total! });
+                            },
+                            onDone: (spec, yaml) => {
+                              finalSpec = spec;
+                              finalYaml = yaml;
+                              setCurrentSpec(spec);
+                              setLoadingStage("done");
+                            },
+                            onError: (msg) => { throw new Error(msg); },
+                          });
+                          streamSucceeded = finalSpec !== null;
+                        } catch {
+                          setLoadingStage("modifying");
+                        }
 
-                        setLoadingStage("costing");
-                        const spec = await enrichSpec(rawSpec, setValidationSummary);
-                        setCurrentSpec(spec);
-                        setLoadingStage("done");
+                        if (!streamSucceeded) {
+                          const res = await fetch(`${API_BASE}/modify`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ spec: currentSpec, instruction }),
+                          });
+                          const data = await res.json();
+                          if (!res.ok) throw new Error(data.detail || "Modification failed");
+                          const rawSpec = data.spec as ArchSpec;
+                          finalYaml = data.yaml;
+                          setLoadingStage("costing");
+                          finalSpec = await enrichSpec(rawSpec, setValidationSummary);
+                          setCurrentSpec(finalSpec);
+                          setLoadingStage("done");
+                        }
 
+                        const spec = finalSpec!;
                         setMessages((prev) => [...prev,
                           { role: "user", content: instruction },
-                          { role: "assistant", content: `Modified **${spec.name}** with ${spec.components.length} components on ${spec.provider.toUpperCase()}.${spec.cost_estimate ? ` Estimated cost: $${spec.cost_estimate.monthly_total.toFixed(2)}/mo.` : ""}`, spec, yaml: data.yaml, suggestions: pickSuggestions(spec) },
+                          { role: "assistant", content: `Modified **${spec.name}** with ${spec.components.length} components on ${spec.provider.toUpperCase()}.${spec.cost_estimate ? ` Estimated cost: $${spec.cost_estimate.monthly_total.toFixed(2)}/mo.` : ""}`, spec, yaml: finalYaml, suggestions: pickSuggestions(spec) },
                         ]);
                       } catch (err) {
                         setMessages((prev) => [...prev,

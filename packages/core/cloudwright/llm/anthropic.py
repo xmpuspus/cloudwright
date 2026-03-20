@@ -10,6 +10,9 @@ from collections.abc import Iterator
 import anthropic
 
 from cloudwright.llm.base import BaseLLM
+from cloudwright.logging import get_logger
+
+log = get_logger(__name__)
 
 GENERATE_MODEL = "claude-sonnet-4-6"
 FAST_MODEL = "claude-haiku-4-5-20251001"
@@ -59,11 +62,20 @@ class AnthropicLLM(BaseLLM):
         delay = 1.0
         for attempt in range(_MAX_RETRIES):
             try:
+                start = time.perf_counter()
                 response = self.client.messages.create(**kwargs)
+                if not response.content:
+                    raise ValueError("LLM returned empty response")
                 usage = {
                     "input_tokens": response.usage.input_tokens,
                     "output_tokens": response.usage.output_tokens,
                 }
+                log.info(
+                    "llm_call",
+                    model=model,
+                    duration_ms=round((time.perf_counter() - start) * 1000),
+                    tokens=usage["input_tokens"] + usage["output_tokens"],
+                )
                 return response.content[0].text, usage
             except _RETRYABLE:
                 if attempt == _MAX_RETRIES - 1:

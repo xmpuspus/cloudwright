@@ -96,6 +96,7 @@ def render(spec: "ArchSpec") -> str:
 
     lines.append(_pad("", inner))
     lines.append("+" + "=" * (_WIDTH - 2) + "+")
+    lines.append("Designed with Cloudwright")
 
     return "\n".join(lines)
 

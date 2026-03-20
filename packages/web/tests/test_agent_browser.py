@@ -325,7 +325,7 @@ class TestValidateTab:
 class TestExportTab:
     def test_export_panel_visible(self, page, web_server):
         _design_and_wait(page, web_server, "Simple AWS app with EC2")
-        page.locator("button", has_text="export").click()
+        page.get_by_role("button", name="export", exact=True).click()
         heading = page.locator("h2", has_text="Export")
         heading.wait_for(state="visible", timeout=5_000)
         assert heading.is_visible()
@@ -377,26 +377,41 @@ class TestModifyTab:
 class TestSuggestionButtons:
     def test_suggestions_appear_after_spec(self, page, web_server):
         _design_and_wait(page, web_server, "3-tier web app on AWS with ALB, EC2, and RDS")
-        suggestion_texts = ["Add caching layer", "Reduce cost", "Increase redundancy", "Add monitoring", "Add security"]
+        # Suggestions may be LLM-generated or from the static fallback list
+        static_texts = ["Add caching layer", "Reduce cost", "Increase redundancy", "Add monitoring", "Add security"]
         found = False
-        for text in suggestion_texts:
+        for text in static_texts:
             btn = page.locator("button", has_text=text)
             if btn.count() > 0:
                 found = True
                 break
+        if not found:
+            # Check for any suggestion-style buttons (small, rounded, in the chat area)
+            sidebar = page.locator("div").filter(has=page.locator("h1", has_text="Cloudwright"))
+            suggestion_buttons = sidebar.locator("button").filter(has_not_text="Send").filter(has_not_text="New")
+            found = suggestion_buttons.count() > 2  # at least some suggestion buttons beyond Send/New
         assert found, "No suggestion buttons found after spec response"
 
     def test_suggestion_click_populates_input(self, page, web_server):
         _design_and_wait(page, web_server, "3-tier web app on AWS with ALB, EC2, and RDS")
-        suggestion_texts = ["Add caching layer", "Reduce cost", "Increase redundancy", "Add monitoring", "Add security"]
+        # Try static suggestions first, then fall back to any suggestion button
+        static_texts = ["Add caching layer", "Reduce cost", "Increase redundancy", "Add monitoring", "Add security"]
         btn = None
         btn_text = ""
-        for text in suggestion_texts:
+        for text in static_texts:
             candidate = page.locator("button", has_text=text)
             if candidate.count() > 0:
                 btn = candidate.first
                 btn_text = btn.inner_text()
                 break
+
+        if btn is None:
+            # LLM-generated suggestions - find any small suggestion button in the sidebar
+            sidebar = page.locator("div").filter(has=page.locator("h1", has_text="Cloudwright"))
+            candidates = sidebar.locator("button").filter(has_not_text="Send").filter(has_not_text="New")
+            if candidates.count() > 0:
+                btn = candidates.first
+                btn_text = btn.inner_text()
 
         assert btn is not None, "No suggestion button found"
         btn.click()

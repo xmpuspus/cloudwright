@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - v0.4.0
+
+### Added
+
+- FedRAMP and GDPR frameworks in web UI validation panel
+- Self-contained HTML export format (`--format html`) for shareable architecture reports
+- "Designed with Cloudwright" attribution on exported diagrams and IaC
+- Optional API key authentication for web API (`CLOUDWRIGHT_API_KEY` env var)
+- Configurable CORS origins via `CLOUDWRIGHT_CORS_ORIGINS` env var
+- Structured logging with structlog (JSON or console output, `CLOUDWRIGHT_LOG_FORMAT`)
+- LLM call timing instrumentation
+- SVG/PNG diagram export from web UI
+- `.env.example` for easy setup
+
+### Fixed
+
+- `SessionStore` path traversal vulnerability (session_id now validated against `[A-Za-z0-9_-]`)
+- Streaming endpoints (`/api/design/stream`, `/api/modify/stream`) now enforce rate limiting
+- MCP session tools thread safety with `threading.Lock`
+- LLM empty response handling (IndexError on content-filtered responses)
+- Silent exception swallowing in web API cost/validation paths (now logged)
+- CI publish workflow action version alignment (`checkout@v4`, `setup-python@v5`)
+- Modify tab in web UI now uses SSE streaming (consistent with chat sidebar)
+- Web UI suggestion buttons use LLM-generated suggestions when available
+
+### Changed
+
+- Minimum `structlog` version requirement added to core package
+
 ## [0.3.5] - 2026-03-14
 
 ### Added

@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import json
-import logging
 import re
 import time
 from collections.abc import Iterator
 
 from cloudwright.llm import get_llm
 from cloudwright.llm.base import BaseLLM
+from cloudwright.logging import get_logger
 from cloudwright.providers import get_equivalent
 from cloudwright.spec import (
     Alternative,
@@ -20,7 +20,7 @@ from cloudwright.spec import (
     DiffResult,
 )
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 # Services that are data stores — encryption and backup defaults applied
 _DATA_STORE_SERVICES = {

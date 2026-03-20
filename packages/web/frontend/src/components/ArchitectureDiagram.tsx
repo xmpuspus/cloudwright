@@ -345,9 +345,31 @@ function buildEdges(spec: ArchSpec): Edge[] {
   });
 }
 
+const API_BASE = "/api";
+
 function ArchitectureDiagram({ spec }: { spec: ArchSpec }) {
   const [showBoundaries, setShowBoundaries] = useState(true);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
+
+  const handleExport = useCallback(async (format: "svg" | "png") => {
+    try {
+      const res = await fetch(`${API_BASE}/export`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ spec, format }),
+      });
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `architecture.${format}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // export is best-effort
+    }
+  }, [spec]);
 
   const costMap = useMemo<Record<string, number>>(() => {
     const m: Record<string, number> = {};
@@ -412,6 +434,8 @@ function ArchitectureDiagram({ spec }: { spec: ArchSpec }) {
       <DiagramControls
         showBoundaries={showBoundaries}
         onToggleBoundaries={() => setShowBoundaries((v) => !v)}
+        onExportSvg={() => handleExport("svg")}
+        onExportPng={() => handleExport("png")}
       />
       <NodeSidePanel
         component={selectedComponent ?? null}

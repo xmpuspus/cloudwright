@@ -25,6 +25,8 @@ const FRAMEWORKS = [
   { key: "hipaa", label: "HIPAA" },
   { key: "pci-dss", label: "PCI-DSS" },
   { key: "soc2", label: "SOC 2" },
+  { key: "fedramp", label: "FedRAMP" },
+  { key: "gdpr", label: "GDPR" },
   { key: "well-architected", label: "Well-Architected" },
 ];
 

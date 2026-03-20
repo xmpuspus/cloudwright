@@ -90,6 +90,12 @@ cloudwright export spec.yaml --format html -o report.html
 
 **Web UI improvements.** FedRAMP and GDPR added to validation panel (all 6 frameworks now available). SVG/PNG diagram export buttons wired. Modify tab now uses SSE streaming. LLM-generated suggestion buttons replace static fallback list. CORS origins configurable via `CLOUDWRIGHT_CORS_ORIGINS`.
 
+<p align="center">
+  <img src="examples/cloudwright-v040-demo.gif" alt="Cloudwright v0.4.0 Web UI Demo" width="720">
+</p>
+
+<p align="center"><em>Web UI - interactive architecture design with LLM-generated suggestions, HIPAA validation with severity scoring, and 6 compliance frameworks including FedRAMP and GDPR.</em></p>
+
 **Observability.** Structured logging with structlog (JSON or console output via `CLOUDWRIGHT_LOG_FORMAT`). LLM call timing instrumentation. Rate limit hits logged.
 
 **Attribution.** All exported diagrams and IaC now include "Designed with Cloudwright" attribution with project URL.

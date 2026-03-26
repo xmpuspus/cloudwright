@@ -26,6 +26,8 @@ def _make_spec_json(name="Test App"):
 
 def _mock_llm_stream(chunks):
     llm = MagicMock()
+    llm.model_name = "mock-model"
+    llm.pricing = {"input": 0.003, "output": 0.015}
     llm.generate_stream.return_value = iter(chunks)
     return llm
 

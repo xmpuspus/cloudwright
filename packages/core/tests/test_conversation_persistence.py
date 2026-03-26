@@ -31,12 +31,21 @@ def _make_spec_json(name="Test App", extra_components=None):
 
 def _mock_llm(responses):
     llm = MagicMock()
+    llm.model_name = "mock-model"
+    llm.pricing = {"input": 0.003, "output": 0.015}
     llm.generate.side_effect = [(r, {"input_tokens": 10, "output_tokens": 20}) for r in responses]
     return llm
 
 
+def _mock_bare_llm():
+    llm = MagicMock()
+    llm.model_name = "mock-model"
+    llm.pricing = {"input": 0.003, "output": 0.015}
+    return llm
+
+
 def _make_session_with_spec(llm=None) -> ConversationSession:
-    llm = llm or MagicMock()
+    llm = llm or _mock_bare_llm()
     session = ConversationSession(llm=llm, session_id="test-123")
     session.current_spec = ArchSpec(
         name="Saved App",
@@ -74,7 +83,7 @@ def test_from_dict_restores_session():
     session.cumulative_usage = {"input_tokens": 50, "output_tokens": 100, "total_cost": 0.002}
 
     data = session.to_dict()
-    restored = ConversationSession.from_dict(data, llm=MagicMock())
+    restored = ConversationSession.from_dict(data, llm=_mock_bare_llm())
 
     assert restored.session_id == session.session_id
     assert restored.history == session.history
@@ -85,7 +94,7 @@ def test_from_dict_with_spec():
     session = _make_session_with_spec()
 
     data = session.to_dict()
-    restored = ConversationSession.from_dict(data, llm=MagicMock())
+    restored = ConversationSession.from_dict(data, llm=_mock_bare_llm())
 
     assert restored.current_spec is not None
     assert restored.current_spec.name == "Saved App"
@@ -93,12 +102,12 @@ def test_from_dict_with_spec():
 
 
 def test_from_dict_with_constraints():
-    llm = MagicMock()
+    llm = _mock_bare_llm()
     constraints = Constraints(budget_monthly=300.0, compliance=["hipaa"])
     session = ConversationSession(llm=llm, constraints=constraints, session_id="c-session")
 
     data = session.to_dict()
-    restored = ConversationSession.from_dict(data, llm=MagicMock())
+    restored = ConversationSession.from_dict(data, llm=_mock_bare_llm())
 
     assert restored.constraints is not None
     assert restored.constraints.budget_monthly == 300.0
@@ -111,7 +120,7 @@ def test_session_store_save_and_load(tmp_path):
     session.history = [{"role": "user", "content": "design an aws app"}]
 
     store.save("test-123", session)
-    loaded = store.load("test-123", llm=MagicMock())
+    loaded = store.load("test-123", llm=_mock_bare_llm())
 
     assert loaded.session_id == "test-123"
     assert len(loaded.history) == 1

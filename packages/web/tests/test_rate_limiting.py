@@ -64,11 +64,11 @@ class TestRateLimiterDirect:
 
 class TestRateLimitingViaAPI:
     def test_rate_limiter_blocks_over_limit(self, client):
-        from cloudwright_web.app import _RateLimiter
+        from cloudwright_web.middleware import _RateLimiter
 
         tight = _RateLimiter(max_requests=1, window_seconds=60)
 
-        with patch("cloudwright_web.app._rate_limiter", tight):
+        with patch("cloudwright_web.middleware._rate_limiter", tight):
             # First request uses the one allowed slot
             client.post("/api/design", json={"description": "simple app"})
             # Second should be blocked

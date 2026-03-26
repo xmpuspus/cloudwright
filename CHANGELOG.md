@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-03-26
+
+### Breaking
+
+- Import paths changed: `cloudwright.session.ConversationSession`, `cloudwright.designer.Architect`, `cloudwright.parsing._parse_arch_spec` are the canonical locations. Old `from cloudwright.architect import ...` still works via re-export shim.
+- Web backend restructured: `app.py` is now an app factory (`create_app()`), endpoints split into routers under `cloudwright_web/routers/`
+- Frontend rewritten with Zustand state management and restructured component architecture
+- Terraform exporter split into per-provider modules under `exporter/terraform/` (import path unchanged)
+- CLI chat command decomposed into `chat.py`, `chat_ui.py`, `chat_session.py`, `chat_streaming.py`
+
+### Added
+
+- Shared SSE streaming abstraction (`cloudwright_web/streaming.py`) used by all streaming endpoints
+- CLI command decorator (`cloudwright_cli/decorators.py`) for standardized output/error handling
+- Frontend test infrastructure: Vitest + React Testing Library + MSW
+- Zustand stores for spec, chat, cost, validation, and UI state
+
+### Changed
+
+- `architect.py` decomposed into `session.py` (ConversationSession), `designer.py` (Architect), `parsing.py` (JSON extraction, spec parsing), `prompts.py` (all constants)
+
+## [0.5.0] - 2026-03-26
+
+### Added
+
+- Connection validation: `ArchSpec` model validator rejects connections referencing non-existent component IDs
+- Config value sanitization: `validate_export_config()` rejects shell metacharacters before Terraform/CloudFormation export
+- Template match confidence scores (0.0-1.0) stored in `spec.metadata['template_confidence']`
+- `BaseLLM.model_name` and `BaseLLM.pricing` abstract properties for explicit cost tracking
+
+### Changed
+
+- Extracted ~600 LOC of prompt constants from `architect.py` into `prompts.py` (pure data, no behavior change)
+- Error hints capped to sliding window of 5 (prevents unbounded growth in long sessions)
+- MCP sessions now persist to disk via `SessionStore` (survive process restarts)
+- Cost tracking uses `llm.pricing` instead of string-matching on module name
+
+### Removed
+
+- MCP in-memory session storage, TTL cleanup, and max session eviction (replaced by SessionStore)
+
 ## [Unreleased] - v0.4.0
 
 ### Added

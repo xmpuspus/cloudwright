@@ -17,26 +17,11 @@ from rich.prompt import Prompt
 from rich.rule import Rule
 from rich.syntax import Syntax
 
+from .chat_session import default_session_id, maybe_save_on_quit
+from .chat_streaming import format_error, is_rate_limit, is_timeout
+from .chat_ui import _HELP, print_cost_summary, print_diff, run_validate
+
 console = Console()
-
-_HELP = """\
-Commands:
-  /save <file>              Save last architecture to YAML file
-  /save-session [name]      Save this conversation session
-  /load-session <name>      Load a saved session
-  /sessions                 List saved sessions
-  /diagram                  Show ASCII diagram for last architecture
-  /yaml                     Show YAML for last architecture
-  /cost                     Show cost estimate for last architecture
-  /validate [fw]            Run compliance check (hipaa, pci-dss, soc2, fedramp, gdpr)
-  /export <fmt>             Export last architecture (terraform, mermaid, d2, cloudformation, sbom, aibom)
-  /terraform                Export last architecture as Terraform
-  /new                      Start a new architecture from scratch
-  /help, /?                 Show this help
-  /quit                     Exit
-
-Follow-up messages modify the current architecture. Use /new to start over.
-"""
 
 
 def chat(
@@ -114,7 +99,7 @@ def _run_terminal_chat(resume: str | None = None, debug: bool = False) -> None:
             user_input = Prompt.ask("\n[bold cyan]>[/bold cyan]")
         except (KeyboardInterrupt, EOFError):
             console.print("\n[dim]Exiting.[/dim]")
-            _maybe_save_on_quit(session, store)
+            maybe_save_on_quit(session, store)
             break
 
         text = user_input.strip()
@@ -122,7 +107,7 @@ def _run_terminal_chat(resume: str | None = None, debug: bool = False) -> None:
             continue
 
         if text.lower() in ("/quit", "/exit", "/q"):
-            _maybe_save_on_quit(session, store)
+            maybe_save_on_quit(session, store)
             console.print("[dim]Goodbye.[/dim]")
             break
 
@@ -148,7 +133,7 @@ def _run_terminal_chat(resume: str | None = None, debug: bool = False) -> None:
 
         if text.startswith("/save-session"):
             parts = text.split(None, 1)
-            name = parts[1].strip() if len(parts) > 1 else _default_session_id()
+            name = parts[1].strip() if len(parts) > 1 else default_session_id()
             saved_path = store.save(name, session)
             console.print(f"[green]Session saved: {name} ({saved_path})[/green]")
             continue
@@ -201,7 +186,7 @@ def _run_terminal_chat(resume: str | None = None, debug: bool = False) -> None:
             elif not session.current_spec.cost_estimate:
                 console.print("[yellow]No cost estimate available.[/yellow]")
             else:
-                _print_cost_summary(session.current_spec)
+                print_cost_summary(session.current_spec)
             continue
 
         if text.startswith("/validate"):
@@ -210,7 +195,7 @@ def _run_terminal_chat(resume: str | None = None, debug: bool = False) -> None:
             else:
                 parts = text.split(None, 1)
                 framework = parts[1].strip() if len(parts) > 1 else None
-                _run_validate(session.current_spec, framework)
+                run_validate(session.current_spec, framework)
             continue
 
         if text == "/terraform":
@@ -250,10 +235,10 @@ def _run_terminal_chat(resume: str | None = None, debug: bool = False) -> None:
                     live.update(Markdown("".join(chunks)))
         except Exception as stream_err:
             # Fallback to non-streaming if streaming fails
-            if _is_rate_limit(stream_err):
+            if is_rate_limit(stream_err):
                 console.print("[yellow]Rate limited, try again in a moment.[/yellow]")
                 continue
-            if _is_timeout(stream_err):
+            if is_timeout(stream_err):
                 console.print("[yellow]Request timed out, try a simpler request.[/yellow]")
                 continue
             if isinstance(stream_err, RuntimeError) and "No LLM provider" in str(stream_err):
@@ -262,7 +247,7 @@ def _run_terminal_chat(resume: str | None = None, debug: bool = False) -> None:
             try:
                 _, _ = session.send(text)
             except Exception as e:
-                console.print(_format_error(e))
+                console.print(format_error(e))
                 continue
 
         # Token usage (show regardless of spec)
@@ -292,11 +277,11 @@ def _run_terminal_chat(resume: str | None = None, debug: bool = False) -> None:
         console.print(render_ascii(spec))
 
         if spec.cost_estimate:
-            _print_cost_summary(spec)
+            print_cost_summary(spec)
 
         # Show spec diff when modifying
         if had_spec and session.last_diff:
-            _print_diff(session.last_diff)
+            print_diff(session.last_diff)
 
         suggestions = spec.metadata.get("suggestions", [])
         if suggestions:
@@ -304,93 +289,32 @@ def _run_terminal_chat(resume: str | None = None, debug: bool = False) -> None:
 
 
 def _default_session_id() -> str:
-    from datetime import datetime
-
-    return datetime.now().strftime("session-%Y%m%d-%H%M%S")
+    return default_session_id()
 
 
 def _maybe_save_on_quit(session: ConversationSession, store: SessionStore) -> None:
-    turn_count = sum(1 for m in session.history if m.get("role") == "user")
-    if turn_count == 0:
-        return
-    try:
-        answer = Prompt.ask("Save session? (y/N)", default="N")
-    except (KeyboardInterrupt, EOFError):
-        return
-    if answer.strip().lower() == "y":
-        name = _default_session_id()
-        store.save(name, session)
-        console.print(f"[green]Session saved as: {name}[/green]")
+    maybe_save_on_quit(session, store)
 
 
 def _is_rate_limit(exc: Exception) -> bool:
-    msg = str(exc).lower()
-    return "rate limit" in msg or "rate_limit" in msg or "429" in msg
+    return is_rate_limit(exc)
 
 
 def _is_timeout(exc: Exception) -> bool:
-    msg = str(exc).lower()
-    return "timeout" in msg or "timed out" in msg
+    return is_timeout(exc)
 
 
 def _format_error(exc: Exception) -> str:
-    msg = str(exc)
-    if isinstance(exc, RuntimeError) and "No LLM provider" in msg:
-        return "[red]No LLM provider configured.[/red] Set ANTHROPIC_API_KEY or OPENAI_API_KEY."
-    if _is_rate_limit(exc):
-        return "[yellow]Rate limited, try again in a moment.[/yellow]"
-    if _is_timeout(exc):
-        return "[yellow]Request timed out, try a simpler request.[/yellow]"
-    if isinstance(exc, ValueError):
-        return "[red]Failed to parse architecture, try rephrasing.[/red]"
-    return f"[red]Error:[/red] {exc}"
+    return format_error(exc)
 
 
 def _print_diff(diff) -> None:
-    if diff.added:
-        console.print(f"[green]+ Added: {', '.join(c.id for c in diff.added)}[/green]")
-    if diff.removed:
-        console.print(f"[red]- Removed: {', '.join(c.id for c in diff.removed)}[/red]")
-    if diff.changed:
-        console.print(f"[yellow]~ Changed: {', '.join(c.id for c in diff.changed)}[/yellow]")
-    if diff.cost_delta is not None and diff.cost_delta != 0:
-        sign = "+" if diff.cost_delta > 0 else ""
-        console.print(f"[dim]Cost delta: {sign}${diff.cost_delta:,.2f}/mo[/dim]")
+    print_diff(diff)
 
 
 def _run_validate(spec: ArchSpec, framework: str | None) -> None:
-    from cloudwright.validator import Validator
-
-    if framework:
-        results = Validator().validate(spec, compliance=[framework])
-    else:
-        results = Validator().validate(spec, well_architected=True)
-
-    if not results:
-        console.print("[yellow]No validation results.[/yellow]")
-        return
-
-    for result in results:
-        passed = sum(1 for c in result.checks if c.passed)
-        total = len(result.checks)
-        status = "[green]PASS[/green]" if result.passed else "[red]FAIL[/red]"
-        console.print(f"{result.framework}: {status}  ({passed}/{total} checks passed)")
-        for check in result.checks:
-            icon = "[green]+[/green]" if check.passed else "[red]-[/red]"
-            console.print(f"  {icon} {check.name}")
-            if not check.passed and check.recommendation:
-                console.print(f"    [dim]{check.recommendation}[/dim]")
+    run_validate(spec, framework)
 
 
 def _print_cost_summary(spec: ArchSpec) -> None:
-    from rich.table import Table
-
-    table = Table(title="Cost Estimate", show_footer=True)
-    table.add_column("Component", style="cyan")
-    table.add_column("Monthly", justify="right", footer=f"${spec.cost_estimate.monthly_total:,.2f}")
-    table.add_column("Notes", style="dim")
-
-    for item in spec.cost_estimate.breakdown:
-        table.add_row(item.component_id, f"${item.monthly:,.2f}", item.notes)
-
-    console.print(table)
+    print_cost_summary(spec)

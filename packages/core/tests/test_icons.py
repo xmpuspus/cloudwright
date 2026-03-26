@@ -14,16 +14,18 @@ from cloudwright.icons import (
 
 def test_known_services_have_icons():
     """All services in the terraform.py resource maps should have registry entries."""
-    from cloudwright.exporter.terraform import _AWS_RESOURCES, _AZURE_RESOURCES, _GCP_RESOURCES
+    from cloudwright.exporter.terraform.aws import RESOURCES as AWS_RESOURCES
+    from cloudwright.exporter.terraform.azure import RESOURCES as AZURE_RESOURCES
+    from cloudwright.exporter.terraform.gcp import RESOURCES as GCP_RESOURCES
 
     missing = []
-    for svc in _AWS_RESOURCES:
+    for svc in AWS_RESOURCES:
         if ("aws", svc) not in ICON_REGISTRY:
             missing.append(f"aws/{svc}")
-    for svc in _GCP_RESOURCES:
+    for svc in GCP_RESOURCES:
         if ("gcp", svc) not in ICON_REGISTRY:
             missing.append(f"gcp/{svc}")
-    for svc in _AZURE_RESOURCES:
+    for svc in AZURE_RESOURCES:
         if ("azure", svc) not in ICON_REGISTRY:
             missing.append(f"azure/{svc}")
     assert not missing, f"Missing icon registry entries: {missing}"

@@ -89,18 +89,18 @@ class TestDatabricksProvider:
 
 class TestDatabricksArchitect:
     def test_provider_services_registered(self):
-        from cloudwright.architect import _PROVIDER_SERVICES
+        from cloudwright.prompts import PROVIDER_SERVICES
 
-        assert "databricks" in _PROVIDER_SERVICES
-        assert len(_PROVIDER_SERVICES["databricks"]) == 12
+        assert "databricks" in PROVIDER_SERVICES
+        assert len(PROVIDER_SERVICES["databricks"]) == 12
 
     def test_service_normalization(self):
-        from cloudwright.architect import _SERVICE_NORMALIZATION
+        from cloudwright.prompts import SERVICE_NORMALIZATION
 
-        assert _SERVICE_NORMALIZATION.get("sql_warehouse") == "databricks_sql_warehouse"
-        assert _SERVICE_NORMALIZATION.get("dlt") == "databricks_pipeline"
-        assert _SERVICE_NORMALIZATION.get("delta_live_tables") == "databricks_pipeline"
-        assert _SERVICE_NORMALIZATION.get("dbx_cluster") == "databricks_cluster"
+        assert SERVICE_NORMALIZATION.get("sql_warehouse") == "databricks_sql_warehouse"
+        assert SERVICE_NORMALIZATION.get("dlt") == "databricks_pipeline"
+        assert SERVICE_NORMALIZATION.get("delta_live_tables") == "databricks_pipeline"
+        assert SERVICE_NORMALIZATION.get("dbx_cluster") == "databricks_cluster"
 
     def test_parse_databricks_spec(self):
         from cloudwright.architect import _parse_arch_spec

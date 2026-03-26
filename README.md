@@ -70,6 +70,28 @@ cloudwright chat --web     # browser UI
 
 ## What's New
 
+### v1.0.0 — Production-Ready Architecture (2026-03-26)
+
+<p align="center">
+  <img src="examples/cloudwright-v100-demo.gif" alt="Cloudwright v1.0 Web UI Demo" width="720">
+</p>
+
+<p align="center"><em>v1.0 Web UI -- HIPAA-compliant 3-tier design with real-time cost estimation ($1,534/mo), compliance validation, and architecture diagram.</em></p>
+
+The 1.0 release is a ground-up restructuring of the entire codebase. Every major module has been decomposed for maintainability, testability, and extensibility.
+
+**Core decomposition.** The 1,491-line `architect.py` monolith is split into four focused modules: `session.py` (multi-turn conversation), `designer.py` (single-shot design + template matching), `parsing.py` (JSON extraction, service normalization), and `prompts.py` (all LLM prompt constants). Existing `from cloudwright.architect import ...` imports still work via a backward-compat shim.
+
+**Web backend.** All 19 endpoints moved from a single 720-line `app.py` into 9 FastAPI router modules with shared middleware, singletons, and a unified SSE streaming abstraction. Each router is independently testable.
+
+**Terraform exporter.** Split from one 1,161-line file into per-provider modules (`aws.py`, `gcp.py`, `azure.py`, `databricks.py`). Adding a new cloud provider is now a single file.
+
+**CLI.** The monolithic chat command decomposed into UI, session lifecycle, and streaming layers. New `@cloudwright_command` decorator eliminates 10+ lines of boilerplate per command.
+
+**Security and correctness (v0.5.0).** Connection validation rejects orphan references. Config sanitization blocks shell metacharacters in Terraform/CloudFormation export. Template match confidence scores (0.0-1.0). Explicit `BaseLLM.pricing` property replaces fragile string-matching. Error hints capped to sliding window of 5. MCP sessions persist to disk.
+
+1,031 tests across all packages, all passing.
+
 ### v0.4.0 -- Security Hardening and Export Enhancements (2026-03-20)
 
 <p align="center">

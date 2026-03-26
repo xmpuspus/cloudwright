@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -49,9 +50,44 @@ def _get_all_formats() -> dict[str, object]:
     return formats
 
 
+_DANGEROUS_PATTERNS = re.compile(r"[;|&`]|\$\(|\$\{")
+
+
+def validate_export_config(config: dict, path: str = "") -> None:
+    """Validate component config values are safe for IaC export.
+
+    Raises ValueError on dangerous content (shell metacharacters, HCL injection).
+    """
+    for key, value in config.items():
+        field_path = f"{path}.{key}" if path else key
+        if isinstance(value, dict):
+            validate_export_config(value, field_path)
+        elif isinstance(value, str):
+            if _DANGEROUS_PATTERNS.search(value):
+                raise ValueError(
+                    f"Config field {field_path!r} contains dangerous characters: {value!r}. "
+                    "Values must not contain shell metacharacters (;|&`$()${})."
+                )
+        elif isinstance(value, bool):
+            pass  # booleans are safe
+        elif isinstance(value, (int, float)):
+            pass  # numbers are safe
+        elif isinstance(value, list):
+            for i, item in enumerate(value):
+                if isinstance(item, dict):
+                    validate_export_config(item, f"{field_path}[{i}]")
+                elif isinstance(item, str) and _DANGEROUS_PATTERNS.search(item):
+                    raise ValueError(f"Config field {field_path}[{i}] contains dangerous characters: {item!r}.")
+
+
 def export_spec(spec: ArchSpec, fmt: str, output: str | None = None, output_dir: str | None = None) -> str:
     """Export an ArchSpec to the given format. Returns the rendered string."""
     fmt = fmt.lower().strip()
+
+    # Validate all component configs before exporting to IaC formats
+    if fmt in ("terraform", "cloudformation", "cfn"):
+        for comp in spec.components:
+            validate_export_config(comp.config, path=f"component[{comp.id}].config")
 
     if fmt == "terraform":
         from cloudwright.exporter.terraform import render

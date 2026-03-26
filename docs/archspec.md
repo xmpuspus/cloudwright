@@ -142,6 +142,21 @@ cost_estimate:
 - **Tier 3 — Data**: Databases, caches, message queues
 - **Tier 4 — Storage**: Object storage, data warehouses, ML/analytics
 
+## Validation Rules
+
+- **Connection integrity**: All connection `source` and `target` values must reference existing component IDs. ArchSpec construction raises `ValueError` on invalid references.
+- **Component IDs**: Must match `[a-zA-Z_][a-zA-Z0-9_-]*` (IaC-safe).
+- **Config sanitization**: Before export to Terraform/CloudFormation, config values are validated by `validate_export_config()`. String values containing shell metacharacters (`;|&` `` ` `` `$()` `${}`) are rejected.
+
+## Template Confidence
+
+When an architecture is generated from a pre-computed template (instead of a full LLM call), the confidence score is stored in metadata:
+
+- `metadata.template_confidence` — float 0.0-1.0, keyword overlap ratio
+- `metadata.template_name` — name of the matched template
+
+Threshold behavior: >= 0.7 uses template directly, 0.5-0.7 uses template as seed with LLM refinement, < 0.5 full LLM design.
+
 ## Export Formats
 
 - **Terraform** — Valid HCL with provider blocks, resources, variables, outputs

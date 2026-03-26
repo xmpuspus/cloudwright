@@ -31,6 +31,8 @@ def _make_spec_json(name: str = "Test App", extra_components: list[dict] | None 
 def _mock_llm(responses: list[str]) -> MagicMock:
     """Return a mock LLM that yields successive responses."""
     llm = MagicMock()
+    llm.model_name = "mock-model"
+    llm.pricing = {"input": 0.003, "output": 0.015}
     llm.generate.side_effect = [(r, {"input_tokens": 10, "output_tokens": 20}) for r in responses]
     return llm
 
@@ -262,10 +264,11 @@ class TestUseCaseRouting:
         assert result != default
 
     def test_default_prompt_for_standard_design(self):
-        from cloudwright.architect import _DESIGN_SYSTEM, Architect
+        from cloudwright.architect import Architect
+        from cloudwright.prompts import DESIGN_SYSTEM
 
         result = Architect._select_system_prompt("build a 3-tier web app on AWS")
-        assert result == _DESIGN_SYSTEM
+        assert result == DESIGN_SYSTEM
 
     def test_complex_use_case_detection(self):
         from cloudwright.architect import Architect

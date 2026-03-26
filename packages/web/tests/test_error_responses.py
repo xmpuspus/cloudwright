@@ -47,10 +47,10 @@ class TestErrorHasSuggestionField:
         assert "suggestion" in resp.json()
 
     def test_rate_limit_error_has_suggestion(self, client):
-        from cloudwright_web.app import _RateLimiter
+        from cloudwright_web.middleware import _RateLimiter
 
         tight = _RateLimiter(max_requests=0, window_seconds=60)
-        with patch("cloudwright_web.app._rate_limiter", tight):
+        with patch("cloudwright_web.middleware._rate_limiter", tight):
             resp = client.post("/api/design", json={"description": "simple web app on AWS"})
 
         assert resp.status_code == 429

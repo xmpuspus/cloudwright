@@ -9,6 +9,8 @@ from cloudwright.architect import ConversationSession
 
 def _mock_llm(responses):
     llm = MagicMock()
+    llm.model_name = "mock-model"
+    llm.pricing = {"input": 0.003, "output": 0.015}
     llm.generate.side_effect = [(r, {"input_tokens": 10, "output_tokens": 20}) for r in responses]
     llm.estimate_tokens.side_effect = lambda text: len(text) // 4
     return llm

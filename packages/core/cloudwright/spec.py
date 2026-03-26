@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class Constraints(BaseModel):
@@ -163,6 +163,23 @@ class ArchSpec(BaseModel):
     alternatives: list[Alternative] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
     history: list[ArchVersion] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_connections(self) -> ArchSpec:
+        """Ensure all connection source/target reference existing component IDs."""
+        component_ids = {c.id for c in self.components}
+        for conn in self.connections:
+            if conn.source not in component_ids:
+                raise ValueError(
+                    f"Connection source {conn.source!r} does not match any component. "
+                    f"Valid IDs: {sorted(component_ids)}"
+                )
+            if conn.target not in component_ids:
+                raise ValueError(
+                    f"Connection target {conn.target!r} does not match any component. "
+                    f"Valid IDs: {sorted(component_ids)}"
+                )
+        return self
 
     def to_yaml(self) -> str:
         data = self.model_dump(exclude_none=True, exclude_defaults=False)

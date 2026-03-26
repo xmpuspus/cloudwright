@@ -276,6 +276,11 @@ class TestDiffAPI:
     def test_diff_removed_component(self, client, sample_spec):
         new_spec = dict(sample_spec)
         new_spec["components"] = [sample_spec["components"][0]]  # only keep web
+        # Remove connections referencing the removed component
+        remaining_ids = {c["id"] for c in new_spec["components"]}
+        new_spec["connections"] = [
+            c for c in new_spec.get("connections", []) if c["source"] in remaining_ids and c["target"] in remaining_ids
+        ]
         resp = client.post("/api/diff", json={"old_spec": sample_spec, "new_spec": new_spec})
         assert resp.status_code == 200
         data = resp.json()["diff"]

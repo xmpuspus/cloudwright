@@ -4,8 +4,10 @@
 
 | Version | Supported |
 | ------- | --------- |
-| 0.2.x   | Yes       |
-| 0.1.x   | No        |
+| 1.0.x   | Yes       |
+| 0.5.x   | Yes       |
+| 0.4.x   | Yes       |
+| < 0.4   | No        |
 
 ## Reporting a Vulnerability
 
@@ -35,6 +37,8 @@ Cloudwright follows these security practices:
 - **Path traversal protection** on static file serving (resolve + is_relative_to)
 - **Generic error messages** — no internal exception details leaked to API clients
 - **Chat role validation** — constrained to user/assistant to prevent prompt injection
+- **Config value sanitization** — `validate_export_config()` rejects shell metacharacters before IaC export
+- **Connection validation** — ArchSpec rejects connections referencing non-existent component IDs
 - **Safe YAML** — all loading via yaml.safe_load()
 - **No dangerous functions** — no eval(), exec(), or pickle with untrusted data
 - **LLM timeouts** (60s) to prevent hanging requests

@@ -178,6 +178,8 @@ def test_modify_produces_meaningful_diff():
 def test_single_word_hi_returns_clarification_without_llm_call():
     """'hi' is too short and has no cloud keyword — must get clarification, no LLM hit."""
     llm = MagicMock()
+    llm.model_name = "mock-model"
+    llm.pricing = {"input": 0.003, "output": 0.015}
     session = ConversationSession(llm=llm)
 
     text, spec = session.send("hi")
@@ -190,6 +192,8 @@ def test_single_word_hi_returns_clarification_without_llm_call():
 def test_design_aws_app_bypasses_clarification():
     """Multi-word messages with a cloud keyword bypass clarification and call the LLM."""
     llm = MagicMock()
+    llm.model_name = "mock-model"
+    llm.pricing = {"input": 0.003, "output": 0.015}
     llm.generate.return_value = (
         "Sure, here is an AWS app design.",
         {"input_tokens": 10, "output_tokens": 20},

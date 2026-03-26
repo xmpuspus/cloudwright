@@ -30,6 +30,14 @@ class OpenAILLM(BaseLLM):
     def __init__(self, api_key: str | None = None):
         self.client = openai.OpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"), timeout=180.0)
 
+    @property
+    def model_name(self) -> str:
+        return GENERATE_MODEL
+
+    @property
+    def pricing(self) -> dict[str, float]:
+        return {"input": 0.003, "output": 0.015}
+
     def generate(
         self, messages: list[dict], system: str, max_tokens: int = 2000, timeout: float | None = None
     ) -> tuple[str, dict]:

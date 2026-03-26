@@ -31,11 +31,13 @@ jobs:
       - name: Install packages
         run: |
           pip install hatchling
-          pip install --no-cache-dir packages/core
+          pip install --no-cache-dir --force-reinstall packages/core
           pip install --no-cache-dir packages/cli
           pip install --no-cache-dir packages/web
           pip install --no-cache-dir packages/mcp
           pip install pytest pytest-timeout pytest-cov
+      - name: Verify new modules installed
+        run: python -c "from cloudwright.prompts import DESIGN_SYSTEM; print('prompts OK')"
       - name: Run core tests
         run: pytest packages/core/tests/ -x -q --timeout=30 -m "not slow" --cov=cloudwright --cov-report=term-missing
       - name: Run web tests

@@ -15,7 +15,7 @@ def client():
 
 class TestMissingApiKeyError:
     def test_design_returns_missing_api_key_error(self, client):
-        with patch("cloudwright_web.app.get_architect") as mock_arch:
+        with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.design.side_effect = RuntimeError("No LLM provider configured")
             resp = client.post("/api/design", json={"description": "simple web app on AWS"})
 
@@ -28,7 +28,7 @@ class TestMissingApiKeyError:
         mock_session.history = []
         mock_session.send.side_effect = RuntimeError("No LLM provider configured")
 
-        with patch("cloudwright_web.app.get_architect") as mock_arch:
+        with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.llm = MagicMock()
             with patch("cloudwright.architect.ConversationSession", return_value=mock_session):
                 resp = client.post("/api/chat", json={"message": "design something"})
@@ -40,7 +40,7 @@ class TestMissingApiKeyError:
 
 class TestErrorHasSuggestionField:
     def test_missing_api_key_has_suggestion(self, client):
-        with patch("cloudwright_web.app.get_architect") as mock_arch:
+        with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.design.side_effect = RuntimeError("No LLM provider configured")
             resp = client.post("/api/design", json={"description": "simple web app on AWS"})
 
@@ -59,7 +59,7 @@ class TestErrorHasSuggestionField:
     def test_timeout_error_has_suggestion(self, client):
         import asyncio
 
-        with patch("cloudwright_web.app.get_architect") as mock_arch:
+        with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.design.side_effect = asyncio.TimeoutError()
             with patch("asyncio.wait_for", side_effect=asyncio.TimeoutError()):
                 resp = client.post("/api/design", json={"description": "simple web app on AWS"})
@@ -67,7 +67,7 @@ class TestErrorHasSuggestionField:
         assert "suggestion" in resp.json()
 
     def test_internal_error_has_suggestion(self, client):
-        with patch("cloudwright_web.app.get_architect") as mock_arch:
+        with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.design.side_effect = Exception("unexpected boom")
             resp = client.post("/api/design", json={"description": "simple web app on AWS"})
 

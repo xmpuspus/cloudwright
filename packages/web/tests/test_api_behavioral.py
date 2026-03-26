@@ -214,7 +214,7 @@ class TestStructuredErrorResponses:
     def test_missing_api_key_error_has_required_fields(self, client):
         from unittest.mock import patch
 
-        with patch("cloudwright_web.app.get_architect") as mock_arch:
+        with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.design.side_effect = RuntimeError("No LLM provider configured")
             resp = client.post("/api/design", json={"description": "simple web app on AWS"})
 
@@ -244,7 +244,7 @@ class TestStructuredErrorResponses:
     def test_internal_error_has_required_fields(self, client):
         from unittest.mock import patch
 
-        with patch("cloudwright_web.app.get_architect") as mock_arch:
+        with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.design.side_effect = Exception("unexpected internal failure")
             resp = client.post("/api/design", json={"description": "simple web app on AWS"})
 
@@ -264,7 +264,7 @@ class TestStructuredErrorResponses:
         import asyncio
         from unittest.mock import patch
 
-        with patch("cloudwright_web.app.get_architect"), patch("asyncio.wait_for", side_effect=asyncio.TimeoutError()):
+        with patch("cloudwright_web.singletons.get_architect"), patch("asyncio.wait_for", side_effect=asyncio.TimeoutError()):
             resp = client.post("/api/design", json={"description": "simple web app on AWS"})
 
         assert resp.status_code == 504

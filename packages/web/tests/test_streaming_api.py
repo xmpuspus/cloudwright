@@ -28,7 +28,7 @@ class TestChatStreamEndpoint:
     def test_chat_stream_returns_sse(self, client):
         mock_session = _make_mock_session(chunks=["Hello", " world"])
 
-        with patch("cloudwright_web.app.get_architect") as mock_arch:
+        with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.llm = MagicMock()
             with patch("cloudwright.architect.ConversationSession", return_value=mock_session):
                 resp = client.post(
@@ -42,7 +42,7 @@ class TestChatStreamEndpoint:
     def test_chat_stream_yields_token_events(self, client):
         mock_session = _make_mock_session(chunks=["chunk1", "chunk2"])
 
-        with patch("cloudwright_web.app.get_architect") as mock_arch:
+        with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.llm = MagicMock()
             with patch("cloudwright.architect.ConversationSession", return_value=mock_session):
                 resp = client.post(
@@ -58,7 +58,7 @@ class TestChatStreamEndpoint:
     def test_chat_stream_includes_done_event(self, client):
         mock_session = _make_mock_session(chunks=["response text"])
 
-        with patch("cloudwright_web.app.get_architect") as mock_arch:
+        with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.llm = MagicMock()
             with patch("cloudwright.architect.ConversationSession", return_value=mock_session):
                 resp = client.post(
@@ -74,7 +74,7 @@ class TestChatStreamEndpoint:
     def test_chat_stream_done_event_includes_usage(self, client):
         mock_session = _make_mock_session(chunks=["text"])
 
-        with patch("cloudwright_web.app.get_architect") as mock_arch:
+        with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.llm = MagicMock()
             with patch("cloudwright.architect.ConversationSession", return_value=mock_session):
                 resp = client.post(
@@ -90,7 +90,7 @@ class TestChatStreamEndpoint:
     def test_chat_stream_with_history(self, client):
         mock_session = _make_mock_session(chunks=["ok"])
 
-        with patch("cloudwright_web.app.get_architect") as mock_arch:
+        with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.llm = MagicMock()
             with patch("cloudwright.architect.ConversationSession", return_value=mock_session):
                 resp = client.post(

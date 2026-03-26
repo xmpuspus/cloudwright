@@ -30,10 +30,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install packages
         run: |
-          pip install packages/core
-          pip install packages/cli
-          pip install packages/web
-          pip install packages/mcp
+          pip install --no-cache-dir --no-build-isolation packages/core
+          pip install --no-cache-dir packages/cli
+          pip install --no-cache-dir packages/web
+          pip install --no-cache-dir packages/mcp
           pip install pytest pytest-timeout pytest-cov
       - name: Run core tests
         run: pytest packages/core/tests/ -x -q --timeout=30 -m "not slow" --cov=cloudwright --cov-report=term-missing

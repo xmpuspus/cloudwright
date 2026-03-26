@@ -173,7 +173,7 @@ class Architect:
                 log.warning("Restored %d dropped components: %s", len(dropped), dropped)
 
         if spec.cost_estimate and not updated.cost_estimate:
-            updated.cost_estimate = spec.cost_estimate
+            updated = updated.model_copy(update={"cost_estimate": spec.cost_estimate})
         return updated
 
     def compare(self, spec: ArchSpec, providers: list[str]) -> list[Alternative]:

@@ -258,16 +258,22 @@ def _parse_arch_spec(data: dict, constraints: Constraints | None) -> ArchSpec:
         validated.append(comp)
     components = validated
 
-    connections = [
-        Connection(
-            source=conn.get("source") or conn.get("from") or conn["source"],
-            target=conn.get("target") or conn.get("to") or conn["target"],
-            label=conn.get("label", ""),
-            protocol=conn.get("protocol"),
-            port=conn.get("port"),
+    connections = []
+    for conn in data.get("connections", []):
+        src = conn.get("source") or conn.get("from")
+        tgt = conn.get("target") or conn.get("to")
+        if not src or not tgt:
+            log.warning("Skipping connection with missing source/target: %s", conn)
+            continue
+        connections.append(
+            Connection(
+                source=src,
+                target=tgt,
+                label=conn.get("label", ""),
+                protocol=conn.get("protocol"),
+                port=conn.get("port"),
+            )
         )
-        for conn in data.get("connections", [])
-    ]
 
     metadata = {}
     if "rationale" in data:

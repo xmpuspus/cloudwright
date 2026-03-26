@@ -78,6 +78,10 @@ def validate_export_config(config: dict, path: str = "") -> None:
                     validate_export_config(item, f"{field_path}[{i}]")
                 elif isinstance(item, str) and _DANGEROUS_PATTERNS.search(item):
                     raise ValueError(f"Config field {field_path}[{i}] contains dangerous characters: {item!r}.")
+                elif isinstance(item, list):
+                    validate_export_config({"_": item}, f"{field_path}[{i}]")
+                elif not isinstance(item, (bool, int, float, str, type(None))):
+                    raise ValueError(f"Config field {field_path}[{i}] has unsupported type: {type(item).__name__}.")
 
 
 def export_spec(spec: ArchSpec, fmt: str, output: str | None = None, output_dir: str | None = None) -> str:

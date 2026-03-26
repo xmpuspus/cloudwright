@@ -30,7 +30,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install packages
         run: |
-          pip install --no-cache-dir --no-build-isolation packages/core
+          pip install hatchling
+          pip install --no-cache-dir packages/core
           pip install --no-cache-dir packages/cli
           pip install --no-cache-dir packages/web
           pip install --no-cache-dir packages/mcp

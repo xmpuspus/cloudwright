@@ -20,7 +20,7 @@ classifiers = [
     "Topic :: System :: Systems Administration",
 ]
 dependencies = [
-    "cloudwright-ai>=0.1.0,<1",
+    "cloudwright-ai>=1.0.0,<2",
     "fastapi>=0.116,<1",
     "uvicorn[standard]>=0.35,<1",
 ]

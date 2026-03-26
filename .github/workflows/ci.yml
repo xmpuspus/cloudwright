@@ -36,8 +36,12 @@ jobs:
           pip install --no-cache-dir packages/web
           pip install --no-cache-dir packages/mcp
           pip install pytest pytest-timeout pytest-cov
-      - name: Verify new modules installed
-        run: python -c "from cloudwright.prompts import DESIGN_SYSTEM; print('prompts OK')"
+      - name: Debug install
+        run: |
+          python -c "import cloudwright; print(cloudwright.__file__)"
+          pip show cloudwright-ai
+          ls -la $(python -c "import cloudwright; import os; print(os.path.dirname(cloudwright.__file__))") | grep -E "prompts|session|designer|parsing"
+          ls packages/core/cloudwright/prompts.py && echo "Source file exists"
       - name: Run core tests
         run: pytest packages/core/tests/ -x -q --timeout=30 -m "not slow" --cov=cloudwright --cov-report=term-missing
       - name: Run web tests

@@ -7,8 +7,8 @@ import logging
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
+import cloudwright_web.singletons as _singletons
 from cloudwright_web.middleware import check_api_key, check_rate_limit
-from cloudwright_web.singletons import get_catalog
 
 log = logging.getLogger(__name__)
 router = APIRouter()
@@ -33,7 +33,7 @@ def catalog_search(req: CatalogSearchRequest, request: Request):
     if err := check_rate_limit(request):
         return err
     try:
-        catalog = get_catalog()
+        catalog = _singletons.get_catalog()
         instances = catalog.search(
             query=req.query,
             vcpus=req.vcpus,
@@ -54,7 +54,7 @@ def catalog_compare(req: CatalogCompareRequest, request: Request):
     if err := check_rate_limit(request):
         return err
     try:
-        catalog = get_catalog()
+        catalog = _singletons.get_catalog()
         result = catalog.compare(*req.instance_names)
         return {"comparison": result}
     except Exception as e:

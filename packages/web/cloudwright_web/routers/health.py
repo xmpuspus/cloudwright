@@ -7,7 +7,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 
-from cloudwright_web.singletons import get_catalog
+import cloudwright_web.singletons as _singletons
 
 router = APIRouter()
 
@@ -15,7 +15,7 @@ router = APIRouter()
 @router.get("/health")
 def health():
     try:
-        catalog = get_catalog()
+        catalog = _singletons.get_catalog()
         results = catalog.search(query="m5", limit=1)
         return {"status": "ok", "catalog_loaded": True, "sample_count": len(results)}
     except Exception:

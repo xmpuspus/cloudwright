@@ -8,12 +8,13 @@ import threading
 import time
 from typing import Literal
 
+from cloudwright.session import ConversationSession
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+import cloudwright_web.singletons as _singletons
 from cloudwright_web.middleware import check_api_key, check_rate_limit, error_response
-from cloudwright_web.singletons import get_architect
 from cloudwright_web.streaming import sse_event
 
 log = logging.getLogger(__name__)
@@ -36,9 +37,7 @@ async def chat(req: ChatRequest, request: Request):
     if err := check_rate_limit(request):
         return err
     try:
-        from cloudwright.architect import ConversationSession
-
-        architect = get_architect()
+        architect = _singletons.get_architect()
         session = ConversationSession(llm=architect.llm)
 
         for msg in req.history:
@@ -82,9 +81,7 @@ async def chat_stream(req: ChatRequest, request: Request):
         return err
 
     async def event_generator():
-        from cloudwright.architect import ConversationSession
-
-        architect = get_architect()
+        architect = _singletons.get_architect()
         session = ConversationSession(llm=architect.llm)
 
         for msg in req.history:

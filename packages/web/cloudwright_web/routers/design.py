@@ -10,23 +10,12 @@ from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+import cloudwright_web.singletons as _singletons
 from cloudwright_web.middleware import check_api_key, check_rate_limit, error_response
 from cloudwright_web.streaming import sse_event
 
 log = logging.getLogger(__name__)
 router = APIRouter()
-
-
-def _get_architect():
-    from cloudwright_web.singletons import get_architect
-
-    return get_architect()
-
-
-def _get_cost_engine():
-    from cloudwright_web.singletons import get_cost_engine
-
-    return get_cost_engine()
 
 
 class DesignRequest(BaseModel):
@@ -48,7 +37,7 @@ async def design(req: DesignRequest, request: Request):
     if err := check_rate_limit(request):
         return err
     try:
-        architect = _get_architect()
+        architect = _singletons.get_architect()
         constraints = None
         if req.budget_monthly or req.compliance:
             constraints = Constraints(budget_monthly=req.budget_monthly, compliance=req.compliance)
@@ -59,7 +48,7 @@ async def design(req: DesignRequest, request: Request):
         except asyncio.TimeoutError:
             return error_response("llm_timeout", "Request timed out", "Try a simpler architecture description", 504)
         try:
-            cost_estimate = await asyncio.to_thread(_get_cost_engine().estimate, spec)
+            cost_estimate = await asyncio.to_thread(_singletons.get_cost_engine().estimate, spec)
             spec = spec.model_copy(update={"cost_estimate": cost_estimate})
         except Exception:
             log.warning("Cost estimation failed in design endpoint", exc_info=True)
@@ -81,7 +70,7 @@ async def design_stream(req: DesignRequest, request: Request):
         return err
 
     async def event_generator():
-        architect = _get_architect()
+        architect = _singletons.get_architect()
         constraints = None
         if req.budget_monthly or req.compliance:
             constraints = Constraints(budget_monthly=req.budget_monthly, compliance=req.compliance)
@@ -98,7 +87,7 @@ async def design_stream(req: DesignRequest, request: Request):
 
         yield sse_event("costing", message="Estimating cost...")
         try:
-            cost_estimate = await asyncio.to_thread(_get_cost_engine().estimate, spec)
+            cost_estimate = await asyncio.to_thread(_singletons.get_cost_engine().estimate, spec)
             spec = spec.model_copy(update={"cost_estimate": cost_estimate})
             yield sse_event("costed", cost_estimate=cost_estimate.model_dump())
         except Exception:
@@ -129,7 +118,7 @@ async def modify(req: ModifyRequest, request: Request):
     if err := check_rate_limit(request):
         return err
     try:
-        architect = _get_architect()
+        architect = _singletons.get_architect()
         spec = ArchSpec.model_validate(req.spec)
         try:
             updated = await asyncio.wait_for(asyncio.to_thread(architect.modify, spec, req.instruction), timeout=120)
@@ -148,7 +137,7 @@ async def modify_stream(req: ModifyRequest, request: Request):
         return err
 
     async def event_generator():
-        architect = _get_architect()
+        architect = _singletons.get_architect()
         spec = ArchSpec.model_validate(req.spec)
 
         yield sse_event("modifying", message="Applying modifications...")
@@ -163,7 +152,7 @@ async def modify_stream(req: ModifyRequest, request: Request):
 
         yield sse_event("costing", message="Estimating cost...")
         try:
-            cost_estimate = await asyncio.to_thread(_get_cost_engine().estimate, updated)
+            cost_estimate = await asyncio.to_thread(_singletons.get_cost_engine().estimate, updated)
             updated = updated.model_copy(update={"cost_estimate": cost_estimate})
             yield sse_event("costed", cost_estimate=cost_estimate.model_dump())
         except Exception:

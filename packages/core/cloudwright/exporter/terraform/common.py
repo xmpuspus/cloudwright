@@ -20,7 +20,7 @@ _REQUIRED_PROVIDERS: dict[str, dict] = {
         "source": "hashicorp/azurerm",
         "version": "= 4.14.0",
     },
-    "databricks": {"source": "databricks/databricks", "version": "~> 1.65"},
+    "databricks": {"source": "databricks/databricks", "version": "= 1.65.0"},
 }
 
 

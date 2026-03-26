@@ -18,15 +18,15 @@ router = APIRouter()
 
 
 def _get_architect():
-    import cloudwright_web.app as _app
+    from cloudwright_web.singletons import get_architect
 
-    return _app.get_architect()
+    return get_architect()
 
 
 def _get_cost_engine():
-    import cloudwright_web.app as _app
+    from cloudwright_web.singletons import get_cost_engine
 
-    return _app.get_cost_engine()
+    return get_cost_engine()
 
 
 class DesignRequest(BaseModel):

@@ -30,7 +30,7 @@ class TestMissingApiKeyError:
 
         with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.llm = MagicMock()
-            with patch("cloudwright.architect.ConversationSession", return_value=mock_session):
+            with patch("cloudwright.session.ConversationSession", return_value=mock_session):
                 resp = client.post("/api/chat", json={"message": "design something"})
 
         assert resp.status_code == 503

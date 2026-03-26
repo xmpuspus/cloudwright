@@ -28,7 +28,7 @@ class TestChatResponseUsage:
 
         with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.llm = MagicMock()
-            with patch("cloudwright.architect.ConversationSession", return_value=session):
+            with patch("cloudwright.session.ConversationSession", return_value=session):
                 resp = client.post("/api/chat", json={"message": "describe my app"})
 
         assert resp.status_code == 200
@@ -40,7 +40,7 @@ class TestChatResponseUsage:
 
         with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.llm = MagicMock()
-            with patch("cloudwright.architect.ConversationSession", return_value=session):
+            with patch("cloudwright.session.ConversationSession", return_value=session):
                 resp = client.post("/api/chat", json={"message": "describe my app"})
 
         assert resp.status_code == 200
@@ -55,7 +55,7 @@ class TestUsageHasTokenCounts:
 
         with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.llm = MagicMock()
-            with patch("cloudwright.architect.ConversationSession", return_value=session):
+            with patch("cloudwright.session.ConversationSession", return_value=session):
                 resp = client.post("/api/chat", json={"message": "design a web app"})
 
         data = resp.json()
@@ -68,7 +68,7 @@ class TestUsageHasTokenCounts:
 
         with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.llm = MagicMock()
-            with patch("cloudwright.architect.ConversationSession", return_value=session):
+            with patch("cloudwright.session.ConversationSession", return_value=session):
                 resp = client.post("/api/chat", json={"message": "design a backend"})
 
         usage_out = resp.json()["usage"]

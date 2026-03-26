@@ -30,7 +30,7 @@ class TestChatStreamEndpoint:
 
         with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.llm = MagicMock()
-            with patch("cloudwright.architect.ConversationSession", return_value=mock_session):
+            with patch("cloudwright.session.ConversationSession", return_value=mock_session):
                 resp = client.post(
                     "/api/chat/stream",
                     json={"message": "design a simple app"},
@@ -44,7 +44,7 @@ class TestChatStreamEndpoint:
 
         with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.llm = MagicMock()
-            with patch("cloudwright.architect.ConversationSession", return_value=mock_session):
+            with patch("cloudwright.session.ConversationSession", return_value=mock_session):
                 resp = client.post(
                     "/api/chat/stream",
                     json={"message": "design a simple app"},
@@ -60,7 +60,7 @@ class TestChatStreamEndpoint:
 
         with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.llm = MagicMock()
-            with patch("cloudwright.architect.ConversationSession", return_value=mock_session):
+            with patch("cloudwright.session.ConversationSession", return_value=mock_session):
                 resp = client.post(
                     "/api/chat/stream",
                     json={"message": "design a simple app"},
@@ -76,7 +76,7 @@ class TestChatStreamEndpoint:
 
         with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.llm = MagicMock()
-            with patch("cloudwright.architect.ConversationSession", return_value=mock_session):
+            with patch("cloudwright.session.ConversationSession", return_value=mock_session):
                 resp = client.post(
                     "/api/chat/stream",
                     json={"message": "design something"},
@@ -92,7 +92,7 @@ class TestChatStreamEndpoint:
 
         with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.llm = MagicMock()
-            with patch("cloudwright.architect.ConversationSession", return_value=mock_session):
+            with patch("cloudwright.session.ConversationSession", return_value=mock_session):
                 resp = client.post(
                     "/api/chat/stream",
                     json={

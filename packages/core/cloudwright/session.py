@@ -1,4 +1,4 @@
-"""ConversationSession — multi-turn architecture design conversation."""
+"""Multi-turn architecture design conversation."""
 
 from __future__ import annotations
 

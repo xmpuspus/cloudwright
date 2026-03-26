@@ -1,8 +1,4 @@
-"""Prompt constants, service catalogs, and configuration data.
-
-Extracted from architect.py for maintainability. All constants are pure data
-with no runtime dependencies — safe to import anywhere.
-"""
+"""Prompt constants, service catalogs, and configuration data."""
 
 from __future__ import annotations
 

@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from cloudwright_web.middleware import check_api_key, check_rate_limit
 from cloudwright_web.singletons import get_catalog
 
 log = logging.getLogger(__name__)
@@ -27,7 +28,10 @@ class CatalogCompareRequest(BaseModel):
 
 
 @router.post("/catalog/search")
-def catalog_search(req: CatalogSearchRequest):
+def catalog_search(req: CatalogSearchRequest, request: Request):
+    check_api_key(request)
+    if err := check_rate_limit(request):
+        return err
     try:
         catalog = get_catalog()
         instances = catalog.search(
@@ -45,7 +49,10 @@ def catalog_search(req: CatalogSearchRequest):
 
 
 @router.post("/catalog/compare")
-def catalog_compare(req: CatalogCompareRequest):
+def catalog_compare(req: CatalogCompareRequest, request: Request):
+    check_api_key(request)
+    if err := check_rate_limit(request):
+        return err
     try:
         catalog = get_catalog()
         result = catalog.compare(*req.instance_names)

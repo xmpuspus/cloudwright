@@ -1,4 +1,4 @@
-"""Architect — single-shot architecture designer with template matching."""
+"""Single-shot architecture designer with template matching."""
 
 from __future__ import annotations
 

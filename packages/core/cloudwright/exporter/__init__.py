@@ -50,7 +50,7 @@ def _get_all_formats() -> dict[str, object]:
     return formats
 
 
-_DANGEROUS_PATTERNS = re.compile(r"[;|&`]|\$\(|\$\{")
+_DANGEROUS_PATTERNS = re.compile(r"[;|&`]|\$\(|\$\{|%\{")
 
 
 def validate_export_config(config: dict, path: str = "") -> None:

@@ -41,9 +41,7 @@ def register(mcp: FastMCP) -> None:
             except FileNotFoundError:
                 return {"error": f"Session {session_id!r} not found. Create one with chat_create_session."}
 
-        text, spec = session.send(message)
-
-        with _lock:
+            text, spec = session.send(message)
             store.save(session_id, session)
 
         return {

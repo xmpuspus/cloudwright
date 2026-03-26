@@ -9,9 +9,10 @@ import logging
 import time
 
 from cloudwright import ArchSpec
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from cloudwright_web.middleware import check_api_key, check_rate_limit
 from cloudwright_web.singletons import get_architect, get_cost_engine
 
 log = logging.getLogger(__name__)
@@ -72,7 +73,10 @@ class CostRequest(BaseModel):
 
 
 @router.post("/cost")
-async def cost(req: CostRequest):
+async def cost(req: CostRequest, request: Request):
+    check_api_key(request)
+    if err := check_rate_limit(request):
+        return err
     try:
         spec_dict = req.spec
         cached = cache.get_cost(spec_dict)

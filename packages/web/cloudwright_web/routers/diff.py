@@ -6,8 +6,10 @@ import logging
 
 from cloudwright.differ import Differ
 from cloudwright.spec import ArchSpec
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
+
+from cloudwright_web.middleware import check_api_key, check_rate_limit
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +22,10 @@ class DiffRequest(BaseModel):
 
 
 @router.post("/diff")
-def diff(req: DiffRequest):
+def diff(req: DiffRequest, request: Request):
+    check_api_key(request)
+    if err := check_rate_limit(request):
+        return err
     try:
         differ = Differ()
         old = ArchSpec.model_validate(req.old_spec)

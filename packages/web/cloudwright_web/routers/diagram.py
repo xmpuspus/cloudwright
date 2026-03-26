@@ -6,11 +6,16 @@ from cloudwright import ArchSpec
 from fastapi import APIRouter, Request
 from fastapi.responses import Response
 
+from cloudwright_web.middleware import check_api_key, check_rate_limit
+
 router = APIRouter()
 
 
 @router.post("/diagram")
 async def render_diagram(request: Request):
+    check_api_key(request)
+    if err := check_rate_limit(request):
+        return err
     data = await request.json()
     spec = ArchSpec.model_validate(data["spec"])
     fmt = data.get("format", "svg")

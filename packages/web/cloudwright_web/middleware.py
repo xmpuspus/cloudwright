@@ -6,6 +6,7 @@ import os
 import threading
 import time
 from collections import deque
+from urllib.parse import unquote
 
 from fastapi import HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,7 +17,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 class PathTraversalMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         raw_path = request.scope.get("path", "") or request.url.path
-        if ".." in raw_path:
+        if ".." in raw_path or ".." in unquote(raw_path):
             return JSONResponse(status_code=404, content={"detail": "Not found"})
         return await call_next(request)
 

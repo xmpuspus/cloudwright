@@ -1,13 +1,4 @@
-"""LLM-powered architecture designer.
-
-This module re-exports from cloudwright.session, cloudwright.designer,
-and cloudwright.parsing for backward compatibility.
-
-New code should import directly:
-    from cloudwright.session import ConversationSession
-    from cloudwright.designer import Architect
-    from cloudwright.parsing import _parse_arch_spec, _extract_json
-"""
+"""Backward-compat re-exports from session, designer, and parsing modules."""
 
 from __future__ import annotations
 

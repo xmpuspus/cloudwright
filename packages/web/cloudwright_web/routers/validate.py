@@ -7,9 +7,10 @@ import logging
 
 from cloudwright import ArchSpec
 from cloudwright.validator import Validator
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from cloudwright_web.middleware import check_api_key, check_rate_limit
 from cloudwright_web.routers.cost import cache
 
 log = logging.getLogger(__name__)
@@ -23,7 +24,10 @@ class ValidateRequest(BaseModel):
 
 
 @router.post("/validate")
-async def validate(req: ValidateRequest):
+async def validate(req: ValidateRequest, request: Request):
+    check_api_key(request)
+    if err := check_rate_limit(request):
+        return err
     try:
         key_suffix = ",".join(sorted(req.compliance)) + str(req.well_architected)
         cached = cache.get_validation(req.spec, key_suffix)

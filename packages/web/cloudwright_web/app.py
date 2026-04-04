@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import multiprocessing
+import os
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from cloudwright_web import __version__
 from cloudwright_web.middleware import (  # noqa: F401
@@ -29,6 +31,16 @@ from cloudwright_web.routers import (
 from cloudwright_web.singletons import get_architect, get_catalog, get_cost_engine  # noqa: F401
 
 
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return response
+
+
 def create_app() -> FastAPI:
     application = FastAPI(
         title="Cloudwright",
@@ -36,6 +48,7 @@ def create_app() -> FastAPI:
         description="Architecture intelligence for cloud engineers",
     )
 
+    application.add_middleware(SecurityHeadersMiddleware)
     application.add_middleware(PathTraversalMiddleware)
     add_cors(application)
 
@@ -73,6 +86,16 @@ app = create_app()
 def serve(host: str = "127.0.0.1", port: int = 8000):
     """Start the Cloudwright web server."""
     import uvicorn
+
+    from cloudwright.logging import configure_logging
+
+    configure_logging()
+
+    if not os.environ.get("CLOUDWRIGHT_API_KEY"):
+        raise SystemExit(
+            "CLOUDWRIGHT_API_KEY environment variable is required when running the web server. "
+            "Set it to a secret value that clients must pass in the X-API-Key header."
+        )
 
     workers = min(multiprocessing.cpu_count(), 4)
     uvicorn.run("cloudwright_web.app:app", host=host, port=port, workers=workers)

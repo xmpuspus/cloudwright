@@ -85,14 +85,22 @@ def error_response(code: str, message: str, suggestion: str, status_code: int = 
     )
 
 
+def _get_client_ip(request: Request) -> str:
+    """Extract client IP, respecting X-Forwarded-For when behind a trusted proxy."""
+    if os.environ.get("CLOUDWRIGHT_TRUST_PROXY"):
+        forwarded = request.headers.get("x-forwarded-for", "")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
 def check_rate_limit(request: Request):
-    ip = request.client.host if request.client else "unknown"
+    ip = _get_client_ip(request)
     allowed, retry_after = _rate_limiter.is_allowed(ip)
     if not allowed:
-        return error_response(
-            "rate_limited",
-            "Too many requests",
-            f"Wait {retry_after} seconds before retrying",
+        return JSONResponse(
             status_code=429,
+            content={"code": "rate_limited", "message": "Too many requests", "suggestion": f"Wait {retry_after} seconds before retrying"},
+            headers={"Retry-After": str(retry_after)},
         )
     return None

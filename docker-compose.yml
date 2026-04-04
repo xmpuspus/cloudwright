@@ -1,0 +1,11 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - CLOUDWRIGHT_API_KEY=${CLOUDWRIGHT_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CLOUDWRIGHT_CORS_ORIGINS=${CLOUDWRIGHT_CORS_ORIGINS:-http://localhost:5173}
+      - CLOUDWRIGHT_LOG_FORMAT=json
+    restart: unless-stopped

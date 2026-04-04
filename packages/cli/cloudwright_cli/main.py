@@ -49,6 +49,9 @@ def main(
     dry_run: bool = typer.Option(False, "--dry-run", help="Preview LLM operations without calling the API"),
     stream: bool = typer.Option(False, "--stream", help="NDJSON streaming output (one JSON line per item)"),
 ) -> None:
+    from cloudwright.logging import configure_logging
+
+    configure_logging()
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
     ctx.obj["json"] = json_output

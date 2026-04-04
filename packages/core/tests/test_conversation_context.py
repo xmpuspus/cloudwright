@@ -53,8 +53,9 @@ def test_trimmed_history_has_summary():
     session.send("add redis on aws")
     session.send("add s3 on aws")
 
-    first_content = session.history[0]["content"]
-    assert "Earlier conversation summary" in first_content
+    # Summary is now stored as a system prompt addition, not in history
+    assert hasattr(session, "_trim_summary")
+    assert "Earlier conversation summary" in session._trim_summary
 
 
 def test_estimate_context_tokens():

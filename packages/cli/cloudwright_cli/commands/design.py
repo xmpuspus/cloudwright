@@ -27,7 +27,10 @@ def design(
     region: Annotated[str, typer.Option(help="Primary region")] = "us-east-1",
     budget: Annotated[float | None, typer.Option(help="Monthly budget in USD")] = None,
     compliance: Annotated[
-        list[str] | None, typer.Option(help="Compliance frameworks (hipaa, pci-dss, soc2, fedramp, gdpr)", autocompletion=_complete_compliance)
+        list[str] | None,
+        typer.Option(
+            help="Compliance frameworks (hipaa, pci-dss, soc2, fedramp, gdpr)", autocompletion=_complete_compliance
+        ),
     ] = None,
     output: Annotated[Path | None, typer.Option("--output", "-o", help="Write YAML to file")] = None,
     yaml_output: Annotated[bool, typer.Option("--yaml")] = False,

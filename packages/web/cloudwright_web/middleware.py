@@ -100,7 +100,11 @@ def check_rate_limit(request: Request):
     if not allowed:
         return JSONResponse(
             status_code=429,
-            content={"code": "rate_limited", "message": "Too many requests", "suggestion": f"Wait {retry_after} seconds before retrying"},
+            content={
+                "code": "rate_limited",
+                "message": "Too many requests",
+                "suggestion": f"Wait {retry_after} seconds before retrying",
+            },
             headers={"Retry-After": str(retry_after)},
         )
     return None

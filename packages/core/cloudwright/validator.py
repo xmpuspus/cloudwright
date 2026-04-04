@@ -757,7 +757,18 @@ def _check_gdpr(spec: ArchSpec) -> ValidationResult:
 
     # Data residency — regions must be EU (across all providers)
     regions = _get_regions(spec)
-    _eu_prefixes = ("eu-", "europe-", "northeurope", "westeurope", "germanywestcentral", "swedencentral", "francesouth", "francecentral", "switzerlandnorth", "norwayeast")
+    _eu_prefixes = (
+        "eu-",
+        "europe-",
+        "northeurope",
+        "westeurope",
+        "germanywestcentral",
+        "swedencentral",
+        "francesouth",
+        "francecentral",
+        "switzerlandnorth",
+        "norwayeast",
+    )
     non_eu = [r for r in regions if not any(r.startswith(p) for p in _eu_prefixes)]
     checks.append(
         ValidationCheck(

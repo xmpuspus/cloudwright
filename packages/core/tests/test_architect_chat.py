@@ -200,7 +200,7 @@ class TestModify:
         assert "Current architecture:" in prompt
         assert "Add monitoring" in prompt
 
-    def test_modify_preserves_cost_estimate(self):
+    def test_modify_marks_cost_stale_when_llm_omits_cost(self):
         from cloudwright.spec import CostEstimate
 
         updated_json = _make_spec_json("Base App")
@@ -209,9 +209,9 @@ class TestModify:
         session.current_spec.cost_estimate = CostEstimate(monthly_total=500.0, components=[])
 
         result = session.modify("Minor tweak")
-        # Cost should be carried over since LLM response had none
-        assert result.cost_estimate is not None
-        assert result.cost_estimate.monthly_total == 500.0
+        # Cost should be cleared with stale flag since LLM response had none
+        assert result.cost_estimate is None
+        assert result.metadata["cost_stale"] is True
 
 
 # Constraints propagation

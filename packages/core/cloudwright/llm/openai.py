@@ -54,7 +54,7 @@ class OpenAILLM(BaseLLM):
         self, messages: list[dict], system: str, max_tokens: int = 2000, timeout: float | None = None
     ) -> Iterator[str]:
         full_messages = [{"role": "system", "content": system}] + messages
-        kwargs = dict(model=GENERATE_MODEL, max_tokens=max_tokens, messages=full_messages, stream=True)
+        kwargs = dict(model=GENERATE_MODEL, max_completion_tokens=max_tokens, messages=full_messages, stream=True)
         if timeout is not None:
             kwargs["timeout"] = timeout
         delay = 1.0
@@ -75,7 +75,7 @@ class OpenAILLM(BaseLLM):
     def _call(
         self, model: str, messages: list[dict], max_tokens: int, timeout: float | None = None
     ) -> tuple[str, dict]:
-        kwargs = dict(model=model, max_tokens=max_tokens, messages=messages)
+        kwargs = dict(model=model, max_completion_tokens=max_tokens, messages=messages)
         if timeout is not None:
             kwargs["timeout"] = timeout
         delay = 1.0

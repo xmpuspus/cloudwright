@@ -54,7 +54,7 @@ def _build_properties(c: "Component") -> dict[str, Any]:
             "DBInstanceClass": cfg.get("instance_class", "db.t3.medium"),
             "Engine": cfg.get("engine", "mysql"),
             "AllocatedStorage": str(cfg.get("allocated_storage", 20)),
-            "MasterUsername": "admin",
+            "MasterUsername": {"Ref": "DBUsername"},
             "MasterUserPassword": {"Ref": "DBPassword"},
             "Tags": tags,
         }
@@ -200,6 +200,11 @@ def render(spec: "ArchSpec") -> str:
             "Environment": {
                 "Type": "String",
                 "Default": "production",
+            },
+            "DBUsername": {
+                "Type": "String",
+                "Description": "Database master username",
+                "Default": "dbadmin",
             },
             "DBPassword": {
                 "Type": "String",

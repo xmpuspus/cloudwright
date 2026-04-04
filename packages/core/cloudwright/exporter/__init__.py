@@ -88,10 +88,9 @@ def export_spec(spec: ArchSpec, fmt: str, output: str | None = None, output_dir:
     """Export an ArchSpec to the given format. Returns the rendered string."""
     fmt = fmt.lower().strip()
 
-    # Validate all component configs before exporting to IaC formats
-    if fmt in ("terraform", "cloudformation", "cfn"):
-        for comp in spec.components:
-            validate_export_config(comp.config, path=f"component[{comp.id}].config")
+    # Validate all component configs before exporting (prevents injection in any format)
+    for comp in spec.components:
+        validate_export_config(comp.config, path=f"component[{comp.id}].config")
 
     if fmt == "terraform":
         from cloudwright.exporter.terraform import render

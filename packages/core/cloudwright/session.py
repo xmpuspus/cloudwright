@@ -123,9 +123,11 @@ class ConversationSession:
         if self.current_spec is None:
             raise ValueError("No current architecture to modify. Use send() to create one first.")
 
+        from cloudwright.evolution import create_version
         from cloudwright.parsing import _extract_json, _parse_arch_spec
 
         old_spec = self.current_spec
+        create_version(old_spec, description=f"Before modify: {instruction[:100]}")
         current_json = _slim_for_modify(self.current_spec)
         prompt = f"Current architecture:\n{current_json}\n\nModification: {instruction}"
 

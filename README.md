@@ -70,6 +70,42 @@ cloudwright chat --web     # browser UI
 
 ## What's New
 
+### v1.1.0 — Security Hardening, OpenAI Support, Docker (2026-04-04)
+
+<p align="center">
+  <img src="examples/cloudwright-v110-demo.gif" alt="Cloudwright v1.1.0 Demo" width="720">
+</p>
+
+<p align="center"><em>v1.1.0 — API key enforcement, OpenAI provider routing, provider-aware service normalization, Docker deployment, and security headers.</em></p>
+
+Security hardening, reliability fixes, and multi-provider LLM support across all 4 packages. 32 files changed, 389 insertions.
+
+**Security.** Web server now requires `CLOUDWRIGHT_API_KEY` at startup (fail-fast). New `SecurityHeadersMiddleware` adds `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Content-Security-Policy`, and `Referrer-Policy` to all responses. Rate limiter returns `Retry-After` header on 429s. `X-Forwarded-For` parsing behind reverse proxy via `CLOUDWRIGHT_TRUST_PROXY`. Client-supplied assistant-role messages rejected from chat history to prevent prompt injection.
+
+**OpenAI provider.** Full `OpenAILLM` implementation with generate, generate_fast, and streaming. Set `CLOUDWRIGHT_LLM_PROVIDER=openai` or let it auto-detect from `OPENAI_API_KEY`. Override the model with `CLOUDWRIGHT_MODEL` (e.g., `gpt-5`, `claude-opus-4-6`).
+
+```bash
+export CLOUDWRIGHT_LLM_PROVIDER=openai
+export OPENAI_API_KEY=sk-...
+cloudwright design "3-tier app on AWS"    # uses GPT-5.2
+```
+
+**Reliability.** History trimming fixed — summaries now go into the system prompt instead of injecting a user message (which caused Anthropic 400 errors on 50+ turn sessions). `send()` and `send_stream()` pop orphaned history on LLM failure. `generate_stream` retries on rate limits for both providers. Usage tracking added to streaming responses.
+
+**IaC security defaults.** Terraform: `username → var.db_username`, `skip_final_snapshot → false`, ECR `IMMUTABLE` tags. CloudFormation: `MasterUsername → !Ref DBUsername`. Config validation applied to all export formats, not just IaC.
+
+**Provider-aware normalization.** `redis` maps to `elasticache` on AWS, `memorystore` on GCP, `azure_cache` on Azure. Same for `postgres`, `mongodb`, `kubernetes`, `docker`. GDPR validator recognizes GCP `europe-*` and Azure `northeurope`/`westeurope` regions.
+
+**Docker deployment.** New `Dockerfile` (python:3.12-slim) and `docker-compose.yml` for containerized web server.
+
+```bash
+CLOUDWRIGHT_API_KEY=secret ANTHROPIC_API_KEY=sk-ant-... docker compose up
+```
+
+**CI/CD.** PyPI publish now requires passing tests (`needs: [test]`). Coverage floor at 70%. Architecture review action YAML fixed. `configure_logging()` called in both CLI and web entrypoints.
+
+**Also wired up:** `create_version()` called before `modify()`, MCP lock scoped to store I/O only, tab completions for provider/compliance, health endpoint returns 503 without LLM key, SSE queue bounded to 256.
+
 ### v1.0.0 — Production-Ready Architecture (2026-03-26)
 
 <p align="center">

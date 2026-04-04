@@ -93,13 +93,24 @@ def serverless_spec():
 
 
 class TestHealth:
-    def test_health_returns_ok(self, client):
+    @pytest.mark.parametrize("env_key", ["ANTHROPIC_API_KEY", "OPENAI_API_KEY"])
+    def test_health_returns_ok_with_llm_key(self, client, env_key, monkeypatch):
+        monkeypatch.setenv(env_key, "test-key")
         resp = client.get("/api/health")
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "ok"
 
-    def test_health_has_catalog(self, client):
+    def test_health_returns_503_without_llm_key(self, client, monkeypatch):
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        resp = client.get("/api/health")
+        assert resp.status_code == 503
+        data = resp.json()
+        assert data["status"] == "degraded"
+
+    def test_health_has_catalog(self, client, monkeypatch):
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
         resp = client.get("/api/health")
         data = resp.json()
         assert "catalog_loaded" in data

@@ -60,6 +60,8 @@ runs:
         HAS_ERRORS=0
         HAS_WARNINGS=0
 
+        _append() { RESULTS="$RESULTS"$'\n'"## $1"$'\n'"$2"$'\n'; }
+
         # Validate
         if echo "$CHECKS" | grep -q "validate"; then
           echo "::group::Validation"
@@ -71,10 +73,7 @@ runs:
           fi
           VALIDATE_OUT=$(cloudwright validate "$SPEC_FILE" $COMPLIANCE_ARGS --json 2>&1) || true
           echo "$VALIDATE_OUT"
-          RESULTS="${RESULTS}
-## Validation
-${VALIDATE_OUT}
-"
+          _append "Validation" "$VALIDATE_OUT"
           if echo "$VALIDATE_OUT" | python3 -c "import json,sys; d=json.load(sys.stdin); exit(0 if d.get('passed', True) else 1)" 2>/dev/null; then
             :
           else
@@ -88,10 +87,7 @@ ${VALIDATE_OUT}
           echo "::group::Cost Estimation"
           COST_OUT=$(cloudwright cost "$SPEC_FILE" --json 2>&1) || true
           echo "$COST_OUT"
-          RESULTS="${RESULTS}
-## Cost Estimate
-${COST_OUT}
-"
+          _append "Cost Estimate" "$COST_OUT"
           echo "::endgroup::"
         fi
 
@@ -100,10 +96,7 @@ ${COST_OUT}
           echo "::group::Score"
           SCORE_OUT=$(cloudwright score "$SPEC_FILE" --json 2>&1) || true
           echo "$SCORE_OUT"
-          RESULTS="${RESULTS}
-## Score
-${SCORE_OUT}
-"
+          _append "Score" "$SCORE_OUT"
           echo "::endgroup::"
         fi
 
@@ -112,10 +105,7 @@ ${SCORE_OUT}
           echo "::group::Lint"
           LINT_OUT=$(cloudwright lint "$SPEC_FILE" --json 2>&1) || true
           echo "$LINT_OUT"
-          RESULTS="${RESULTS}
-## Lint
-${LINT_OUT}
-"
+          _append "Lint" "$LINT_OUT"
           if echo "$LINT_OUT" | python3 -c "import json,sys; d=json.load(sys.stdin); issues=d if isinstance(d,list) else d.get('issues',[]); exit(1 if any(i.get('severity')=='error' for i in issues if isinstance(i,dict)) else 0)" 2>/dev/null; then
             :
           else
@@ -129,10 +119,7 @@ ${LINT_OUT}
           echo "::group::Blast Radius Analysis"
           ANALYZE_OUT=$(cloudwright analyze "$SPEC_FILE" --json 2>&1) || true
           echo "$ANALYZE_OUT"
-          RESULTS="${RESULTS}
-## Analyze
-${ANALYZE_OUT}
-"
+          _append "Analyze" "$ANALYZE_OUT"
           echo "::endgroup::"
         fi
 
@@ -141,10 +128,7 @@ ${ANALYZE_OUT}
           echo "::group::Diff"
           DIFF_OUT=$(cloudwright diff "$OLD_SPEC_FILE" "$SPEC_FILE" --json 2>&1) || true
           echo "$DIFF_OUT"
-          RESULTS="${RESULTS}
-## Diff
-${DIFF_OUT}
-"
+          _append "Diff" "$DIFF_OUT"
           echo "::endgroup::"
         fi
 
@@ -154,10 +138,7 @@ ${DIFF_OUT}
             echo "::group::Policy Check"
             POLICY_OUT=$(cloudwright policy "$SPEC_FILE" "$POLICY_FILE" --json 2>&1) || true
             echo "$POLICY_OUT"
-            RESULTS="${RESULTS}
-## Policy
-${POLICY_OUT}
-"
+            _append "Policy" "$POLICY_OUT"
             if echo "$POLICY_OUT" | python3 -c "import json,sys; d=json.load(sys.stdin); exit(0 if d.get('passed', True) else 1)" 2>/dev/null; then
               :
             else

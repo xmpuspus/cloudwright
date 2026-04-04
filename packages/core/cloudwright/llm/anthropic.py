@@ -14,7 +14,7 @@ from cloudwright.logging import get_logger
 
 log = get_logger(__name__)
 
-GENERATE_MODEL = "claude-sonnet-4-6"
+GENERATE_MODEL = os.environ.get("CLOUDWRIGHT_MODEL") or "claude-sonnet-4-6"
 FAST_MODEL = "claude-haiku-4-5-20251001"
 _MAX_RETRIES = int(os.environ.get("CLOUDWRIGHT_LLM_MAX_RETRIES", 3))
 

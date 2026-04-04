@@ -14,7 +14,7 @@ from cloudwright.logging import get_logger
 
 log = get_logger(__name__)
 
-GENERATE_MODEL = "gpt-5.2"
+GENERATE_MODEL = os.environ.get("CLOUDWRIGHT_MODEL") or "gpt-5.2"
 FAST_MODEL = "gpt-5-mini"
 _MAX_RETRIES = int(os.environ.get("CLOUDWRIGHT_LLM_MAX_RETRIES", 3))
 

@@ -105,4 +105,6 @@ class TestChatStreamEndpoint:
                 )
 
         assert resp.status_code == 200
-        assert len(mock_session.history) == 2
+        # Only user-role messages are accepted from client history (security fix)
+        assert len(mock_session.history) == 1
+        assert mock_session.history[0]["role"] == "user"

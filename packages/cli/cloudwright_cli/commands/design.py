@@ -13,6 +13,8 @@ from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.table import Table
 
+from cloudwright_cli.completions import complete_compliance as _complete_compliance
+from cloudwright_cli.completions import complete_provider as _complete_provider
 from cloudwright_cli.output import emit_dry_run, emit_error, emit_success, is_json_mode
 
 console = Console()
@@ -21,11 +23,14 @@ console = Console()
 def design(
     ctx: typer.Context,
     description: Annotated[str, typer.Argument(help="Natural language architecture description")],
-    provider: Annotated[str, typer.Option(help="Cloud provider")] = "aws",
+    provider: Annotated[str, typer.Option(help="Cloud provider", autocompletion=_complete_provider)] = "aws",
     region: Annotated[str, typer.Option(help="Primary region")] = "us-east-1",
     budget: Annotated[float | None, typer.Option(help="Monthly budget in USD")] = None,
     compliance: Annotated[
-        list[str] | None, typer.Option(help="Compliance frameworks (hipaa, pci-dss, soc2, fedramp, gdpr)")
+        list[str] | None,
+        typer.Option(
+            help="Compliance frameworks (hipaa, pci-dss, soc2, fedramp, gdpr)", autocompletion=_complete_compliance
+        ),
     ] = None,
     output: Annotated[Path | None, typer.Option("--output", "-o", help="Write YAML to file")] = None,
     yaml_output: Annotated[bool, typer.Option("--yaml")] = False,

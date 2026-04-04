@@ -14,7 +14,7 @@ from cloudwright.logging import get_logger
 
 log = get_logger(__name__)
 
-GENERATE_MODEL = "claude-sonnet-4-6"
+GENERATE_MODEL = os.environ.get("CLOUDWRIGHT_MODEL") or "claude-sonnet-4-6"
 FAST_MODEL = "claude-haiku-4-5-20251001"
 _MAX_RETRIES = int(os.environ.get("CLOUDWRIGHT_LLM_MAX_RETRIES", 3))
 
@@ -55,9 +55,18 @@ class AnthropicLLM(BaseLLM):
         kwargs = dict(model=GENERATE_MODEL, max_tokens=max_tokens, system=system_block, messages=messages)
         if timeout is not None:
             kwargs["timeout"] = timeout
-        with self.client.messages.stream(**kwargs) as stream:
-            for text in stream.text_stream:
-                yield text
+        delay = 1.0
+        for attempt in range(_MAX_RETRIES):
+            try:
+                with self.client.messages.stream(**kwargs) as stream:
+                    for text in stream.text_stream:
+                        yield text
+                return
+            except _RETRYABLE:
+                if attempt == _MAX_RETRIES - 1:
+                    raise
+                time.sleep(delay * (1 + random.uniform(0, 0.5)))
+                delay *= 2
 
     def _call(
         self, model: str, messages: list[dict], system: str, max_tokens: int, timeout: float | None = None

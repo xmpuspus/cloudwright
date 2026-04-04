@@ -13,14 +13,14 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
       - name: Find changed specs
         id: specs
         run: |
-          SPECS=$(git diff --name-only HEAD~1 HEAD -- '*.yaml' '*.yml' | grep -E '(spec|arch)' | head -1 || true)
+          SPECS=$(git diff --name-only HEAD~1 HEAD -- '*.yaml' '*.yml' | grep -v '^\.github/' | grep -E '(spec|arch)' | head -1 || true)
           echo "file=$SPECS" >> "$GITHUB_OUTPUT"
           echo "found=$([ -n "$SPECS" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 

@@ -41,6 +41,8 @@ async def chat(req: ChatRequest, request: Request):
         session = ConversationSession(llm=architect.llm)
 
         for msg in req.history:
+            if msg.role != "user":
+                continue  # only accept user-role messages from client history
             session.history.append({"role": msg.role, "content": msg.content})
 
         try:
@@ -85,10 +87,12 @@ async def chat_stream(req: ChatRequest, request: Request):
         session = ConversationSession(llm=architect.llm)
 
         for msg in req.history:
+            if msg.role != "user":
+                continue  # only accept user-role messages from client history
             session.history.append({"role": msg.role, "content": msg.content})
 
         try:
-            queue: asyncio.Queue = asyncio.Queue()
+            queue: asyncio.Queue = asyncio.Queue(maxsize=256)
             loop = asyncio.get_running_loop()
 
             def _run_stream():

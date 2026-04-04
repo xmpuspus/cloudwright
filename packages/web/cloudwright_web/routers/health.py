@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 import cloudwright_web.singletons as _singletons
 
@@ -14,6 +15,13 @@ router = APIRouter()
 
 @router.get("/health")
 def health():
+    # Check LLM key presence
+    has_llm_key = bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("OPENAI_API_KEY"))
+    if not has_llm_key:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "degraded", "reason": "No LLM API key configured (ANTHROPIC_API_KEY or OPENAI_API_KEY)"},
+        )
     try:
         catalog = _singletons.get_catalog()
         results = catalog.search(query="m5", limit=1)

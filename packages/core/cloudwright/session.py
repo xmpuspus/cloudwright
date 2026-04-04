@@ -70,7 +70,11 @@ class ConversationSession:
         self._trim_history()
         self.history.append({"role": "user", "content": message})
         system = self._build_system_with_hints(CHAT_SYSTEM)
-        text, usage = self.llm.generate(self.history, system, max_tokens=10000)
+        try:
+            text, usage = self.llm.generate(self.history, system, max_tokens=10000)
+        except Exception:
+            self.history.pop()  # remove orphaned user message
+            raise
         self._track_usage(usage)
         self.history.append({"role": "assistant", "content": text})
 
@@ -90,12 +94,21 @@ class ConversationSession:
         system = self._build_system_with_hints(CHAT_SYSTEM)
 
         accumulated = []
-        for chunk in self.llm.generate_stream(self.history, system, max_tokens=10000):
-            accumulated.append(chunk)
-            yield chunk
+        try:
+            for chunk in self.llm.generate_stream(self.history, system, max_tokens=10000):
+                accumulated.append(chunk)
+                yield chunk
+        except Exception:
+            self.history.pop()  # remove orphaned user message
+            raise
 
         full_text = "".join(accumulated)
         self.history.append({"role": "assistant", "content": full_text})
+
+        # Track usage from stream (estimate from accumulated text)
+        estimated_output = len(full_text) // 4
+        estimated_input = self.estimate_context_tokens()
+        self._track_usage({"input_tokens": estimated_input, "output_tokens": estimated_output})
 
         spec = self._try_parse_spec(full_text)
         if spec is not None:
@@ -110,9 +123,11 @@ class ConversationSession:
         if self.current_spec is None:
             raise ValueError("No current architecture to modify. Use send() to create one first.")
 
+        from cloudwright.evolution import create_version
         from cloudwright.parsing import _extract_json, _parse_arch_spec
 
         old_spec = self.current_spec
+        create_version(old_spec, description=f"Before modify: {instruction[:100]}")
         current_json = _slim_for_modify(self.current_spec)
         prompt = f"Current architecture:\n{current_json}\n\nModification: {instruction}"
 
@@ -159,7 +174,13 @@ class ConversationSession:
                 self._add_error_hint("Do not remove existing components unless explicitly asked")
 
         if self.current_spec.cost_estimate and not updated.cost_estimate:
-            updated = updated.model_copy(update={"cost_estimate": self.current_spec.cost_estimate})
+            updated = updated.model_copy(update={"cost_estimate": None})
+            if not hasattr(updated, "metadata") or updated.metadata is None:
+                updated = updated.model_copy(update={"metadata": {"cost_stale": True}})
+            else:
+                meta = dict(updated.metadata) if isinstance(updated.metadata, dict) else {}
+                meta["cost_stale"] = True
+                updated = updated.model_copy(update={"metadata": meta})
 
         self.current_spec = updated
 
@@ -217,8 +238,8 @@ class ConversationSession:
             role = msg["role"]
             content = msg.get("content", "")[:200]
             summary_parts.append(f"{role}: {content}")
-        summary_text = "Earlier conversation summary:\n" + "\n".join(summary_parts)
-        self.history = [{"role": "user", "content": summary_text}] + self.history[messages_to_trim:]
+        self._trim_summary = "Earlier conversation summary:\n" + "\n".join(summary_parts)
+        self.history = self.history[messages_to_trim:]
 
     def to_dict(self) -> dict:
         return {
@@ -275,10 +296,13 @@ class ConversationSession:
             return None
 
     def _build_system_with_hints(self, base_system: str) -> str:
-        if not self._error_hints:
-            return base_system
-        hints = "\n".join(f"- {h}" for h in self._error_hints[-_MAX_ERROR_HINTS:])
-        return f"{base_system}\n\nLEARNINGS FROM THIS SESSION (avoid repeating):\n{hints}"
+        parts = [base_system]
+        if getattr(self, "_trim_summary", None):
+            parts.append(f"\nCONVERSATION CONTEXT:\n{self._trim_summary}")
+        if self._error_hints:
+            hints = "\n".join(f"- {h}" for h in self._error_hints[-_MAX_ERROR_HINTS:])
+            parts.append(f"\nLEARNINGS FROM THIS SESSION (avoid repeating):\n{hints}")
+        return "\n".join(parts)
 
 
 def _slim_for_modify(spec: ArchSpec) -> str:

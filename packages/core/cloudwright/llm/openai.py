@@ -14,7 +14,7 @@ from cloudwright.logging import get_logger
 
 log = get_logger(__name__)
 
-GENERATE_MODEL = "gpt-5.2"
+GENERATE_MODEL = os.environ.get("CLOUDWRIGHT_MODEL") or "gpt-5.2"
 FAST_MODEL = "gpt-5-mini"
 _MAX_RETRIES = int(os.environ.get("CLOUDWRIGHT_LLM_MAX_RETRIES", 3))
 
@@ -54,19 +54,28 @@ class OpenAILLM(BaseLLM):
         self, messages: list[dict], system: str, max_tokens: int = 2000, timeout: float | None = None
     ) -> Iterator[str]:
         full_messages = [{"role": "system", "content": system}] + messages
-        kwargs = dict(model=GENERATE_MODEL, max_tokens=max_tokens, messages=full_messages, stream=True)
+        kwargs = dict(model=GENERATE_MODEL, max_completion_tokens=max_tokens, messages=full_messages, stream=True)
         if timeout is not None:
             kwargs["timeout"] = timeout
-        stream = self.client.chat.completions.create(**kwargs)
-        for chunk in stream:
-            content = chunk.choices[0].delta.content
-            if content:
-                yield content
+        delay = 1.0
+        for attempt in range(_MAX_RETRIES):
+            try:
+                stream = self.client.chat.completions.create(**kwargs)
+                for chunk in stream:
+                    content = chunk.choices[0].delta.content
+                    if content:
+                        yield content
+                return
+            except _RETRYABLE:
+                if attempt == _MAX_RETRIES - 1:
+                    raise
+                time.sleep(delay * (1 + random.uniform(0, 0.5)))
+                delay *= 2
 
     def _call(
         self, model: str, messages: list[dict], max_tokens: int, timeout: float | None = None
     ) -> tuple[str, dict]:
-        kwargs = dict(model=model, max_tokens=max_tokens, messages=messages)
+        kwargs = dict(model=model, max_completion_tokens=max_tokens, messages=messages)
         if timeout is not None:
             kwargs["timeout"] = timeout
         delay = 1.0

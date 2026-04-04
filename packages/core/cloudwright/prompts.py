@@ -272,6 +272,18 @@ DEFAULT_CONNECTION_PROTOCOLS: list[tuple[tuple[int, int], str, int]] = [
 
 # -- Service normalization for LLM output drift ------------------------------------
 
+# Provider-aware normalization: ambiguous service names resolve differently per provider.
+# Keys that are unambiguous map to a single target. Keys that depend on provider
+# are handled by normalize_service(raw, provider) below.
+_PROVIDER_SPECIFIC_NORMALIZATION: dict[str, dict[str, str]] = {
+    "redis": {"aws": "elasticache", "gcp": "memorystore", "azure": "azure_cache"},
+    "postgres": {"aws": "rds", "gcp": "cloud_sql", "azure": "azure_sql"},
+    "mysql": {"aws": "rds", "gcp": "cloud_sql", "azure": "azure_sql"},
+    "mongodb": {"aws": "dynamodb", "gcp": "firestore", "azure": "cosmos_db"},
+    "kubernetes": {"aws": "eks", "gcp": "gke", "azure": "aks"},
+    "docker": {"aws": "ecs", "gcp": "cloud_run", "azure": "container_apps"},
+}
+
 SERVICE_NORMALIZATION: dict[str, str] = {
     "aws_rds": "rds",
     "aws_lambda": "lambda",
@@ -592,3 +604,12 @@ RULES:
 - Design a single provider-agnostic architecture using the primary provider's service keys
 - Include realistic instance types and configurations for accurate pricing
 - Respond with ONLY the JSON object"""
+
+
+def normalize_service(raw: str, provider: str | None = None) -> str:
+    """Normalize a raw service name, using provider context for ambiguous names."""
+    key = raw.lower().strip()
+    if provider and key in _PROVIDER_SPECIFIC_NORMALIZATION:
+        provider_map = _PROVIDER_SPECIFIC_NORMALIZATION[key]
+        return provider_map.get(provider.lower(), SERVICE_NORMALIZATION.get(key, key))
+    return SERVICE_NORMALIZATION.get(key, key)

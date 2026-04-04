@@ -57,11 +57,20 @@ class OpenAILLM(BaseLLM):
         kwargs = dict(model=GENERATE_MODEL, max_tokens=max_tokens, messages=full_messages, stream=True)
         if timeout is not None:
             kwargs["timeout"] = timeout
-        stream = self.client.chat.completions.create(**kwargs)
-        for chunk in stream:
-            content = chunk.choices[0].delta.content
-            if content:
-                yield content
+        delay = 1.0
+        for attempt in range(_MAX_RETRIES):
+            try:
+                stream = self.client.chat.completions.create(**kwargs)
+                for chunk in stream:
+                    content = chunk.choices[0].delta.content
+                    if content:
+                        yield content
+                return
+            except _RETRYABLE:
+                if attempt == _MAX_RETRIES - 1:
+                    raise
+                time.sleep(delay * (1 + random.uniform(0, 0.5)))
+                delay *= 2
 
     def _call(
         self, model: str, messages: list[dict], max_tokens: int, timeout: float | None = None

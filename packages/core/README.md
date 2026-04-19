@@ -1,5 +1,10 @@
 # Cloudwright
 
+[![PyPI](https://img.shields.io/pypi/v/cloudwright-ai.svg)](https://pypi.org/project/cloudwright-ai/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/xmpuspus/cloudwright/blob/main/LICENSE)
+[![Python 3.12+](https://img.shields.io/pypi/pyversions/cloudwright-ai)](https://pypi.org/project/cloudwright-ai/)
+[![xmpuspus/cloudwright MCP server](https://glama.ai/mcp/servers/xmpuspus/cloudwright/badges/score.svg)](https://glama.ai/mcp/servers/xmpuspus/cloudwright)
+
 Architecture intelligence for cloud engineers.
 
 Cloudwright bridges the gap between a whiteboard sketch and deployable infrastructure. Describe a system in natural language, and Cloudwright produces a structured architecture spec, cost estimates, compliance reports, Terraform/CloudFormation code, diagrams, and diffs — all from a single format called **ArchSpec**.

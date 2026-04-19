@@ -2,6 +2,8 @@
 
 mcp-name: io.github.xmpuspus/cloudwright
 
+[![xmpuspus/cloudwright MCP server](https://glama.ai/mcp/servers/xmpuspus/cloudwright/badges/score.svg)](https://glama.ai/mcp/servers/xmpuspus/cloudwright)
+
 MCP (Model Context Protocol) server for [Cloudwright](https://github.com/xmpuspus/cloudwright) architecture intelligence.
 
 Exposes Cloudwright's design, cost, validate, and export capabilities as MCP tools for use with Claude Code and other MCP-compatible clients.

@@ -11,9 +11,6 @@ jobs:
   publish:
     needs: [test]
     runs-on: ubuntu-latest
-    environment: release
-    permissions:
-      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -34,18 +31,22 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: packages/core/dist/
+          password: ${{ secrets.PYPI_API_TOKEN }}
 
       - name: Publish CLI to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: packages/cli/dist/
+          password: ${{ secrets.PYPI_API_TOKEN }}
 
       - name: Publish web to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: packages/web/dist/
+          password: ${{ secrets.PYPI_API_TOKEN }}
 
       - name: Publish MCP to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: packages/mcp/dist/
+          password: ${{ secrets.PYPI_API_TOKEN }}

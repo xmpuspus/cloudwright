@@ -26,6 +26,7 @@ from cloudwright_web.routers import (
     diagram_router,
     export_router,
     health_router,
+    modules_router,
     validate_router,
 )
 from cloudwright_web.singletons import get_architect, get_catalog, get_cost_engine  # noqa: F401
@@ -60,6 +61,7 @@ def create_app() -> FastAPI:
     application.include_router(validate_router, prefix="/api")
     application.include_router(export_router, prefix="/api")
     application.include_router(catalog_router, prefix="/api")
+    application.include_router(modules_router, prefix="/api")
     application.include_router(diagram_router, prefix="/api")
     application.include_router(chat_router, prefix="/api")
 

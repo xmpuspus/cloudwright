@@ -61,8 +61,7 @@ def register(mcp: FastMCP) -> None:
             str,
             Field(
                 description=(
-                    "Cloud provider slug. Values: 'aws' (47 services), 'gcp' (25), "
-                    "'azure' (28), 'databricks'."
+                    "Cloud provider slug. Values: 'aws' (47 services), 'gcp' (25), 'azure' (28), 'databricks'."
                 ),
                 examples=["aws", "gcp", "azure", "databricks"],
             ),

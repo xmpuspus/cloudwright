@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
 
 from cloudwright.exporter.terraform import aws, azure, databricks, gcp
@@ -29,6 +30,56 @@ def _providers_in_spec(spec: "ArchSpec") -> set[str]:
     for c in spec.components:
         providers.add(c.provider.lower())
     return providers & _REQUIRED_PROVIDERS.keys()
+
+
+def _terraform_label(value: str) -> str:
+    label = re.sub(r"[^a-zA-Z0-9_]+", "_", value).strip("_").lower()
+    if not label:
+        return "module"
+    if not re.match(r"^[a-zA-Z_]", label):
+        return f"module_{label}"
+    return label
+
+
+def _module_blocks(spec: "ArchSpec") -> tuple[list[str], set[str]]:
+    instances = (spec.metadata or {}).get("modules", {}).get("instances", {})
+    if not isinstance(instances, dict):
+        return [], set()
+
+    component_ids = {component.id for component in spec.components}
+    rendered: list[str] = []
+    module_component_ids: set[str] = set()
+
+    for instance_id, instance in sorted(instances.items(), key=lambda item: item[0]):
+        if not isinstance(instance, dict):
+            continue
+        terraform = instance.get("terraform") or {}
+        if not isinstance(terraform, dict) or not terraform.get("source"):
+            continue
+        ids = instance.get("component_ids") or []
+        if not isinstance(ids, list):
+            continue
+        existing_ids = [component_id for component_id in ids if component_id in component_ids]
+        expected_count = instance.get("expected_component_count")
+        if (
+            instance.get("partial")
+            or not instance.get("approved", False)
+            or (isinstance(expected_count, int) and len(existing_ids) != expected_count)
+        ):
+            continue
+
+        label = _terraform_label(str(instance_id))
+        lines = [
+            f'module "{label}" {{',
+            f'  source = "{terraform["source"]}"',
+        ]
+        if terraform.get("version"):
+            lines.append(f'  version = "{terraform["version"]}"')
+        lines.append("}")
+        rendered.append("\n".join(lines))
+        module_component_ids.update(existing_ids)
+
+    return rendered, module_component_ids
 
 
 def render(spec: "ArchSpec") -> str:
@@ -116,6 +167,11 @@ def render(spec: "ArchSpec") -> str:
     parts.append("  sensitive   = true")
     parts.append("}")
     parts.append("")
+    parts.append('variable "db_username" {')
+    parts.append('  description = "Database administrator username"')
+    parts.append('  default     = "cloudwright_admin"')
+    parts.append("}")
+    parts.append("")
     parts.append('variable "account_id" {')
     parts.append('  description = "AWS account ID"')
     parts.append('  default     = ""')
@@ -168,8 +224,16 @@ def render(spec: "ArchSpec") -> str:
         parts.append("}")
         parts.append("")
 
+    module_blocks, module_component_ids = _module_blocks(spec)
+    if module_blocks:
+        parts.append("# Modules")
+        parts.extend(module_blocks)
+        parts.append("")
+
     parts.append("# Resources")
     for c in spec.components:
+        if c.id in module_component_ids:
+            continue
         parts.append(_render_resource(c, spec))
         parts.append("")
 

@@ -55,6 +55,40 @@ const TIER_LABELS: Record<number, string> = {
   4: "Supporting",
 };
 
+function scalarToYaml(value: unknown): string {
+  if (value === null) return "null";
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  const text = String(value);
+  if (/^[A-Za-z0-9_./:@-]+$/.test(text)) return text;
+  return JSON.stringify(text);
+}
+
+function toYaml(value: unknown, indent = 0): string {
+  const pad = " ".repeat(indent);
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "[]";
+    return value.map((item) => {
+      if (item && typeof item === "object") {
+        const nested = toYaml(item, indent + 2);
+        return `${pad}- ${nested.trimStart()}`;
+      }
+      return `${pad}- ${scalarToYaml(item)}`;
+    }).join("\n");
+  }
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>).filter(([, item]) => item !== undefined);
+    if (entries.length === 0) return "{}";
+    return entries.map(([key, item]) => {
+      if (item && typeof item === "object") {
+        const nested = toYaml(item, indent + 2);
+        return `${pad}${key}:\n${nested}`;
+      }
+      return `${pad}${key}: ${scalarToYaml(item)}`;
+    }).join("\n");
+  }
+  return scalarToYaml(value);
+}
+
 function StatCard({
   label,
   value,
@@ -90,6 +124,7 @@ export default function SpecPanel({ spec, yaml }: SpecPanelProps) {
   const [tab, setTab] = useState<TabKey>("overview");
   const [copied, setCopied] = useState(false);
   const preRef = useRef<HTMLPreElement>(null);
+  const source = useMemo(() => toYaml(spec) || yaml || "", [spec, yaml]);
 
   const providers = useMemo(() => {
     const s = new Set(spec.components.map((c) => c.provider));
@@ -113,7 +148,7 @@ export default function SpecPanel({ spec, yaml }: SpecPanelProps) {
 
   const handleCopy = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(yaml);
+      await navigator.clipboard.writeText(source);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -125,17 +160,17 @@ export default function SpecPanel({ spec, yaml }: SpecPanelProps) {
         window.getSelection()?.addRange(range);
       }
     }
-  }, [yaml]);
+  }, [source]);
 
   const handleDownload = useCallback(() => {
-    const blob = new Blob([yaml], { type: "text/yaml" });
+    const blob = new Blob([source], { type: "text/yaml" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = `${spec.name?.replace(/\s+/g, "-").toLowerCase() || "architecture"}.yaml`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [yaml, spec.name]);
+  }, [source, spec.name]);
 
   return (
     <div style={{ padding: 32, maxWidth: 960 }}>
@@ -451,7 +486,7 @@ export default function SpecPanel({ spec, yaml }: SpecPanelProps) {
                 {spec.name?.replace(/\s+/g, "-").toLowerCase() || "architecture"}.yaml
               </span>
               <span style={{ fontSize: 11, color: "#cbd5e1" }}>
-                {yaml.split("\n").length} lines
+                {source.split("\n").length} lines
               </span>
             </div>
             <div style={{ display: "flex", gap: 6 }}>
@@ -505,7 +540,7 @@ export default function SpecPanel({ spec, yaml }: SpecPanelProps) {
                 wordBreak: "break-word",
               }}
             >
-              {yaml || "No YAML available"}
+              {source || "No YAML available"}
             </pre>
           </div>
         </div>

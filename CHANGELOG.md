@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-04-26
+
+### Added
+
+- Smart Canvas: web diagram is now a fully editable architecture canvas (add/connect/drag nodes, edit label/description/tier/config/tags, delete resources/connections) with deterministic frontend state mutations — no LLM `modify` calls.
+- Catalog drawer with three tabs (Resources, Modules, Standards) on the diagram tab.
+- `GET /api/catalog/services?provider={provider}` endpoint backing the Resources tab. Provider casing is normalized (e.g., `?provider=GCP` and `?provider=gcp` return the same set).
+- Approved module catalog: `GET /api/modules` and `GET /api/modules/{id}` expose curated multi-resource patterns from `packages/core/cloudwright/data/modules/`.
+- Bundled approved modules: AWS Three-Tier Web, AWS Serverless API, AWS Data Lake, GCP Serverless API, Azure Three-Tier Web.
+- `cloudwright.modules` core module: `ModuleCatalog`, `ModuleSpec`, `insert_module`, `validate_standards`, `validate_standards_from_dict` for canvas standards checks.
+- `POST /api/canvas/validate` endpoint for naming-prefix, required-tag, orphan-connection, partial-module, and unapproved-module checks.
+- `spec.metadata.canvas.nodes` namespace persisting dragged node positions (`{node_id: {x, y}}`).
+- `spec.metadata.modules.instances` namespace persisting module provenance (source module id, version, expected component count, naming prefix, required tags, generated component ids).
+- Terraform exporter emits `module "<instance_id>"` blocks with pinned `source` and `version` for intact catalog module instances; falls back to per-component resource rendering when an instance is partial.
+- `var.db_username` Terraform variable so module-aware specs `terraform validate` cleanly.
+
+### Changed
+
+- Frontend `ArchitectureDiagram` accepts an `onSpecChange` callback so the canvas can push deterministic edits back into the app-level spec, then refresh cost/validation in the background.
+- `Component.config` is now optional in the frontend type to match the canvas-add resource flow.
+
+### Fixed
+
+- Provider lookups in `/api/catalog/services` now lowercase the query parameter, so uppercase providers like `GCP` and `Azure` work.
+
 ## [1.0.0] - 2026-03-26
 
 ### Breaking

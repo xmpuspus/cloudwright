@@ -1,0 +1,61 @@
+id: gcp-serverless-api
+name: GCP Serverless API
+provider: gcp
+category: serverless
+description: Approved Google Cloud API Gateway, Cloud Functions, and Firestore pattern.
+approved: true
+tags: [api, serverless, terraform, approved]
+required_tags: [environment, owner, cost_center]
+default_tags:
+  environment: production
+  owner: platform
+  cost_center: shared
+naming:
+  component_id_prefix: gcp_api
+terraform:
+  source: registry.terraform.io/cloudwright/gcp-serverless-api/google
+  version: 1.0.0
+fragment:
+  name: GCP Serverless API Module
+  provider: gcp
+  region: us-central1
+  components:
+    - id: gateway
+      service: cloud_api_gateway
+      provider: gcp
+      label: API Gateway
+      description: Managed API ingress for serverless workloads.
+      tier: 1
+      config:
+        monthly_requests: 1000000
+    - id: function
+      service: cloud_functions
+      provider: gcp
+      label: Cloud Function
+      description: Stateless API handler.
+      tier: 2
+      config:
+        memory_mb: 512
+        avg_duration_ms: 200
+        monthly_requests: 1000000
+    - id: database
+      service: firestore
+      provider: gcp
+      label: Firestore Database
+      description: Managed document database.
+      tier: 3
+      config:
+        reads_per_month: 1000000
+        writes_per_month: 500000
+        storage_gb: 10
+  connections:
+    - source: gateway
+      target: function
+      label: Invoke
+      protocol: HTTPS
+      port: 443
+    - source: function
+      target: database
+      label: Data access
+      protocol: HTTPS
+      port: 443

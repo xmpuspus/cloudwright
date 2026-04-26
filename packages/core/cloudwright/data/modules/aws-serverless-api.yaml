@@ -1,0 +1,62 @@
+id: aws-serverless-api
+name: AWS Serverless API
+provider: aws
+category: serverless
+description: Approved API Gateway, Lambda, and DynamoDB pattern for low-ops APIs.
+approved: true
+tags: [api, serverless, terraform, approved]
+required_tags: [environment, owner, cost_center]
+default_tags:
+  environment: production
+  owner: platform
+  cost_center: shared
+naming:
+  component_id_prefix: aws_api
+terraform:
+  source: registry.terraform.io/cloudwright/aws-serverless-api/aws
+  version: 1.0.0
+fragment:
+  name: AWS Serverless API Module
+  provider: aws
+  region: us-east-1
+  components:
+    - id: gateway
+      service: api_gateway
+      provider: aws
+      label: API Gateway
+      description: Managed REST API ingress.
+      tier: 1
+      config:
+        monthly_requests: 1000000
+        type: rest
+    - id: function
+      service: lambda
+      provider: aws
+      label: Lambda Handler
+      description: Stateless request handler.
+      tier: 2
+      config:
+        memory_mb: 512
+        avg_duration_ms: 200
+        monthly_requests: 1000000
+    - id: table
+      service: dynamodb
+      provider: aws
+      label: DynamoDB Table
+      description: Durable API data store.
+      tier: 3
+      config:
+        read_capacity_units: 5
+        write_capacity_units: 5
+        storage_gb: 10
+  connections:
+    - source: gateway
+      target: function
+      label: Invoke
+      protocol: HTTPS
+      port: 443
+    - source: function
+      target: table
+      label: Data access
+      protocol: HTTPS
+      port: 443

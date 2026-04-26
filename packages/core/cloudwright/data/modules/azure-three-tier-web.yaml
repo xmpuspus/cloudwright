@@ -1,0 +1,73 @@
+id: azure-three-tier-web
+name: Azure Three-Tier Web
+provider: azure
+category: web
+description: Approved CDN, application gateway, virtual machines, and SQL Database baseline.
+approved: true
+tags: [web, three-tier, terraform, approved]
+required_tags: [environment, owner, cost_center]
+default_tags:
+  environment: production
+  owner: platform
+  cost_center: shared
+naming:
+  component_id_prefix: azure_web
+terraform:
+  source: registry.terraform.io/cloudwright/azure-three-tier-web/azurerm
+  version: 1.0.0
+fragment:
+  name: Azure Three-Tier Web Module
+  provider: azure
+  region: eastus
+  components:
+    - id: cdn
+      service: azure_cdn
+      provider: azure
+      label: Azure CDN
+      description: Global content delivery and edge cache.
+      tier: 0
+      config:
+        estimated_gb: 500
+    - id: gateway
+      service: app_gateway
+      provider: azure
+      label: Application Gateway
+      description: L7 ingress with WAF-capable routing.
+      tier: 1
+      config:
+        sku: WAF_v2
+        capacity_units: 1
+    - id: app
+      service: virtual_machines
+      provider: azure
+      label: Virtual Machine Scale Set
+      description: Compute tier for application workloads.
+      tier: 2
+      config:
+        instance_type: Standard_D2s_v5
+        count: 2
+    - id: sql
+      service: azure_sql
+      provider: azure
+      label: Azure SQL Database
+      description: Managed relational database.
+      tier: 3
+      config:
+        service_tier: Standard
+        storage_gb: 100
+  connections:
+    - source: cdn
+      target: gateway
+      label: HTTPS
+      protocol: HTTPS
+      port: 443
+    - source: gateway
+      target: app
+      label: HTTP
+      protocol: HTTP
+      port: 80
+    - source: app
+      target: sql
+      label: SQL
+      protocol: TCP
+      port: 1433

@@ -13,7 +13,20 @@ interface ArchSpec {
   components: Component[];
   connections: Connection[];
   cost_estimate?: CostEstimate;
-  metadata?: { suggestions?: string[] };
+  metadata?: {
+    suggestions?: string[];
+    canvas?: { nodes?: Record<string, { x: number; y: number }> };
+    modules?: {
+      instances?: Record<string, {
+        module_id: string;
+        component_ids: string[];
+        expected_component_count?: number;
+        partial?: boolean;
+        approved?: boolean;
+      }>;
+    };
+    [key: string]: unknown;
+  };
 }
 
 interface Component {
@@ -23,7 +36,7 @@ interface Component {
   label: string;
   description: string;
   tier: number;
-  config: Record<string, unknown>;
+  config?: Record<string, unknown>;
 }
 
 interface Connection {
@@ -336,6 +349,17 @@ function App() {
     }
   };
 
+  const handleSpecChange = async (updatedSpec: ArchSpec) => {
+    setCurrentSpec(updatedSpec);
+    setValidationSummary(null);
+    try {
+      const enriched = await enrichSpec(updatedSpec, setValidationSummary);
+      setCurrentSpec(enriched);
+    } catch {
+      // Keep the deterministic canvas edit even if cost or validation refresh fails.
+    }
+  };
+
   return (
     <div style={{ display: "flex", height: "100vh", background: "#ffffff" }}>
       {/* Sidebar - Chat */}
@@ -509,7 +533,7 @@ function App() {
 
           {activeTab === "diagram" && (currentSpec || loadingStage !== "idle") && (
             <div style={{ position: "relative", width: "100%", height: "100%" }}>
-              {currentSpec && <ArchitectureDiagram spec={currentSpec} />}
+              {currentSpec && <ArchitectureDiagram spec={currentSpec} onSpecChange={handleSpecChange} />}
               {loadingStage !== "idle" && (
                 <div style={{
                   position: "absolute", top: 16, right: 16,

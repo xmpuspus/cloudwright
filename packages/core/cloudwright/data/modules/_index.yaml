@@ -1,0 +1,6 @@
+modules:
+  - aws-three-tier-web.yaml
+  - aws-serverless-api.yaml
+  - aws-data-lake.yaml
+  - gcp-serverless-api.yaml
+  - azure-three-tier-web.yaml

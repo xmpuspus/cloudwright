@@ -67,8 +67,7 @@ def register(mcp: FastMCP) -> None:
             list[str],
             Field(
                 description=(
-                    "List of cloud providers to compare pricing across. "
-                    "Values: 'aws', 'gcp', 'azure', 'databricks'."
+                    "List of cloud providers to compare pricing across. Values: 'aws', 'gcp', 'azure', 'databricks'."
                 ),
                 examples=[["aws", "gcp", "azure"], ["aws", "gcp"]],
             ),

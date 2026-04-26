@@ -1,0 +1,74 @@
+id: aws-data-lake
+name: AWS Data Lake
+provider: aws
+category: data
+description: Approved object storage, streaming, catalog, and warehouse baseline for analytics.
+approved: true
+tags: [analytics, data-lake, terraform, approved]
+required_tags: [environment, owner, cost_center]
+default_tags:
+  environment: production
+  owner: platform
+  cost_center: shared
+naming:
+  component_id_prefix: aws_data
+terraform:
+  source: registry.terraform.io/cloudwright/aws-data-lake/aws
+  version: 1.0.0
+fragment:
+  name: AWS Data Lake Module
+  provider: aws
+  region: us-east-1
+  components:
+    - id: ingest
+      service: kinesis
+      provider: aws
+      label: Kinesis Stream
+      description: Streaming ingestion for event data.
+      tier: 1
+      config:
+        shard_count: 2
+    - id: raw_bucket
+      service: s3
+      provider: aws
+      label: Raw Data Bucket
+      description: Encrypted landing zone for raw data.
+      tier: 3
+      config:
+        storage_gb: 1000
+        requests_per_month: 250000
+    - id: transform
+      service: lambda
+      provider: aws
+      label: Transform Lambda
+      description: Lightweight transform and partition writer.
+      tier: 2
+      config:
+        memory_mb: 1024
+        avg_duration_ms: 500
+        monthly_requests: 2000000
+    - id: warehouse
+      service: redshift
+      provider: aws
+      label: Redshift Warehouse
+      description: Curated analytical warehouse.
+      tier: 4
+      config:
+        node_type: dc2.large
+        num_nodes: 2
+  connections:
+    - source: ingest
+      target: transform
+      label: Events
+      protocol: HTTPS
+      port: 443
+    - source: transform
+      target: raw_bucket
+      label: Write objects
+      protocol: HTTPS
+      port: 443
+    - source: raw_bucket
+      target: warehouse
+      label: Load curated data
+      protocol: HTTPS
+      port: 443

@@ -71,6 +71,49 @@ cloudwright chat --web     # browser UI
 
 ## What's New
 
+### v1.2.0 — Smart Canvas + Module Catalog (2026-04-26)
+
+<p align="center">
+  <img src="examples/cloudwright-smart-canvas-demo.gif" alt="Cloudwright Smart Canvas Demo" width="800">
+</p>
+
+<p align="center"><em>Smart Canvas — drag-and-drop architecture canvas with a per-provider resource catalog, approved module catalog, naming/tagging standards checks, and Terraform module export.</em></p>
+
+The web diagram is now a fully editable architecture canvas. The chat-driven design loop still works end-to-end, but now you can also build and refine an architecture by hand — or take an LLM-generated spec and tighten it up before export.
+
+**Catalog drawer.** A new left-side drawer on the diagram tab exposes three tabs:
+
+- **Resources** — the full catalog for the active provider (AWS, GCP, Azure, Databricks), pulled live from `/api/catalog/services`. The endpoint normalizes provider casing so `?provider=GCP` and `?provider=gcp` return the same set.
+- **Modules** — approved architecture modules from `/api/modules`, filtered to the active provider. Bundled modules ship in `packages/core/cloudwright/data/modules/`:
+  - AWS Three-Tier Web
+  - AWS Serverless API
+  - AWS Data Lake
+  - GCP Serverless API
+  - Azure Three-Tier Web
+- **Standards** — runs `POST /api/canvas/validate` against the current spec and surfaces orphan connections, unapproved module instances, partial modules, naming-prefix violations, and missing required tags.
+
+**Deterministic edits.** Adding a resource, dropping in a module, connecting two nodes, dragging a node, editing a label/description/tier/config/tags, and deleting components or connections are all handled in the frontend as plain spec mutations. They do not call the LLM `modify` endpoint, which means edits are fast, free, and reproducible.
+
+**Persistence in `metadata`.** Two new namespaces under `spec.metadata` keep the canvas honest:
+
+- `metadata.canvas.nodes` — `{node_id: {x, y}}` positions for every dragged node, so layouts survive serialization, reload, and round-trips through Terraform export.
+- `metadata.modules.instances` — module provenance for every dropped module: source module id, version, expected component count, naming prefix, required tags, and the list of generated component ids. Standards checks and Terraform export both read from this.
+
+**Standards checks.** `validate_standards` enforces:
+
+- No connections referencing missing components.
+- Every component generated from a module retains the module's naming prefix.
+- Every component carries the module's required tags.
+- Module instances that were partially deleted or stripped of components are flagged as `partial_module_instance`.
+- Module instances that no longer reference an approved catalog module are flagged as `unapproved_module`.
+
+**Terraform module export.** When a module instance is intact (every original component still present, still approved), the Terraform exporter emits a single `module "<instance_id>"` block referencing the catalog module's `terraform.source` and pinned `version`, and skips the underlying components in the resource section. If the instance was modified — components renamed, deleted, or marked partial — the exporter falls back to rendering each component as an individual resource. Mixed specs work too: catalog modules render as module blocks, ad-hoc resources render as resources, side by side in the same `main.tf`.
+
+```bash
+cloudwright chat --web
+# Open http://localhost:8765, use the Catalog drawer, then click Export -> Terraform
+```
+
 ### v1.1.0 — Security Hardening, OpenAI Support, Docker (2026-04-04)
 
 <p align="center">

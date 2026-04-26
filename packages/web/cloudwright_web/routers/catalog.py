@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, HTTPException, Request
+from cloudwright.registry import get_registry
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 import cloudwright_web.singletons as _singletons
@@ -25,6 +26,24 @@ class CatalogSearchRequest(BaseModel):
 
 class CatalogCompareRequest(BaseModel):
     instance_names: list[str] = Field(..., min_length=2)
+
+
+@router.get("/catalog/services")
+def catalog_services(request: Request, provider: str | None = Query(default=None)):
+    check_api_key(request)
+    if err := check_rate_limit(request):
+        return err
+    try:
+        registry = get_registry()
+        providers = [provider.lower()] if provider else registry.list_providers()
+        services = []
+        for provider_name in providers:
+            services.extend(service.to_dict() for service in registry.list_services(provider_name))
+        services.sort(key=lambda service: (service["provider"], service["category"], service["name"]))
+        return {"services": services}
+    except Exception as e:
+        log.exception("Catalog services endpoint failed")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/catalog/search")

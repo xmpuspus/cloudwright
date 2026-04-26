@@ -46,7 +46,7 @@ Changelog = "https://github.com/xmpuspus/cloudwright/blob/main/CHANGELOG.md"
 path = "cloudwright/__init__.py"
 
 [tool.hatch.build]
-artifacts = ["cloudwright/data/catalog.db", "cloudwright/data/icons/**/*.svg"]
+artifacts = ["cloudwright/data/catalog.db", "cloudwright/data/icons/**/*.svg", "cloudwright/data/modules/**/*.yaml"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["cloudwright"]

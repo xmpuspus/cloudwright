@@ -47,6 +47,8 @@ def complete_workload_profile(incomplete: str) -> list[tuple[str, str]]:
 def complete_export_format(incomplete: str) -> list[tuple[str, str]]:
     formats = [
         ("terraform", "HashiCorp Terraform HCL"),
+        ("pulumi-ts", "Pulumi TypeScript (@pulumi/aws, @pulumi/gcp, @pulumi/azure-native)"),
+        ("pulumi-python", "Pulumi Python (pulumi_aws, pulumi_gcp, pulumi_azure_native)"),
         ("cloudformation", "AWS CloudFormation YAML"),
         ("mermaid", "Mermaid diagram syntax"),
         ("d2", "D2 diagram language"),

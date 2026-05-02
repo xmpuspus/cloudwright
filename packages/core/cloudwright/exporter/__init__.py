@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 
 FORMATS = (
     "terraform",
+    "pulumi-ts",
+    "pulumi-python",
     "cloudformation",
     "mermaid",
     "d2",
@@ -98,6 +100,26 @@ def export_spec(spec: ArchSpec, fmt: str, output: str | None = None, output_dir:
         content = render(spec)
         if output_dir:
             _write_dir(output_dir, {"main.tf": content})
+        elif output:
+            Path(output).write_text(content)
+        return content
+
+    if fmt in ("pulumi-ts", "pulumi-typescript"):
+        from cloudwright.exporter.pulumi import project_files_ts, render_pulumi_ts
+
+        content = render_pulumi_ts(spec)
+        if output_dir:
+            _write_dir(output_dir, project_files_ts(spec))
+        elif output:
+            Path(output).write_text(content)
+        return content
+
+    if fmt in ("pulumi-python", "pulumi-py"):
+        from cloudwright.exporter.pulumi import project_files_python, render_pulumi_python
+
+        content = render_pulumi_python(spec)
+        if output_dir:
+            _write_dir(output_dir, project_files_python(spec))
         elif output:
             Path(output).write_text(content)
         return content

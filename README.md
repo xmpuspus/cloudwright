@@ -20,9 +20,9 @@ export ANTHROPIC_API_KEY=sk-ant-...
 cloudwright design "HIPAA healthcare API on AWS with Postgres and Redis"
 ```
 
-Cloudwright takes a one-line description of a cloud system and produces a structured architecture spec, a per-component cost breakdown, a compliance report, and ready-to-apply Terraform or CloudFormation. It works across AWS, GCP, Azure, and Databricks. Version 1.3 ships safe-by-default Terraform (encryption, IMDSv2, S3 public-access blocks), per-model cost tracking, the Smart Canvas editable web UI, and an MCP server you can plug into Claude Desktop, Cursor, or Cline.
+Cloudwright takes a one-line description of a cloud system and produces a structured architecture spec, a per-component cost breakdown, a compliance report, and ready-to-apply Terraform, Pulumi (TypeScript or Python), or CloudFormation. It works across AWS, GCP, Azure, and Databricks. Version 1.4 adds live AWS import (`cloudwright import-live`), the Pulumi exporter, two-stage prompting with first-class network boundaries, and a drop-in GitHub Action that posts arch-diff plus cost-delta on every infra PR.
 
-[Try it](#quickstart) - [Docs](docs/) - [MCP server](#mcp-server-claude--cursor--cline)
+[Try it](#quickstart) - [What's new in v1.4](#whats-new-in-v140) - [Docs](docs/) - [MCP server](#mcp-server-claude--cursor--cline)
 
 ## What you get
 
@@ -112,8 +112,23 @@ hcl = export_spec(spec, "terraform", output_dir="./infra")
 
 ## What's new in v1.4.0
 
-- **GitHub Action for PR previews.** Drop-in workflow posts an idempotent comment with arch diff, monthly cost delta, and compliance changes whenever a PR touches `*.tf` or `cloudwright.yaml`. See [`docs/github-action.md`](docs/github-action.md).
-- **Refreshed Smart Canvas demo GIF** showing add-resource, side-panel edit, and cost recomputation against the current UI.
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/cloudwright-light-1-diagram.png" alt="Boundary-aware architecture diagram with VPC, subnets, and tiered components"></td>
+    <td width="50%"><img src="docs/screenshots/cloudwright-light-2-cost.png" alt="Per-component cost breakdown for the same architecture"></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/cloudwright-light-3-validate.png" alt="HIPAA validation panel showing 40% compliance with critical and high severity findings"></td>
+    <td width="50%"><img src="docs/screenshots/cloudwright-light-4-canvas.png" alt="Diagram with the Catalog drawer open for adding resources"></td>
+  </tr>
+</table>
+
+- **Pulumi exporter (TypeScript + Python).** `cloudwright export spec.yaml --format pulumi-ts -o ./infra` writes a complete Pulumi TypeScript project (`index.ts`, `Pulumi.yaml`, `package.json`, `tsconfig.json`). `--format pulumi-python` writes the Python equivalent. AWS, GCP, and Azure coverage matches the Terraform exporter, with the same safe-by-default posture (S3 public-access block + AES256 + versioning, RDS encryption + 7-day backups + deletion protection, EC2 IMDSv2, DynamoDB SSE + PITR, CloudFront TLSv1.2_2021, CloudTrail log-file validation). Aliases `pulumi-typescript` and `pulumi-py` also work.
+- **Live AWS import.** `cloudwright import-live --provider aws --region us-east-1 [--profile NAME] [--services ec2,rds,s3] [-o spec.yaml]` walks `boto3 describe-*` calls (EC2, VPC + subnets + security groups, RDS, S3, Lambda, ECS, EKS, DynamoDB, ALB / NLB, CloudFront, SQS, API Gateway, CloudTrail) and produces an ArchSpec from running infrastructure. Captures security posture (S3 encryption + versioning + public-access-block, RDS multi-AZ + backup retention, EC2 IMDSv2, SG ingress 0.0.0.0/0). Best-effort connection inference: ALB to EC2 via target groups, CloudFront to S3 via origin domains. Per-service permission denials are non-fatal. Optional dep: `pip install 'cloudwright-ai[live-import]'`.
+- **Two-stage prompting plus boundary-aware spec.** `Architect.design()` now runs Stage 1 (free-text architectural reasoning via Sonnet) followed by Stage 2 (strict JSON projection via Haiku). Stage 2 is told the canonical service keys, allowed connection kinds (`sync_request | async_event | stream | replication | batch`), and boundary kinds (VPC / subnet / security_group / availability_zone / region / account), so it projects faithfully without redesigning. VPCs, subnets, and SGs are now first-class in the LLM contract. Per-stage usage (`stage1`, `stage2`, `total_cost_usd`, `two_stage: true`) is exposed on `/api/design`, `/api/modify`, and their streaming variants. Single-shot path retained as fallback (`Architect(two_stage=False)`).
+- **Workload-aware safe defaults.** Pre-v1.4, `_post_validate` forced `encryption=true`, `multi_az=true`, `backup=true`, `auto_scaling=true`, and `count=2` onto every spec, masking Stage 1 reasoning. v1.4 makes these conditional on `spec.metadata.workload_profile`: `sandbox`, `dev`, `test`, `demo`, `poc` keep the LLM's chosen values; `production`, `medium`, `large`, `enterprise` get safe defaults forced. Compliance frameworks (HIPAA, PCI-DSS, SOC 2, GDPR, FedRAMP, HITRUST, ISO 27001) always force encryption + HA regardless of profile.
+- **GitHub Action for PR previews.** Drop-in workflow posts an idempotent comment with architecture diff (added / removed / changed components), monthly cost delta (head vs. base, with annual rollup), and per-framework compliance changes whenever a PR touches `*.tf`, `*.tfstate`, `cloudwright.yaml`, or `spec.yaml`. Reusable composite action at `.github/actions/cloudwright-pr-comment/`. See [`docs/github-action.md`](docs/github-action.md).
+- **Refreshed Smart Canvas demo GIF** (`examples/cloudwright-smart-canvas-demo.gif`) showing prompt to diagram to catalog drawer to add resource to side-panel edit to cost recomputation against the current UI. Reproducible via `python scripts/record_smart_canvas.py`.
 
 ## What's new in v1.3.0
 

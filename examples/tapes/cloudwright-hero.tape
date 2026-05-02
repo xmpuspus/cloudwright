@@ -41,7 +41,12 @@ Sleep 500ms
 Enter
 Sleep 2.5s
 
-Type "ls infra/"
+Type "cloudwright export spec.yaml --format pulumi-ts -o ./pulumi-infra"
+Sleep 500ms
+Enter
+Sleep 2.5s
+
+Type "ls infra/ pulumi-infra/"
 Sleep 500ms
 Enter
 Sleep 2.5s

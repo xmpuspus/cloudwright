@@ -158,7 +158,60 @@ _ALERTING_SERVICES = {"sns", "eventbridge", "pub_sub", "event_hubs", "event_grid
 
 _MONITORING_SERVICES = {"cloudwatch", "cloud_logging", "azure_monitor", "cloud_monitoring"}
 
-_US_REGION_PREFIXES = ("us-", "us-gov-")
+# FedRAMP authorized regions per provider.
+# Source: AWS FedRAMP Marketplace (https://aws.amazon.com/compliance/services-in-scope/FedRAMP/),
+# Azure FedRAMP scope (https://learn.microsoft.com/en-us/azure/compliance/offerings/offering-fedramp),
+# and GCP Assured Workloads / FedRAMP authorization
+# (https://cloud.google.com/assured-workloads/docs/regions-and-services).
+# A naive ``startswith("us-")`` heuristic is wrong: e.g. ``us-east-1`` is FedRAMP
+# Moderate but ``us-iso-east-1`` is not, and us-west-1 is NOT in scope.
+_FEDRAMP_REGIONS: dict[str, set[str]] = {
+    # AWS commercial Moderate: us-east-1, us-east-2, us-west-2
+    # AWS GovCloud High: us-gov-east-1, us-gov-west-1
+    "aws": {
+        "us-east-1",
+        "us-east-2",
+        "us-west-2",
+        "us-gov-east-1",
+        "us-gov-west-1",
+    },
+    # GCP FedRAMP regions (Assured Workloads US locations).
+    "gcp": {
+        "us-central1",
+        "us-east1",
+        "us-east4",
+        "us-east5",
+        "us-west1",
+        "us-west2",
+        "us-west3",
+        "us-west4",
+    },
+    # Azure Government + commercial regions FedRAMP-authorized.
+    "azure": {
+        "usgovvirginia",
+        "usgovarizona",
+        "usgovtexas",
+        "usgoviowa",
+        "eastus",
+        "eastus2",
+        "centralus",
+        "northcentralus",
+        "southcentralus",
+        "westcentralus",
+        "westus",
+        "westus2",
+        "westus3",
+    },
+    # Databricks runs on the underlying cloud — we conservatively accept the
+    # union so a Databricks-on-AWS spec deployed in us-east-1 isn't flagged.
+    "databricks": {
+        "us-east-1",
+        "us-east-2",
+        "us-west-2",
+        "us-gov-east-1",
+        "us-gov-west-1",
+    },
+}
 
 
 class Validator:
@@ -660,9 +713,12 @@ def _check_fedramp(spec: ArchSpec) -> ValidationResult:
         )
     )
 
-    # Authorized regions — must be US or GovCloud
+    # Authorized regions — must be in the FedRAMP allowlist for this provider.
+    # NOTE: a startswith("us-") heuristic is incorrect (e.g. us-iso-* and
+    # us-west-1 are NOT FedRAMP-authorized). We use explicit allowlists.
     regions = _get_regions(spec)
-    unauthorized = [r for r in regions if not any(r.startswith(p) for p in _US_REGION_PREFIXES)]
+    allowed = _FEDRAMP_REGIONS.get(spec.provider.lower(), set())
+    unauthorized = [r for r in regions if r not in allowed]
     checks.append(
         ValidationCheck(
             name="authorized_regions",
@@ -670,11 +726,14 @@ def _check_fedramp(spec: ArchSpec) -> ValidationResult:
             passed=len(unauthorized) == 0,
             severity="critical",
             detail=(
-                "All regions are authorized US/GovCloud regions"
+                "All regions are FedRAMP-authorized for this provider"
                 if not unauthorized
                 else f"Unauthorized regions: {', '.join(unauthorized)}"
             ),
-            recommendation="Deploy only in US or GovCloud regions for FedRAMP compliance.",
+            recommendation=(
+                "Deploy only in FedRAMP-authorized regions for the chosen provider "
+                "(AWS: us-east-1, us-east-2, us-west-2, us-gov-east-1, us-gov-west-1)."
+            ),
         )
     )
 

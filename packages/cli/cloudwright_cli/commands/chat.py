@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import logging
-import sys
+import os
 import time
 from typing import Annotated
 
 import typer
 from cloudwright import ArchSpec, ConversationSession
 from cloudwright.ascii_diagram import render_ascii
+from cloudwright.logging import configure_logging
 from cloudwright.session_store import SessionStore
 from rich.console import Console
 from rich.live import Live
@@ -23,21 +24,27 @@ from .chat_ui import _HELP, print_cost_summary, print_diff, run_validate
 
 console = Console()
 
+DEFAULT_WEB_PORT = 8765
+
 
 def chat(
     web: Annotated[bool, typer.Option("--web", help="Launch web UI instead of terminal chat")] = False,
     resume: Annotated[str | None, typer.Option("--resume", help="Resume a saved session by ID")] = None,
     debug: Annotated[bool, typer.Option("--debug", help="Log LLM requests/responses to stderr")] = False,
+    port: Annotated[
+        int,
+        typer.Option("--port", help=f"Port for --web (default: {DEFAULT_WEB_PORT})"),
+    ] = DEFAULT_WEB_PORT,
 ) -> None:
     """Interactive architecture design chat."""
     if web:
-        _launch_web()
+        _launch_web(port=port)
         return
 
     _run_terminal_chat(resume=resume, debug=debug)
 
 
-def _launch_web() -> None:
+def _launch_web(port: int = DEFAULT_WEB_PORT) -> None:
     try:
         import cloudwright_web  # type: ignore
         import uvicorn
@@ -49,18 +56,19 @@ def _launch_web() -> None:
 
     import socket
 
-    port = 8000
-    for candidate in range(8000, 8100):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            if s.connect_ex(("127.0.0.1", candidate)) != 0:
-                port = candidate
-                break
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        if s.connect_ex(("127.0.0.1", port)) == 0:
+            console.print(
+                f"[red]Error:[/red] port {port} is already in use. "
+                f"Pass --port to choose another (e.g. --port {port + 1})."
+            )
+            raise typer.Exit(1)
 
     import threading
     import webbrowser
 
     url = f"http://127.0.0.1:{port}"
-    console.print(f"[cyan]Launching Cloudwright web UI on {url}[/cyan]")
+    console.print(f"\n[bold cyan]Cloudwright web UI:[/bold cyan] {url}\n")
 
     def _open_browser():
         time.sleep(1.5)
@@ -71,8 +79,14 @@ def _launch_web() -> None:
 
 
 def _run_terminal_chat(resume: str | None = None, debug: bool = False) -> None:
-    if debug:
-        logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+    configure_logging()
+    env_level = os.environ.get("CLOUDWRIGHT_LOG_LEVEL", "").upper()
+    if debug or env_level == "DEBUG":
+        logging.getLogger().setLevel(logging.DEBUG)
+        logging.getLogger("cloudwright").setLevel(logging.DEBUG)
+    elif env_level in {"INFO", "WARNING", "ERROR", "CRITICAL"}:
+        logging.getLogger().setLevel(getattr(logging, env_level))
+        logging.getLogger("cloudwright").setLevel(getattr(logging, env_level))
 
     console.print(
         Panel(

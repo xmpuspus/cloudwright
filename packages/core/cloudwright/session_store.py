@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
+import tempfile
 import time
 from pathlib import Path
 
@@ -19,6 +21,31 @@ def _validate_session_id(session_id: str) -> None:
         raise ValueError("Invalid session_id")
 
 
+def _atomic_write_text(path: Path, text: str) -> None:
+    """Write text atomically: write to temp file, fsync, then os.replace.
+
+    Guarantees the destination file is either the prior contents or the new
+    contents — never partial. Safe against SIGKILL mid-write.
+    """
+    parent = path.parent
+    parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_path = tempfile.mkstemp(prefix=path.name + ".", suffix=".tmp", dir=str(parent))
+    tmp = Path(tmp_path)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except Exception:
+        try:
+            if tmp.exists():
+                tmp.unlink()
+        except OSError:
+            pass
+        raise
+
+
 class SessionStore:
     """Save/load ConversationSession state to ~/.cloudwright/sessions/."""
 
@@ -27,12 +54,12 @@ class SessionStore:
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
     def save(self, session_id: str, session) -> Path:
-        """Persist a ConversationSession to disk."""
+        """Persist a ConversationSession to disk atomically."""
         _validate_session_id(session_id)
         data = session.to_dict()
         data["saved_at"] = time.time()
         path = self.base_dir / f"{session_id}.json"
-        path.write_text(json.dumps(data, indent=2, default=str))
+        _atomic_write_text(path, json.dumps(data, indent=2, default=str))
         return path
 
     def load(self, session_id: str, llm=None):

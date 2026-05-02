@@ -22,46 +22,34 @@ from cloudwright.spec import ArchSpec, Component, Connection, Constraints
 log = get_logger(__name__)
 
 
+_JSON_DECODER = json.JSONDecoder()
+
+
 def _extract_json(text: str) -> dict:
-    """Extract the first complete JSON object from text using brace counting."""
+    """Extract the first complete JSON object/array from text.
+
+    Strips markdown code fences and ``<json>`` XML wrappers, locates the first
+    ``{`` or ``[``, then defers to the C-implemented stdlib JSONDecoder which
+    handles strings, escapes, unicode, and nested-quoted JSON correctly.
+    """
+    # Strip markdown code fences (```json ... ```)
     text = re.sub(r"```(?:json)?\s*", "", text)
     text = text.replace("```", "")
+    # Strip optional <json>...</json> XML wrappers (some LLMs emit these)
+    text = re.sub(r"</?json\s*>", "", text, flags=re.IGNORECASE)
 
-    start = text.find("{")
-    if start == -1:
+    obj_start = text.find("{")
+    arr_start = text.find("[")
+    candidates = [i for i in (obj_start, arr_start) if i != -1]
+    if not candidates:
         raise ValueError(f"No JSON object found in LLM response: {text[:300]}")
+    start = min(candidates)
 
-    depth = 0
-    in_string = False
-    escape = False
-
-    for i in range(start, len(text)):
-        ch = text[i]
-
-        if escape:
-            escape = False
-            continue
-
-        if ch == "\\":
-            if in_string:
-                escape = True
-            continue
-
-        if ch == '"':
-            in_string = not in_string
-            continue
-
-        if in_string:
-            continue
-
-        if ch == "{":
-            depth += 1
-        elif ch == "}":
-            depth -= 1
-            if depth == 0:
-                return json.loads(text[start : i + 1])
-
-    raise ValueError(f"Unterminated JSON object in LLM response: {text[:300]}")
+    try:
+        parsed, _end = _JSON_DECODER.raw_decode(text[start:])
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Unterminated or invalid JSON in LLM response: {text[:300]}") from exc
+    return parsed
 
 
 def _enforce_connections(spec: ArchSpec) -> ArchSpec:

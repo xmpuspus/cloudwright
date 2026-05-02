@@ -1,0 +1,47 @@
+name: Cloudwright PR Preview
+
+# Runs on PRs that touch infrastructure-shaped files. Posts an idempotent
+# comment summarizing architecture diff, monthly cost delta, and compliance
+# changes against the base branch.
+#
+# Setup:
+#   1. Copy this file into your repo at .github/workflows/cloudwright-pr-preview.yml
+#   2. Set ANTHROPIC_API_KEY (or OPENAI_API_KEY) as a repository secret
+#   3. Adjust `spec-path` and `compliance` to match your repo layout
+#
+# Customizing the trigger paths: cost/validate only run when the spec file
+# itself changes. Add or remove globs in `paths` below to fit your project.
+
+on:
+  pull_request:
+    paths:
+      - '**/*.tf'
+      - '**/*.tfstate'
+      - 'cloudwright.yaml'
+      - 'cloudwright.yml'
+      - 'spec.yaml'
+      - 'spec.yml'
+      - '**/cloudwright.yaml'
+      - '**/spec.yaml'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history so the action can read base spec
+
+      - name: Cloudwright PR comment
+        uses: ./.github/actions/cloudwright-pr-comment
+        with:
+          spec-path: cloudwright.yaml
+          compliance: soc2
+          # workload-profile: medium
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

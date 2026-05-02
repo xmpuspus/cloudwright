@@ -110,6 +110,11 @@ results = Validator().validate(spec, compliance=["hipaa", "pci-dss"])
 hcl = export_spec(spec, "terraform", output_dir="./infra")
 ```
 
+## What's new in v1.4.0
+
+- **GitHub Action for PR previews.** Drop-in workflow posts an idempotent comment with arch diff, monthly cost delta, and compliance changes whenever a PR touches `*.tf` or `cloudwright.yaml`. See [`docs/github-action.md`](docs/github-action.md).
+- **Refreshed Smart Canvas demo GIF** showing add-resource, side-panel edit, and cost recomputation against the current UI.
+
 ## What's new in v1.3.0
 
 - **Safe-by-default Terraform.** S3 public-access blocks, RDS `storage_encrypted` and `deletion_protection`, EC2 IMDSv2, security-group ingress restricted to listed CIDRs.

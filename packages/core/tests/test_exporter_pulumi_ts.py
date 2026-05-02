@@ -10,7 +10,6 @@ TypeScript string literal.
 from __future__ import annotations
 
 import pytest
-
 from cloudwright.exporter.pulumi import render_pulumi_ts
 from cloudwright.exporter.pulumi.aws_ts import render_resource as render_aws
 from cloudwright.exporter.pulumi.azure_ts import render_resource as render_azure

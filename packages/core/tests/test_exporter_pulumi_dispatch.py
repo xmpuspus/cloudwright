@@ -10,7 +10,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from cloudwright.exporter import FORMATS, export_spec
 from cloudwright.spec import ArchSpec, Component
 

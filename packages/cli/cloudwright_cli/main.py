@@ -13,6 +13,7 @@ from cloudwright_cli.commands.diff import diff
 from cloudwright_cli.commands.drift_cmd import drift
 from cloudwright_cli.commands.export import export
 from cloudwright_cli.commands.import_cmd import import_infra
+from cloudwright_cli.commands.import_live_cmd import import_live
 from cloudwright_cli.commands.init_cmd import init
 from cloudwright_cli.commands.lint_cmd import lint
 from cloudwright_cli.commands.mcp_cmd import mcp_serve
@@ -68,6 +69,7 @@ app.command()(diff)
 app.command()(drift)
 app.command()(modify)
 app.command(name="import")(import_infra)
+app.command(name="import-live")(import_live)
 app.command()(chat)
 app.command()(init)
 app.command()(policy)

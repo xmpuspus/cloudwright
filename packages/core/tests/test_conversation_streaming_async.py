@@ -10,7 +10,6 @@ import json
 from unittest.mock import MagicMock
 
 import pytest
-
 from cloudwright.session import ConversationSession
 
 

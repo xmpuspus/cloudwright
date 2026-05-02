@@ -20,7 +20,6 @@ import asyncio
 from unittest.mock import MagicMock
 
 import pytest
-
 from cloudwright.llm.openai import OpenAILLM
 
 
@@ -120,9 +119,7 @@ async def test_generate_stream_async_forwards_timeout():
     llm = OpenAILLM(api_key="test")
     llm._async_client = _FakeAsyncClient(fake)
 
-    async for _ in llm.generate_stream_async(
-        [{"role": "user", "content": "hi"}], "system", timeout=42.0
-    ):
+    async for _ in llm.generate_stream_async([{"role": "user", "content": "hi"}], "system", timeout=42.0):
         pass
 
     assert llm._async_client.chat.completions.last_kwargs.get("timeout") == 42.0

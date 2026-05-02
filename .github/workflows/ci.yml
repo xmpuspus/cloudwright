@@ -35,7 +35,7 @@ jobs:
           pip install -e ./packages/cli
           pip install -e ./packages/web
           pip install -e ./packages/mcp
-          pip install pytest pytest-timeout pytest-cov
+          pip install pytest pytest-timeout pytest-cov pytest-asyncio
       - name: Run core tests
         run: pytest packages/core/tests/ -x -q --timeout=30 -m "not slow" --cov=cloudwright --cov-report=term-missing --cov-fail-under=70
       - name: Run web tests

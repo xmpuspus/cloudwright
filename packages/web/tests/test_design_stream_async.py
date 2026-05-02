@@ -18,10 +18,9 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
-from fastapi.testclient import TestClient
-
 from cloudwright.spec import ArchSpec, Component, CostEstimate
 from cloudwright_web.routers import design as design_router
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture

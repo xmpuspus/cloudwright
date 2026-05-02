@@ -26,10 +26,9 @@ import inspect
 import json
 
 import pytest
-from fastapi.testclient import TestClient
-
 from cloudwright_web import routers as _routers_pkg  # noqa: F401 — ensures package init
 from cloudwright_web.routers import chat as chat_router
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture
@@ -108,9 +107,7 @@ def test_chat_stream_aborts_inner_agen_on_consumer_close():
     async def _drive():
         with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.llm = MagicMock()
-            with patch(
-                "cloudwright_web.routers.chat.ConversationSession", return_value=mock_session
-            ):
+            with patch("cloudwright_web.routers.chat.ConversationSession", return_value=mock_session):
                 from starlette.requests import Request
 
                 request = Request(
@@ -158,9 +155,7 @@ def test_chat_stream_no_orphan_tasks_after_full_response(client):
     async def _check():
         with patch("cloudwright_web.singletons.get_architect") as mock_arch:
             mock_arch.return_value.llm = MagicMock()
-            with patch(
-                "cloudwright_web.routers.chat.ConversationSession", return_value=mock_session
-            ):
+            with patch("cloudwright_web.routers.chat.ConversationSession", return_value=mock_session):
                 tasks_before = {t for t in asyncio.all_tasks() if not t.done()}
                 from starlette.requests import Request
 
@@ -187,15 +182,9 @@ def test_chat_stream_no_orphan_tasks_after_full_response(client):
                 tasks_after.discard(me)
                 tasks_before.discard(me)
                 new_tasks = tasks_after - tasks_before
-                assert not new_tasks, (
-                    f"Cancel-safe streaming must leave no orphan tasks; found {new_tasks}"
-                )
+                assert not new_tasks, f"Cancel-safe streaming must leave no orphan tasks; found {new_tasks}"
                 # Sanity: we did get a done event.
-                stages = [
-                    json.loads(e.split("data: ", 1)[1].strip()).get("stage")
-                    for e in events
-                    if "data:" in e
-                ]
+                stages = [json.loads(e.split("data: ", 1)[1].strip()).get("stage") for e in events if "data:" in e]
                 assert "done" in stages
 
     asyncio.run(_check())

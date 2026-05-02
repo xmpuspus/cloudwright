@@ -105,9 +105,7 @@ class Architect:
         except (ValueError, json.JSONDecodeError) as first_err:
             log.warning("Stage 2 projection failed: %s — retrying with explicit JSON-only nudge", first_err)
             stage2_messages.append({"role": "assistant", "content": "Let me output only JSON."})
-            stage2_messages.append(
-                {"role": "user", "content": "Output ONLY the JSON object. No prose. Start with {."}
-            )
+            stage2_messages.append({"role": "user", "content": "Output ONLY the JSON object. No prose. Start with {."})
             text, stage2_usage = self.llm.generate_fast(stage2_messages, DESIGN_PROJECTION_SYSTEM, max_tokens=10000)
             data = _extract_json(text)
         stage2_enriched = self._enrich_usage(stage2_usage, stage2_start)
@@ -352,9 +350,7 @@ class Architect:
         except (ValueError, json.JSONDecodeError) as first_err:
             log.warning("Stage 2 modify projection failed: %s — retrying", first_err)
             stage2_messages.append({"role": "assistant", "content": "Let me output only JSON."})
-            stage2_messages.append(
-                {"role": "user", "content": "Output ONLY the JSON object. No prose. Start with {."}
-            )
+            stage2_messages.append({"role": "user", "content": "Output ONLY the JSON object. No prose. Start with {."})
             text, stage2_usage = self.llm.generate_fast(stage2_messages, DESIGN_PROJECTION_SYSTEM, max_tokens=10000)
             data = _extract_json(text)
         stage2_enriched = self._enrich_usage(stage2_usage, stage2_start)

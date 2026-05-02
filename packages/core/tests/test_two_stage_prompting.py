@@ -35,7 +35,14 @@ _STAGE2_JSON = json.dumps(
                 "tier": 2,
                 "config": {"memory_mb": 1024, "runtime": "python3.12"},
             },
-            {"id": "orders", "service": "dynamodb", "provider": "aws", "label": "Orders Table", "tier": 3, "config": {}},
+            {
+                "id": "orders",
+                "service": "dynamodb",
+                "provider": "aws",
+                "label": "Orders Table",
+                "tier": 3,
+                "config": {},
+            },
         ],
         "connections": [
             {"source": "apigw", "target": "fn", "label": "invoke", "kind": "sync_request"},
@@ -61,8 +68,14 @@ def _two_stage_mock_llm() -> MagicMock:
     llm.model_name = "claude-sonnet-4-6"
     llm.pricing = {"input": 0.003, "output": 0.015}
     llm.pricing_for = MagicMock(return_value={"input": 0.003, "output": 0.015})
-    llm.generate.return_value = (_STAGE1_REASONING, {"input_tokens": 200, "output_tokens": 350, "model": "claude-sonnet-4-6"})
-    llm.generate_fast.return_value = (_STAGE2_JSON, {"input_tokens": 600, "output_tokens": 400, "model": "claude-haiku-4-5"})
+    llm.generate.return_value = (
+        _STAGE1_REASONING,
+        {"input_tokens": 200, "output_tokens": 350, "model": "claude-sonnet-4-6"},
+    )
+    llm.generate_fast.return_value = (
+        _STAGE2_JSON,
+        {"input_tokens": 600, "output_tokens": 400, "model": "claude-haiku-4-5"},
+    )
     return llm
 
 

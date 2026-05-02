@@ -9,10 +9,17 @@ from __future__ import annotations
 import re
 from datetime import date
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import yaml
 from pydantic import BaseModel, Field, field_validator, model_validator
+
+# Connection kinds — describes the shape of the interaction, not just protocol/port.
+# Used by exporters to choose between sync HTTP, queue-based async, streaming, etc.
+ConnectionKind = Literal["sync_request", "async_event", "stream", "replication", "batch"]
+
+# Boundary kinds — concrete network/grouping primitives the LLM should reason about.
+BoundaryKind = Literal["vpc", "subnet", "security_group", "availability_zone", "region", "account"]
 
 
 class Constraints(BaseModel):
@@ -52,13 +59,21 @@ class Connection(BaseModel):
     protocol: str | None = None
     port: int | None = None
     estimated_monthly_gb: float | None = None
+    # Interaction shape (audit finding #18). Optional for back-compat with
+    # specs created before v1.4 — None means "unspecified, treat as sync".
+    kind: ConnectionKind | None = None
 
 
 class Boundary(BaseModel):
-    """Grouping boundary (VPC, subnet, AZ, security group, region, account)."""
+    """Grouping boundary (VPC, subnet, AZ, security group, region, account).
+
+    Boundaries are first-class in v1.4 — the LLM is asked to reason about
+    networking topology (VPCs, subnets, SGs) explicitly during Stage 1 and
+    project them into the spec during Stage 2.
+    """
 
     id: str
-    kind: str  # vpc, subnet, availability_zone, security_group, region, account
+    kind: BoundaryKind | str  # str fallback for forward-compat with future kinds
     label: str = ""
     parent: str | None = None
     component_ids: list[str] = Field(default_factory=list)

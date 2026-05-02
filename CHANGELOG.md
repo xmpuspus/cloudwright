@@ -18,6 +18,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **AWS service coverage:** vpc, ec2, rds, s3, alb, nlb, cloudfront, lambda, dynamodb, sqs, kinesis, ecr, ecs, eks, cloudtrail, cloudwatch.
 - **GCP service coverage:** compute_engine, gke, cloud_sql, cloud_storage, cloud_run, pub_sub, bigquery.
 - **Azure service coverage:** virtual_machines, aks, azure_sql, blob_storage, azure_functions, app_gateway.
+## [1.4.0] - 2026-05-01
+
+### Added
+
+- **Two-stage prompting for design and complex modify.** Per `ai-llm-eval.md` ("Two-Stage Prompting Recovers Reasoning Quality Lost to JSON Schema Constraints"), `Architect.design()` now runs Stage 1 (free-text architectural reasoning via Sonnet, `DESIGN_REASONING_SYSTEM`) followed by Stage 2 (strict JSON projection via Haiku, `DESIGN_PROJECTION_SYSTEM`). Stage 2 is told the canonical service keys, allowed connection kinds, and boundary kinds — so it projects faithfully without redesigning. Single-shot path retained as fallback (`Architect(two_stage=False)`). `IMPORT/MIGRATION/COMPARE` flows still use the legacy single-shot prompts since their contracts are tighter.
+- **`Connection.kind` enum.** New optional field on `Connection`: `sync_request | async_event | stream | replication | batch`. Default `None` for back-compat. Stage 2 projector populates it based on the Stage 1 reasoning's verbs ("calls" → `sync_request`, "publishes to" → `async_event`, "streams" → `stream`, etc.). Parser accepts canonical and aliased values (`sync`, `async`, `http`, `Sync-Request`) and silently drops invalid values to `None`.
+- **First-class boundaries in the LLM contract.** `Boundary` (VPC / subnet / security_group / availability_zone / region / account) was previously in the schema but never asked of the LLM. The Stage 1 prompt now instructs the architect to reason about networking topology explicitly; Stage 2 projects named VPCs, subnets, and SGs into a `boundaries` array with parent linkage. Parser tolerates malformed boundary entries (missing `id`/`kind`, invalid IDs, ghost component refs) by dropping them with a warning.
+- **Per-stage usage in API responses.** When a request goes through two-stage prompting, the `usage` payload returned by `/api/design`, `/api/design/stream`, `/api/modify`, `/api/modify/stream` now includes `stage1` (`{model, input_tokens, output_tokens, cost_usd, latency_ms, reasoning_chars}`), `stage2` (same shape), `stage1_tokens`, `stage2_tokens`, `total_cost_usd`, and a `two_stage: true` flag. Aggregate `input_tokens`/`output_tokens`/`cost_usd` fields still present for back-compat.
+
+### Changed
+
+- **Conditional safe-default injection in `_post_validate`.** The pre-v1.4 implementation forced `encryption=true`, `multi_az=true`, `backup=true`, `auto_scaling=true`, and `count=2` onto every spec — masking Stage 1 reasoning and producing the same monolithic shape for sandbox/dev workloads as for HIPAA-bound production. v1.4 makes these conditional on workload profile (`spec.metadata.workload_profile`) and declared compliance:
+  - `sandbox`, `dev`, `development`, `test`, `demo`, `poc` profiles get the LLM's chosen values without overrides.
+  - `production`, `prod`, `medium`, `large`, `enterprise` profiles get the safe defaults forced.
+  - Compliance frameworks (HIPAA, PCI-DSS, SOC 2, GDPR, FedRAMP, HITRUST, ISO 27001) always force encryption + HA regardless of profile.
+  - Instance type / class / node-type defaults still always applied (they're sane fallbacks, not safety settings).
+- **`SERVICE_NORMALIZATION` is now a fallback.** With Stage 2 explicitly told the canonical service keys, the 60-entry normalization table should rarely trigger. Each hit now logs a louder WARNING ("Stage 2 projector should have emitted the canonical key directly") so we can track LLM drift and trim the table over time.
+
+### Notes
+
+- All 4 new test files added: `test_two_stage_prompting.py` (8 tests), `test_boundary_in_spec.py` (5 tests), `test_connection_kind.py` (8 tests), `test_post_validate_conditional.py` (8 tests). 29 new tests, all passing.
+- Existing `_post_validate` tests retain their behavior because `_profile_requires_encryption` / `_profile_requires_ha` default to `True` when no profile metadata and no overriding signal is present, preserving the previous defaults for callers that didn't tag specs.
 
 ## [1.3.0] - 2026-05-02
 

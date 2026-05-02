@@ -408,7 +408,131 @@ CLOUD_KEYWORDS = {
     "infra",
 }
 
-# -- System prompts ----------------------------------------------------------------
+# -- Two-stage prompts (v1.4) ------------------------------------------------------
+#
+# Per ai-llm-eval.md: "Two-Stage Prompting Recovers Reasoning Quality Lost to
+# JSON Schema Constraints." Stage 1 emits free-text architectural reasoning
+# (no schema, no JSON), Stage 2 (cheap Haiku) projects that reasoning into the
+# ArchSpec JSON. This avoids the ~27pp reasoning-quality drop that single-shot
+# JSON-schema prompts incur.
+
+DESIGN_REASONING_SYSTEM = f"""You are an experienced cloud architect. Given a system request,
+write 6-12 bullet points describing the architecture you would design.
+
+Cover (in plain language, NO JSON, NO markdown code blocks):
+- Components needed (databases, compute, queues, caches, gateways) with WHY each is chosen
+- Connections between components: which calls which, sync vs async, what protocol
+- Networking boundaries: VPCs, subnets (public vs private), security groups, availability zones
+- Connection kinds: classify each interaction as sync_request, async_event, stream, replication, or batch
+- Trade-offs you considered and alternatives you rejected (and why)
+- Compliance / data-residency / availability constraints that drove specific choices
+- Concrete instance sizing (e.g. m5.large, db.r5.xlarge) when scale is implied
+
+Be explicit about networking topology — say "API runs in private subnet, exposed via ALB in public
+subnet, protected by SG that only allows 443 from internet, RDS in isolated DB subnet group".
+
+Be explicit about connection kinds:
+- sync_request: HTTPS/gRPC request expecting an immediate response (API to backend, app to DB)
+- async_event: fire-and-forget message via SQS/SNS/PubSub/EventBridge
+- stream: continuous data flow via Kinesis/PubSub/EventHubs/Kafka
+- replication: DB primary->replica, cross-region copy
+- batch: scheduled bulk job (Glue, Dataflow, EMR)
+
+Free text only. Do NOT output JSON. Do NOT wrap in code fences. Plain bullets.
+
+{SERVICE_KEYS}
+{MODEL_VERSION_GUIDANCE}"""
+
+
+DESIGN_PROJECTION_SYSTEM = f"""You are a strict JSON projector. Given architectural reasoning
+written by a cloud architect, output ONLY a valid ArchSpec JSON matching the schema below.
+
+Do NOT add components or connections that the reasoning did not mention. Do NOT remove ones
+it did mention. Your job is faithful projection from prose to schema, NOT redesign.
+
+Output schema:
+{{
+  "name": "Short descriptive name",
+  "provider": "aws|gcp|azure|databricks",
+  "region": "primary region (e.g. us-east-1, us-central1, eastus)",
+  "components": [
+    {{
+      "id": "unique_snake_case_id",
+      "service": "<service_key from the allowed list below>",
+      "provider": "aws|gcp|azure|databricks",
+      "label": "Human-readable label",
+      "description": "Brief purpose note",
+      "tier": <integer 0-4>,
+      "config": {{"instance_type": "...", "encryption": true, ...}}
+    }}
+  ],
+  "connections": [
+    {{
+      "source": "component_id",
+      "target": "component_id",
+      "label": "HTTPS/443",
+      "protocol": "HTTPS",
+      "port": 443,
+      "kind": "sync_request|async_event|stream|replication|batch"
+    }}
+  ],
+  "boundaries": [
+    {{
+      "id": "main_vpc",
+      "kind": "vpc|subnet|security_group|availability_zone|region|account",
+      "label": "Main VPC",
+      "parent": "<parent boundary id, optional>",
+      "component_ids": ["comp_a", "comp_b"]
+    }}
+  ],
+  "rationale": [{{"decision": "...", "reason": "..."}}],
+  "suggestions": ["...", "...", "..."]
+}}
+
+TIER RULES (vertical positioning, top to bottom):
+- Tier 0: Internet-facing entry points (CDN, DNS, API gateway, WAF)
+- Tier 1: Load balancing and ingress
+- Tier 2: Compute (VMs, containers, serverless functions)
+- Tier 3: Data layer (databases, caches, message queues)
+- Tier 4: Storage, backup, analytics, ML, monitoring
+
+CONNECTION KIND MAPPING — populate `kind` based on the reasoning:
+- "calls", "queries", "reads from", "fetches" -> sync_request
+- "publishes to", "emits", "fires event" -> async_event
+- "streams", "pipes" -> stream
+- "replicates", "copies" -> replication
+- "scheduled job", "ETL", "batch" -> batch
+
+BOUNDARY MAPPING — when reasoning mentions VPCs, subnets, SGs, AZs:
+- Create a boundary entry for each named VPC/subnet/SG
+- Set `component_ids` to the components the reasoning placed inside it
+- Set `parent` to nest subnets under VPCs, SGs under VPCs, etc.
+
+{SERVICE_KEYS}
+
+STRICT RULES:
+- Use ONLY the service keys listed above. Reject and remap anything else.
+- For RDS/Aurora variants: use 'rds' or 'aurora' as service, put engine in config.
+- Match the provider to what the reasoning describes; default to aws if unclear.
+- Respond with ONLY the JSON object — no markdown, no explanation, no code fences.
+- Include 2-4 "rationale" entries summarizing the reasoning's key decisions.
+- Include 3 "suggestions" for next-step modifications.
+- Populate `boundaries` whenever the reasoning mentions VPC/subnet/SG/AZ structure.
+- Populate `kind` on every connection when the reasoning makes the interaction shape clear.
+{MODEL_VERSION_GUIDANCE}"""
+
+
+MODIFY_REASONING_SYSTEM = f"""You are an experienced cloud architect. Given the current
+architecture and a modification request, write 4-10 bullets describing the updated architecture.
+
+Cover what changed (added, removed, reconfigured), what stayed the same, and any networking /
+boundary / connection-kind implications. Free text only. No JSON.
+
+{SERVICE_KEYS}
+{MODEL_VERSION_GUIDANCE}"""
+
+
+# -- Single-shot prompts (legacy, kept for back-compat) ---------------------------
 
 DESIGN_SYSTEM = f"""You generate cloud architectures as structured JSON.
 

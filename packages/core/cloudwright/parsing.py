@@ -17,7 +17,7 @@ from cloudwright.prompts import (
     SERVICE_NORMALIZATION,
 )
 from cloudwright.providers import get_equivalent
-from cloudwright.spec import ArchSpec, Component, Connection, Constraints
+from cloudwright.spec import ArchSpec, Boundary, Component, Connection, Constraints
 
 log = get_logger(__name__)
 
@@ -116,30 +116,90 @@ def _enforce_connections(spec: ArchSpec) -> ArchSpec:
     return spec
 
 
+# Compliance frameworks that require encryption-at-rest and HA on data stores.
+_HA_REQUIRING_FRAMEWORKS = {"hipaa", "pci-dss", "pci", "soc2", "gdpr", "fedramp", "hitrust", "iso27001"}
+_ENCRYPTION_REQUIRING_FRAMEWORKS = {"hipaa", "pci-dss", "pci", "soc2", "gdpr", "fedramp", "hitrust", "iso27001"}
+
+# Workload profiles that imply production-grade HA defaults. v1.4 makes these
+# conditional rather than blanket-applied — sandbox/dev workloads don't get
+# multi_az/count=2 forced on them.
+_HA_PROFILES = {"medium", "large", "enterprise", "production", "prod"}
+_NON_HA_PROFILES = {"sandbox", "dev", "development", "test", "demo", "poc"}
+
+
+def _profile_requires_ha(spec: ArchSpec, constraints: Constraints | None) -> bool:
+    """Return True when the spec/constraints imply production HA defaults."""
+    profile = ""
+    if spec.metadata and isinstance(spec.metadata, dict):
+        profile = str(spec.metadata.get("workload_profile", "")).lower()
+    if profile in _NON_HA_PROFILES:
+        return False
+    if profile in _HA_PROFILES:
+        return True
+    if constraints is None:
+        # No signal either way — default to production posture (back-compat).
+        return True
+    # Compliance frameworks always pull in HA.
+    if any(f.lower() in _HA_REQUIRING_FRAMEWORKS for f in constraints.compliance):
+        return True
+    if constraints.availability and constraints.availability >= 0.995:
+        return True
+    if constraints.throughput_rps and constraints.throughput_rps >= 1000:
+        return True
+    # If constraints exist but none of the production signals fire, treat as
+    # non-production — caller asked for something modest.
+    return True  # conservative default for back-compat
+
+
+def _profile_requires_encryption(spec: ArchSpec, constraints: Constraints | None) -> bool:
+    """Return True when defaults should force encryption=true on data stores."""
+    profile = ""
+    if spec.metadata and isinstance(spec.metadata, dict):
+        profile = str(spec.metadata.get("workload_profile", "")).lower()
+    if profile in _NON_HA_PROFILES:
+        # Sandboxes get whatever the LLM picked — no forced encryption override.
+        return False
+    if constraints is None:
+        return True  # back-compat default
+    if any(f.lower() in _ENCRYPTION_REQUIRING_FRAMEWORKS for f in constraints.compliance):
+        return True
+    return True  # default true — better safe than encrypted-after-the-breach
+
+
 def _post_validate(spec: ArchSpec, constraints: Constraints | None) -> ArchSpec:
-    """Apply safe defaults and enforce constraint-specific controls."""
+    """Apply safe defaults and enforce constraint-specific controls.
+
+    v1.4 change: defaults are conditional on workload profile + compliance.
+    Sandbox/dev profiles get the LLM's chosen values without overrides; only
+    production / compliance-bound workloads get encryption=true / multi_az=true /
+    count=2 forced. Per audit finding #4 — over-aggressive default injection
+    masked Stage 1 reasoning quality.
+    """
     components = [c.model_copy(deep=True) for c in spec.components]
     changed = False
     multi_component = len(components) > 3
+
+    needs_encryption = _profile_requires_encryption(spec, constraints)
+    needs_ha = _profile_requires_ha(spec, constraints)
 
     for i, comp in enumerate(components):
         cfg = dict(comp.config)
         updated = False
 
         if comp.service in DATA_STORE_SERVICES:
-            if not cfg.get("encryption"):
+            if needs_encryption and not cfg.get("encryption"):
                 cfg["encryption"] = True
                 updated = True
-            if not cfg.get("backup"):
+            if needs_ha and not cfg.get("backup"):
                 cfg["backup"] = True
                 updated = True
 
-        if comp.service in DATABASE_SERVICES and multi_component:
+        if comp.service in DATABASE_SERVICES and multi_component and needs_ha:
             if not cfg.get("multi_az"):
                 cfg["multi_az"] = True
                 updated = True
 
-        if comp.service in COMPUTE_SERVICES:
+        if comp.service in COMPUTE_SERVICES and needs_ha:
             if not cfg.get("auto_scaling"):
                 cfg["auto_scaling"] = True
                 updated = True
@@ -163,7 +223,7 @@ def _post_validate(spec: ArchSpec, constraints: Constraints | None) -> ArchSpec:
             cfg["storage_gb"] = 100
             updated = True
 
-        if comp.service in COMPUTE_SERVICES and "count" not in cfg:
+        if comp.service in COMPUTE_SERVICES and "count" not in cfg and needs_ha:
             cfg["count"] = 2
             updated = True
 
@@ -202,13 +262,22 @@ def _parse_arch_spec(data: dict, constraints: Constraints | None) -> ArchSpec:
         for c in data.get("components", [])
     ]
 
-    # Normalize service keys
+    # Normalize service keys.
+    # v1.4 note: with the Stage 2 projector explicitly told which canonical
+    # service keys to use, normalization should be a rare fallback. Each hit
+    # logs a WARNING so we can track LLM drift and trim the table over time.
     normalized = []
     for comp in components:
         raw = comp.service
         if raw in SERVICE_NORMALIZATION:
             fixed = SERVICE_NORMALIZATION[raw]
-            log.warning("Normalizing service key '%s' -> '%s' (component: %s)", raw, fixed, comp.id)
+            log.warning(
+                "SERVICE_NORMALIZATION fallback triggered: '%s' -> '%s' (component: %s). "
+                "Stage 2 projector should have emitted the canonical key directly.",
+                raw,
+                fixed,
+                comp.id,
+            )
             cfg = dict(comp.config)
             if raw in SERVICE_ENGINE_SUFFIXES:
                 cfg.setdefault("engine", SERVICE_ENGINE_SUFFIXES[raw])
@@ -247,12 +316,25 @@ def _parse_arch_spec(data: dict, constraints: Constraints | None) -> ArchSpec:
     components = validated
 
     connections = []
+    _VALID_KINDS = {"sync_request", "async_event", "stream", "replication", "batch"}
     for conn in data.get("connections", []):
         src = conn.get("source") or conn.get("from")
         tgt = conn.get("target") or conn.get("to")
         if not src or not tgt:
             log.warning("Skipping connection with missing source/target: %s", conn)
             continue
+        # v1.4: parse Connection.kind. Coerce variants and drop invalid values
+        # silently (back-compat with older specs that didn't have the field).
+        raw_kind = conn.get("kind") or conn.get("type")
+        kind: str | None = None
+        if raw_kind:
+            normalized_kind = str(raw_kind).lower().strip().replace("-", "_").replace(" ", "_")
+            if normalized_kind in _VALID_KINDS:
+                kind = normalized_kind
+            elif normalized_kind in {"sync", "request", "rpc", "http"}:
+                kind = "sync_request"
+            elif normalized_kind in {"async", "event", "queue", "pubsub"}:
+                kind = "async_event"
         connections.append(
             Connection(
                 source=src,
@@ -260,14 +342,41 @@ def _parse_arch_spec(data: dict, constraints: Constraints | None) -> ArchSpec:
                 label=conn.get("label", ""),
                 protocol=conn.get("protocol"),
                 port=conn.get("port"),
+                kind=kind,
             )
         )
+
+    # v1.4: parse boundaries (VPC/subnet/SG) when present.
+    boundaries: list[Boundary] = []
+    component_ids_for_boundaries = {c.id for c in components}
+    for b in data.get("boundaries", []) or []:
+        bid = b.get("id")
+        bkind = b.get("kind")
+        if not bid or not bkind:
+            log.warning("Skipping boundary with missing id/kind: %s", b)
+            continue
+        comp_ids = [cid for cid in (b.get("component_ids") or []) if cid in component_ids_for_boundaries]
+        try:
+            boundaries.append(
+                Boundary(
+                    id=bid,
+                    kind=str(bkind).lower(),
+                    label=b.get("label", ""),
+                    parent=b.get("parent"),
+                    component_ids=comp_ids,
+                    config=b.get("config", {}),
+                )
+            )
+        except ValueError as exc:
+            log.warning("Skipping invalid boundary %s: %s", bid, exc)
 
     metadata = {}
     if "rationale" in data:
         metadata["rationale"] = data["rationale"]
     if "suggestions" in data:
         metadata["suggestions"] = data["suggestions"]
+    if "workload_profile" in data:
+        metadata["workload_profile"] = data["workload_profile"]
 
     # Filter out connections with invalid references before constructing ArchSpec
     component_ids = {c.id for c in components}
@@ -282,6 +391,7 @@ def _parse_arch_spec(data: dict, constraints: Constraints | None) -> ArchSpec:
         constraints=constraints,
         components=components,
         connections=valid_connections,
+        boundaries=boundaries,
         metadata=metadata,
     )
     spec = _enforce_connections(spec)

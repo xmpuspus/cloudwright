@@ -13,9 +13,12 @@ from cloudwright.parsing import _extract_json, _parse_arch_spec
 from cloudwright.prompts import (
     COMPARISON_SYSTEM,
     COMPLIANCE_CONTROLS,
+    DESIGN_PROJECTION_SYSTEM,
+    DESIGN_REASONING_SYSTEM,
     DESIGN_SYSTEM,
     IMPORT_SYSTEM,
     MIGRATION_SYSTEM,
+    MODIFY_REASONING_SYSTEM,
     MODIFY_SYSTEM,
 )
 from cloudwright.providers import get_equivalent
@@ -27,12 +30,18 @@ _STOPWORDS = {"a", "an", "the", "on", "in", "for", "with", "and", "or", "to", "m
 
 
 class Architect:
-    def __init__(self, llm: BaseLLM | None = None):
+    def __init__(self, llm: BaseLLM | None = None, two_stage: bool = True):
         self.llm = llm or get_llm()
         # Side-channel for the most recent usage dict produced by design()/modify().
         # The web routers read this to surface model/tokens/cost in API responses
         # without a breaking signature change to design().
         self.last_usage: dict = {}
+        # When True (default in v1.4) use two-stage prompting: Stage 1 emits free
+        # text architectural reasoning (Sonnet), Stage 2 projects to JSON (Haiku).
+        # Per ai-llm-eval.md this recovers ~27pp of reasoning quality lost to
+        # single-shot JSON-schema constraints. Flip to False to use the legacy
+        # single-shot path (kept around for benchmarking and emergency fallback).
+        self.two_stage = two_stage
 
     def design(self, description: str, constraints: Constraints | None = None) -> ArchSpec:
         self.last_usage = {}
@@ -56,6 +65,56 @@ class Architect:
                     spec = spec.model_copy(update={"region": constraints.regions[0]})
                 return spec
 
+        if self.two_stage and self._select_system_prompt(description) is DESIGN_SYSTEM:
+            spec = self._design_two_stage(description, constraints)
+        else:
+            spec = self._design_single_shot(description, constraints)
+
+        if template_result is not None:
+            _, confidence = template_result
+            spec = spec.model_copy(update={"metadata": {**spec.metadata, "template_confidence": confidence}})
+        return spec
+
+    def _design_two_stage(self, description: str, constraints: Constraints | None) -> ArchSpec:
+        """Two-stage: free-text reasoning -> strict JSON projection."""
+        # Stage 1: free-text architectural reasoning (Sonnet, no JSON schema).
+        stage1_system = DESIGN_REASONING_SYSTEM
+        if constraints:
+            stage1_system += _build_constraint_prompt(constraints)
+        stage1_messages = [{"role": "user", "content": description}]
+
+        stage1_start = time.perf_counter()
+        reasoning, stage1_usage = self.llm.generate(stage1_messages, stage1_system, max_tokens=4000)
+        stage1_enriched = self._enrich_usage(stage1_usage, stage1_start)
+
+        # Stage 2: project the reasoning into ArchSpec JSON via Haiku (cheap, strict).
+        stage2_messages = [
+            {
+                "role": "user",
+                "content": (
+                    f"Original user request:\n{description}\n\n"
+                    f"Architect's reasoning:\n{reasoning}\n\n"
+                    "Project this into the ArchSpec JSON schema now."
+                ),
+            }
+        ]
+        stage2_start = time.perf_counter()
+        try:
+            text, stage2_usage = self.llm.generate_fast(stage2_messages, DESIGN_PROJECTION_SYSTEM, max_tokens=10000)
+            data = _extract_json(text)
+        except (ValueError, json.JSONDecodeError) as first_err:
+            log.warning("Stage 2 projection failed: %s — retrying with explicit JSON-only nudge", first_err)
+            stage2_messages.append({"role": "assistant", "content": "Let me output only JSON."})
+            stage2_messages.append({"role": "user", "content": "Output ONLY the JSON object. No prose. Start with {."})
+            text, stage2_usage = self.llm.generate_fast(stage2_messages, DESIGN_PROJECTION_SYSTEM, max_tokens=10000)
+            data = _extract_json(text)
+        stage2_enriched = self._enrich_usage(stage2_usage, stage2_start)
+
+        self.last_usage = self._merge_two_stage_usage(stage1_enriched, stage2_enriched, reasoning)
+        return _parse_arch_spec(data, constraints)
+
+    def _design_single_shot(self, description: str, constraints: Constraints | None) -> ArchSpec:
+        """Legacy single-shot path. Used for IMPORT/MIGRATION/COMPARE prompts and as fallback."""
         system = self._select_system_prompt(description)
         if constraints:
             system += _build_constraint_prompt(constraints)
@@ -80,12 +139,7 @@ class Architect:
             data = _extract_json(text)
 
         self.last_usage = self._enrich_usage(usage, start)
-
-        spec = _parse_arch_spec(data, constraints)
-        if template_result is not None:
-            _, confidence = template_result
-            spec = spec.model_copy(update={"metadata": {**spec.metadata, "template_confidence": confidence}})
-        return spec
+        return _parse_arch_spec(data, constraints)
 
     def _enrich_usage(self, usage: dict, start: float) -> dict:
         if not usage:
@@ -96,6 +150,8 @@ class Architect:
         pricing_for = getattr(self.llm, "pricing_for", None)
         if callable(pricing_for):
             pricing = pricing_for(model)
+            if not (isinstance(pricing, dict) and "input" in pricing and "output" in pricing):
+                pricing = self.llm.pricing
         else:
             pricing = self.llm.pricing
         inp = enriched.get("input_tokens", 0) or 0
@@ -103,6 +159,52 @@ class Architect:
         enriched["cost_usd"] = round((inp / 1000) * pricing["input"] + (out / 1000) * pricing["output"], 6)
         enriched["latency_ms"] = round((time.perf_counter() - start) * 1000)
         return enriched
+
+    @staticmethod
+    def _merge_two_stage_usage(stage1: dict, stage2: dict, reasoning_text: str) -> dict:
+        """Combine stage 1 and stage 2 usage dicts into a single payload.
+
+        The merged dict keeps the headline fields (input_tokens, output_tokens,
+        cost_usd, model) for back-compat, plus per-stage breakdown that the web
+        layer surfaces in API responses.
+        """
+        s1_in = stage1.get("input_tokens", 0) or 0
+        s1_out = stage1.get("output_tokens", 0) or 0
+        s2_in = stage2.get("input_tokens", 0) or 0
+        s2_out = stage2.get("output_tokens", 0) or 0
+        s1_cost = stage1.get("cost_usd", 0.0) or 0.0
+        s2_cost = stage2.get("cost_usd", 0.0) or 0.0
+        s1_lat = stage1.get("latency_ms", 0) or 0
+        s2_lat = stage2.get("latency_ms", 0) or 0
+        merged = {
+            "input_tokens": s1_in + s2_in,
+            "output_tokens": s1_out + s2_out,
+            "cost_usd": round(s1_cost + s2_cost, 6),
+            "latency_ms": s1_lat + s2_lat,
+            # Headline model = the heavy reasoning model (Sonnet); Stage 2 model is
+            # surfaced in the per-stage breakdown.
+            "model": stage1.get("model"),
+            "two_stage": True,
+            "stage1": {
+                "model": stage1.get("model"),
+                "input_tokens": s1_in,
+                "output_tokens": s1_out,
+                "cost_usd": s1_cost,
+                "latency_ms": s1_lat,
+                "reasoning_chars": len(reasoning_text or ""),
+            },
+            "stage2": {
+                "model": stage2.get("model"),
+                "input_tokens": s2_in,
+                "output_tokens": s2_out,
+                "cost_usd": s2_cost,
+                "latency_ms": s2_lat,
+            },
+            "total_cost_usd": round(s1_cost + s2_cost, 6),
+            "stage1_tokens": s1_in + s1_out,
+            "stage2_tokens": s2_in + s2_out,
+        }
+        return merged
 
     @staticmethod
     def _select_system_prompt(description: str) -> str:
@@ -159,9 +261,38 @@ class Architect:
 
         self.last_usage = {}
         current = _slim_for_modify(spec)
+
+        # Simple modifications (e.g. "rename db to mydb") still go through the
+        # fast single-shot path — two-stage adds latency we don't need for trivial
+        # edits. Complex modifications (compliance, migrate, redesign) get the
+        # full reasoning + projection pipeline so the LLM can think about
+        # boundaries and connection kinds explicitly.
+        if self.two_stage and not _is_simple_modification(instruction):
+            updated = self._modify_two_stage(spec, current, instruction)
+        else:
+            updated = self._modify_single_shot(spec, current, instruction)
+
+        original_ids = {c.id for c in spec.components}
+        updated_ids = {c.id for c in updated.components}
+        dropped = original_ids - updated_ids
+        if dropped:
+            remove_words = {"remove", "delete", "drop", "eliminate", "get rid of"}
+            explicitly_removed = any(w in instruction.lower() for w in remove_words)
+            if not explicitly_removed:
+                restored = list(updated.components)
+                original_map = {c.id: c for c in spec.components}
+                for cid in dropped:
+                    restored.append(original_map[cid])
+                updated = updated.model_copy(update={"components": restored})
+                log.warning("Restored %d dropped components: %s", len(dropped), dropped)
+
+        if spec.cost_estimate and not updated.cost_estimate:
+            updated = updated.model_copy(update={"cost_estimate": spec.cost_estimate})
+        return updated
+
+    def _modify_single_shot(self, spec: ArchSpec, current: str, instruction: str) -> ArchSpec:
         prompt = f"Current architecture:\n{current}\n\nModification: {instruction}"
         messages = [{"role": "user", "content": prompt}]
-
         max_tokens = 10000
 
         if _is_simple_modification(instruction):
@@ -185,25 +316,47 @@ class Architect:
             text, usage = self.llm.generate(messages, MODIFY_SYSTEM, max_tokens=max_tokens)
             data = _extract_json(text)
         self.last_usage = self._enrich_usage(usage, start)
-        updated = _parse_arch_spec(data, spec.constraints)
+        return _parse_arch_spec(data, spec.constraints)
 
-        original_ids = {c.id for c in spec.components}
-        updated_ids = {c.id for c in updated.components}
-        dropped = original_ids - updated_ids
-        if dropped:
-            remove_words = {"remove", "delete", "drop", "eliminate", "get rid of"}
-            explicitly_removed = any(w in instruction.lower() for w in remove_words)
-            if not explicitly_removed:
-                restored = list(updated.components)
-                original_map = {c.id: c for c in spec.components}
-                for cid in dropped:
-                    restored.append(original_map[cid])
-                updated = updated.model_copy(update={"components": restored})
-                log.warning("Restored %d dropped components: %s", len(dropped), dropped)
+    def _modify_two_stage(self, spec: ArchSpec, current: str, instruction: str) -> ArchSpec:
+        # Stage 1: free-text reasoning about the modification.
+        stage1_prompt = (
+            f"Current architecture (slim JSON):\n{current}\n\n"
+            f"Modification request: {instruction}\n\n"
+            "Describe the updated architecture in plain bullets — what changed, what stayed, "
+            "any boundary or connection-kind implications."
+        )
+        stage1_messages = [{"role": "user", "content": stage1_prompt}]
+        stage1_start = time.perf_counter()
+        reasoning, stage1_usage = self.llm.generate(stage1_messages, MODIFY_REASONING_SYSTEM, max_tokens=4000)
+        stage1_enriched = self._enrich_usage(stage1_usage, stage1_start)
 
-        if spec.cost_estimate and not updated.cost_estimate:
-            updated = updated.model_copy(update={"cost_estimate": spec.cost_estimate})
-        return updated
+        # Stage 2: project to JSON.
+        stage2_messages = [
+            {
+                "role": "user",
+                "content": (
+                    f"Original architecture:\n{current}\n\n"
+                    f"Modification request: {instruction}\n\n"
+                    f"Architect's reasoning about the update:\n{reasoning}\n\n"
+                    "Project the COMPLETE updated architecture into the ArchSpec JSON schema."
+                ),
+            }
+        ]
+        stage2_start = time.perf_counter()
+        try:
+            text, stage2_usage = self.llm.generate_fast(stage2_messages, DESIGN_PROJECTION_SYSTEM, max_tokens=10000)
+            data = _extract_json(text)
+        except (ValueError, json.JSONDecodeError) as first_err:
+            log.warning("Stage 2 modify projection failed: %s — retrying", first_err)
+            stage2_messages.append({"role": "assistant", "content": "Let me output only JSON."})
+            stage2_messages.append({"role": "user", "content": "Output ONLY the JSON object. No prose. Start with {."})
+            text, stage2_usage = self.llm.generate_fast(stage2_messages, DESIGN_PROJECTION_SYSTEM, max_tokens=10000)
+            data = _extract_json(text)
+        stage2_enriched = self._enrich_usage(stage2_usage, stage2_start)
+
+        self.last_usage = self._merge_two_stage_usage(stage1_enriched, stage2_enriched, reasoning)
+        return _parse_arch_spec(data, spec.constraints)
 
     def compare(self, spec: ArchSpec, providers: list[str]) -> list[Alternative]:
         from cloudwright.cost import CostEngine

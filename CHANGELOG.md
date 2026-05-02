@@ -40,6 +40,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - All 4 new test files added: `test_two_stage_prompting.py` (8 tests), `test_boundary_in_spec.py` (5 tests), `test_connection_kind.py` (8 tests), `test_post_validate_conditional.py` (8 tests). 29 new tests, all passing.
 - Existing `_post_validate` tests retain their behavior because `_profile_requires_encryption` / `_profile_requires_ha` default to `True` when no profile metadata and no overriding signal is present, preserving the previous defaults for callers that didn't tag specs.
+- **Cancel-safe LLM streaming via `AsyncAnthropic` + `AsyncOpenAI`.** `AnthropicLLM.generate_stream_async` and `OpenAILLM.generate_stream_async` use the providers' native async clients with `async with` cleanup, so consumer cancellation propagates into the SDK and closes the upstream httpx connection. Lazy-built `async_client` property on each provider — sync callers pay no async-import cost.
+- **`ConversationSession.send_stream_async`.** Async generator mirror of `send_stream`. Pops the orphan user message on `BaseException` (covers `asyncio.CancelledError`) so a disconnected stream doesn't leave a user-without-assistant turn at the end of history.
+- **`BaseLLM.generate_stream_async` default.** Bridges the sync `generate_stream` through `asyncio.to_thread` for any third-party provider that hasn't implemented the native async path yet — not cancel-safe, but provides a working default.
+- **SSE proxy-buffering headers.** `/api/chat/stream`, `/api/design/stream`, `/api/modify/stream` now ship `X-Accel-Buffering: no` and `Cache-Control: no-cache` so nginx (and most reverse proxies) forward token chunks immediately instead of waiting on a 4-16 KB buffer fill.
+
+### Changed
+
+- **`/api/chat/stream` no longer uses a worker thread.** The `threading.Thread` + `asyncio.Queue` bridge is gone. The route now `async for`s over `session.send_stream_async` directly, so client disconnect or timeout cancels the upstream LLM call instead of orphaning a thread that keeps consuming tokens. Net ~50 LOC simplification (audit `docs/audits/03-reliability-perf.md` Critical #2).
+- **`/api/design/stream` and `/api/modify/stream` route-level timeouts.** Replaced bare `asyncio.to_thread(...)` with `asyncio.wait_for(asyncio.to_thread(...), timeout=120)` and a graceful `llm_timeout` SSE error event. Matches the cancel-safety contract of `/api/chat/stream`. (`/api/design/stream` previously had no route-level timeout at all.)
+
+### Fixed
+
+- **Orphan thread on chat-stream disconnect.** Audit Critical #2: a daemon `threading.Thread` ran `session.send_stream` to completion even after the client disconnected or the route returned `llm_timeout`. The async refactor kills this entirely.
+- **`asyncio.Queue` full → token loss.** Audit High: the 256-slot queue between the worker thread and the SSE consumer dropped tokens past the 256-chunk mark on slow networks (manifesting as truncated specs that `_try_parse_spec` rejected). Removed with the queue.
+- **Timeout doesn't cancel LLM bill.** Audit High: route-level `asyncio.wait_for(..., 120)` cancelled the awaiting coroutine but left the SDK call running for up to 60 more seconds in the worker thread. Async path makes the timeout actually short-circuit the SDK call.
 
 ## [1.3.0] - 2026-05-02
 

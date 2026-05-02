@@ -17,6 +17,12 @@ from cloudwright_web.streaming import sse_event
 log = logging.getLogger(__name__)
 router = APIRouter()
 
+# Mirrors the chat router. Push timeouts into ``asyncio.wait_for`` so a
+# cancelled request actually unwinds the SDK call instead of leaving a worker
+# thread to keep billing tokens.
+_LLM_DESIGN_TIMEOUT_S = 120.0
+_SSE_HEADERS = {"X-Accel-Buffering": "no", "Cache-Control": "no-cache"}
+
 
 class DesignRequest(BaseModel):
     description: str = Field(..., min_length=5, max_length=2000)
@@ -79,7 +85,24 @@ async def design_stream(req: DesignRequest, request: Request):
         yield sse_event("generating", message="Generating architecture...")
 
         try:
-            spec = await asyncio.to_thread(architect.design, req.description, constraints)
+            # ``asyncio.wait_for`` cancels the awaitable on timeout, which
+            # propagates ``CancelledError`` into the ``to_thread`` shim. The
+            # underlying ``architect.design`` is still a sync SDK call, so it
+            # may finish anyway, but the route no longer blocks forever
+            # waiting on it. Once ``Architect`` exposes an async path this
+            # becomes truly cancel-safe.
+            spec = await asyncio.wait_for(
+                asyncio.to_thread(architect.design, req.description, constraints),
+                timeout=_LLM_DESIGN_TIMEOUT_S,
+            )
+        except asyncio.TimeoutError:
+            yield sse_event(
+                "error",
+                code="llm_timeout",
+                message="Request timed out",
+                suggestion="Try a simpler architecture description",
+            )
+            return
         except Exception as e:
             yield sse_event("error", message=str(e))
             return
@@ -111,7 +134,7 @@ async def design_stream(req: DesignRequest, request: Request):
 
         yield sse_event("done", spec=spec.model_dump(exclude_none=True), yaml=spec.to_yaml(), usage=usage)
 
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+    return StreamingResponse(event_generator(), media_type="text/event-stream", headers=_SSE_HEADERS)
 
 
 @router.post("/modify")
@@ -146,7 +169,18 @@ async def modify_stream(req: ModifyRequest, request: Request):
         yield sse_event("modifying", message="Applying modifications...")
 
         try:
-            updated = await asyncio.to_thread(architect.modify, spec, req.instruction)
+            updated = await asyncio.wait_for(
+                asyncio.to_thread(architect.modify, spec, req.instruction),
+                timeout=_LLM_DESIGN_TIMEOUT_S,
+            )
+        except asyncio.TimeoutError:
+            yield sse_event(
+                "error",
+                code="llm_timeout",
+                message="Request timed out",
+                suggestion="Try a simpler modification",
+            )
+            return
         except Exception as e:
             yield sse_event("error", message=str(e))
             return
@@ -165,4 +199,4 @@ async def modify_stream(req: ModifyRequest, request: Request):
 
         yield sse_event("done", spec=updated.model_dump(exclude_none=True), yaml=updated.to_yaml(), usage=usage)
 
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+    return StreamingResponse(event_generator(), media_type="text/event-stream", headers=_SSE_HEADERS)

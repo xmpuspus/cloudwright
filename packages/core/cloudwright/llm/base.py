@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
 
 
 class BaseLLM(ABC):
@@ -56,6 +56,33 @@ class BaseLLM(ABC):
         self, messages: list[dict], system: str, max_tokens: int = 2000, timeout: float | None = None
     ) -> Iterator[str]:
         """Stream generation. Yields text chunks."""
+
+    async def generate_stream_async(
+        self, messages: list[dict], system: str, max_tokens: int = 2000, timeout: float | None = None
+    ) -> AsyncIterator[str]:
+        """Async streaming. Yields text chunks via ``async for``.
+
+        Default implementation falls back to bridging the sync ``generate_stream``
+        through ``asyncio.to_thread``. Concrete providers should override with a
+        native async path (``AsyncAnthropic``, ``AsyncOpenAI``) so that
+        cancellation propagates into the underlying httpx connection — without
+        the override, cancelling the consumer leaves the worker thread (and
+        upstream LLM call) running to completion.
+        """
+        import asyncio
+
+        chunks: list[str] = []
+
+        def _collect() -> list[str]:
+            for c in self.generate_stream(messages, system, max_tokens, timeout):
+                chunks.append(c)
+            return chunks
+
+        # Fallback path: drain the sync stream off-thread, then yield.
+        # Not cancel-safe, but provides a working default for any third-party
+        # provider that hasn't yet implemented the async path.
+        for c in await asyncio.to_thread(_collect):
+            yield c
 
     def estimate_tokens(self, text: str) -> int:
         """Rough token count (~4 chars per token for English)."""

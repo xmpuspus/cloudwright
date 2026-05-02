@@ -21,6 +21,15 @@ def _make_mock_session(chunks=None):
     session.history = []
     if chunks is not None:
         session.send_stream.return_value = iter(chunks)
+
+        async def _async_stream(_msg):
+            for c in chunks:
+                yield c
+
+        # ``send_stream_async`` is the new cancel-safe path the router uses;
+        # ``MagicMock`` doesn't auto-generate async generators, so we wire it
+        # explicitly. ``send_stream`` is kept around for back-compat tests.
+        session.send_stream_async = _async_stream
     return session
 
 

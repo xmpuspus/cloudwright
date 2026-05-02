@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 import random
 import time
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
 
 import anthropic
 
@@ -53,7 +54,19 @@ def _normalize_system(system: str | list[dict]) -> list[dict]:
 
 class AnthropicLLM(BaseLLM):
     def __init__(self, api_key: str | None = None):
-        self.client = anthropic.Anthropic(api_key=api_key or os.environ.get("ANTHROPIC_API_KEY"), timeout=180.0)
+        resolved_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
+        self.client = anthropic.Anthropic(api_key=resolved_key, timeout=180.0)
+        # Async client used by ``generate_stream_async`` — instantiated lazily
+        # on first use so import-time failures (e.g. missing async deps in
+        # constrained environments) don't break the sync code path.
+        self._async_client: anthropic.AsyncAnthropic | None = None
+        self._api_key = resolved_key
+
+    @property
+    def async_client(self) -> anthropic.AsyncAnthropic:
+        if self._async_client is None:
+            self._async_client = anthropic.AsyncAnthropic(api_key=self._api_key, timeout=180.0)
+        return self._async_client
 
     @property
     def model_name(self) -> str:
@@ -116,6 +129,37 @@ class AnthropicLLM(BaseLLM):
                 if attempt == _MAX_RETRIES - 1:
                     raise
                 time.sleep(delay * (1 + random.uniform(0, 0.5)))
+                delay *= 2
+
+    async def generate_stream_async(
+        self,
+        messages: list[dict],
+        system: str | list[dict],
+        max_tokens: int = 2000,
+        timeout: float | None = None,
+    ) -> AsyncIterator[str]:
+        """Async streaming via ``AsyncAnthropic``.
+
+        Cancel-safe: if the consumer breaks (client disconnect, timeout,
+        ``asyncio.CancelledError``), the ``async with`` block tears down the
+        underlying httpx stream and closes the upstream connection — so we
+        stop billing tokens the moment the consumer goes away.
+        """
+        system_block = _normalize_system(system)
+        kwargs = dict(model=GENERATE_MODEL, max_tokens=max_tokens, system=system_block, messages=messages)
+        if timeout is not None:
+            kwargs["timeout"] = timeout
+        delay = 1.0
+        for attempt in range(_MAX_RETRIES):
+            try:
+                async with self.async_client.messages.stream(**kwargs) as stream:
+                    async for text in stream.text_stream:
+                        yield text
+                return
+            except _RETRYABLE:
+                if attempt == _MAX_RETRIES - 1:
+                    raise
+                await asyncio.sleep(delay * (1 + random.uniform(0, 0.5)))
                 delay *= 2
 
     def _call(

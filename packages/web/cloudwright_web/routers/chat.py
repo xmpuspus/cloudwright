@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import threading
-import time
 from typing import Literal
 
 from cloudwright.session import ConversationSession
@@ -19,6 +17,19 @@ from cloudwright_web.streaming import sse_event
 
 log = logging.getLogger(__name__)
 router = APIRouter()
+
+# Per-call SDK timeout passed into the async LLM client. Matches the previous
+# route-level ``asyncio.wait_for(..., timeout=120)`` budget but pushes the
+# enforcement down into the SDK so cancellation actually short-circuits the
+# upstream LLM call (sync paths used to keep billing tokens after the route
+# timed out).
+_LLM_STREAM_TIMEOUT_S = 120.0
+
+# Headers attached to every SSE response. ``X-Accel-Buffering: no`` disables
+# nginx (and most reverse-proxy) buffering so token chunks reach the browser
+# as soon as we yield them — without it, first-token latency observed by the
+# user can balloon to 2-4s waiting for the proxy buffer to fill.
+_SSE_HEADERS = {"X-Accel-Buffering": "no", "Cache-Control": "no-cache"}
 
 
 class ChatMessage(BaseModel):
@@ -91,51 +102,55 @@ async def chat_stream(req: ChatRequest, request: Request):
                 continue  # only accept user-role messages from client history
             session.history.append({"role": msg.role, "content": msg.content})
 
+        # Push the stream timeout into the SDK call; on the async path this
+        # cancels the upstream httpx connection, so we stop billing tokens the
+        # moment the deadline passes (the old thread-bridge could not).
         try:
-            queue: asyncio.Queue = asyncio.Queue(maxsize=256)
-            loop = asyncio.get_running_loop()
+            session.llm.timeout = _LLM_STREAM_TIMEOUT_S  # best-effort hint for legacy adapters
+        except Exception:
+            pass
 
-            def _run_stream():
-                try:
-                    for chunk in session.send_stream(req.message):
-                        loop.call_soon_threadsafe(queue.put_nowait, ("token", chunk))
-                    loop.call_soon_threadsafe(queue.put_nowait, ("done", None))
-                except Exception as exc:
-                    loop.call_soon_threadsafe(queue.put_nowait, ("error", str(exc)))
+        try:
+            agen = session.send_stream_async(req.message)
+            try:
+                while True:
+                    try:
+                        chunk = await asyncio.wait_for(agen.__anext__(), timeout=_LLM_STREAM_TIMEOUT_S)
+                    except StopAsyncIteration:
+                        break
+                    except asyncio.TimeoutError:
+                        # ``aclose`` cancels the inner ``async for`` and the
+                        # SDK's ``async with`` tears down the upstream connection,
+                        # so we do not orphan a coroutine billing tokens.
+                        await agen.aclose()
+                        yield sse_event(
+                            "error",
+                            code="llm_timeout",
+                            message="Request timed out",
+                            suggestion="Try a simpler architecture description",
+                        )
+                        return
+                    yield sse_event("token", data=chunk)
+            finally:
+                # If the consumer disconnects (or anything else aborts the
+                # generator), explicitly close the inner async-gen so the
+                # SDK's ``async with`` cleanup runs synchronously here rather
+                # than at GC time.
+                await agen.aclose()
 
-            thread = threading.Thread(target=_run_stream, daemon=True)
-            thread.start()
-
-            deadline = time.time() + 120
-            while True:
-                remaining = deadline - time.time()
-                if remaining <= 0:
-                    yield sse_event(
-                        "error",
-                        code="llm_timeout",
-                        message="Request timed out",
-                        suggestion="Try a simpler architecture description",
-                    )
-                    return
-                try:
-                    kind, payload = await asyncio.wait_for(queue.get(), timeout=min(remaining, 5))
-                except asyncio.TimeoutError:
-                    continue
-
-                if kind == "token":
-                    yield sse_event("token", data=payload)
-                elif kind == "error":
-                    yield sse_event("error", message=payload)
-                    return
-                else:  # done
-                    spec = session.current_spec
-                    done_kwargs: dict = {"usage": session.last_usage}
-                    if spec:
-                        done_kwargs["data"] = spec.model_dump(exclude_none=True)
-                        done_kwargs["yaml"] = spec.to_yaml()
-                    yield sse_event("done", **done_kwargs)
-                    return
+            spec = session.current_spec
+            done_kwargs: dict = {"usage": session.last_usage}
+            if spec:
+                done_kwargs["data"] = spec.model_dump(exclude_none=True)
+                done_kwargs["yaml"] = spec.to_yaml()
+            yield sse_event("done", **done_kwargs)
+        except asyncio.CancelledError:
+            # Re-raised so Starlette can finish the request unwind. We do NOT
+            # emit an SSE error event here — the consumer is gone, nobody is
+            # listening, and yielding into a closed connection raises again.
+            raise
         except Exception as e:
+            log.exception("Chat stream failed")
             yield sse_event("error", message=str(e))
 
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+    return StreamingResponse(event_generator(), media_type="text/event-stream", headers=_SSE_HEADERS)

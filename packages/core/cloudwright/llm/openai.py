@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 import random
 import time
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
 
 import openai
 
@@ -34,7 +35,16 @@ _RETRYABLE = (
 
 class OpenAILLM(BaseLLM):
     def __init__(self, api_key: str | None = None):
-        self.client = openai.OpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"), timeout=180.0)
+        resolved_key = api_key or os.environ.get("OPENAI_API_KEY")
+        self.client = openai.OpenAI(api_key=resolved_key, timeout=180.0)
+        self._async_client: openai.AsyncOpenAI | None = None
+        self._api_key = resolved_key
+
+    @property
+    def async_client(self) -> openai.AsyncOpenAI:
+        if self._async_client is None:
+            self._async_client = openai.AsyncOpenAI(api_key=self._api_key, timeout=180.0)
+        return self._async_client
 
     @property
     def model_name(self) -> str:
@@ -121,6 +131,66 @@ class OpenAILLM(BaseLLM):
                 if attempt == _MAX_RETRIES - 1:
                     raise
                 time.sleep(delay * (1 + random.uniform(0, 0.5)))
+                delay *= 2
+
+    async def generate_stream_async(
+        self, messages: list[dict], system: str, max_tokens: int = 2000, timeout: float | None = None
+    ) -> AsyncIterator[str]:
+        """Async streaming via ``AsyncOpenAI``.
+
+        Cancel-safe: ``async with`` on the stream guarantees the underlying
+        httpx response is released the moment the consumer goes away (client
+        disconnect, ``asyncio.CancelledError``, exception in the consumer).
+        Without this, the orphaned coroutine would keep consuming tokens
+        until the LLM returned its final chunk.
+        """
+        full_messages = [{"role": "system", "content": system}] + messages
+        kwargs = dict(
+            model=GENERATE_MODEL,
+            max_completion_tokens=max_tokens,
+            messages=full_messages,
+            stream=True,
+            # Surface usage on the final chunk; without this the streaming
+            # response carries no token counts and we can't bill or
+            # cache-track.
+            stream_options={"include_usage": True},
+        )
+        if timeout is not None:
+            kwargs["timeout"] = timeout
+        delay = 1.0
+        for attempt in range(_MAX_RETRIES):
+            try:
+                stream = await self.async_client.chat.completions.create(**kwargs)
+                try:
+                    async for chunk in stream:
+                        if not chunk.choices:
+                            continue
+                        content = chunk.choices[0].delta.content
+                        if content:
+                            yield content
+                finally:
+                    # AsyncStream supports either ``aclose`` or ``close`` on a
+                    # given SDK version — call whichever exists. Swallow
+                    # close-time errors because we may already be unwinding
+                    # from a cancellation.
+                    aclose = getattr(stream, "aclose", None)
+                    if callable(aclose):
+                        try:
+                            await aclose()
+                        except Exception:
+                            pass
+                    else:
+                        close = getattr(stream, "close", None)
+                        if callable(close):
+                            try:
+                                close()
+                            except Exception:
+                                pass
+                return
+            except _RETRYABLE:
+                if attempt == _MAX_RETRIES - 1:
+                    raise
+                await asyncio.sleep(delay * (1 + random.uniform(0, 0.5)))
                 delay *= 2
 
     def _call(

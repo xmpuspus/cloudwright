@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import time
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
 
 from cloudwright.llm import get_llm
 from cloudwright.llm.base import BaseLLM
@@ -103,6 +103,41 @@ class ConversationSession:
             raise
 
         full_text = "".join(accumulated)
+        self._finalize_stream(full_text)
+
+    async def send_stream_async(self, message: str) -> AsyncIterator[str]:
+        """Async stream a response token-by-token.
+
+        Mirrors ``send_stream`` but uses the provider's native async path
+        (``AnthropicLLM.generate_stream_async`` / ``OpenAILLM.generate_stream_async``)
+        so that consumer cancellation propagates into the underlying httpx
+        connection. The web routers use this so a client disconnect or
+        timeout actually stops the LLM call instead of orphaning a worker
+        thread that keeps consuming tokens.
+        """
+        self._trim_history()
+        self.history.append({"role": "user", "content": message})
+        system = self._build_cacheable_system(CHAT_SYSTEM)
+
+        accumulated: list[str] = []
+        try:
+            async for chunk in self.llm.generate_stream_async(self.history, system, max_tokens=10000):
+                accumulated.append(chunk)
+                yield chunk
+        except BaseException:
+            # ``BaseException`` covers ``asyncio.CancelledError`` (Python 3.8+
+            # promoted CancelledError to a BaseException subclass). On
+            # cancellation we still want to roll back the orphan user message
+            # before propagating, so the session's history doesn't end on a
+            # user turn with no assistant reply.
+            self.history.pop()
+            raise
+
+        full_text = "".join(accumulated)
+        self._finalize_stream(full_text)
+
+    def _finalize_stream(self, full_text: str) -> None:
+        """Bookkeeping shared by sync and async streaming paths."""
         self.history.append({"role": "assistant", "content": full_text})
 
         # Track usage from stream (estimate from accumulated text)

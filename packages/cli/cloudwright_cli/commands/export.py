@@ -15,6 +15,10 @@ console = Console()
 
 _SYNTAX_MAP = {
     "terraform": "hcl",
+    "pulumi-ts": "typescript",
+    "pulumi-typescript": "typescript",
+    "pulumi-python": "python",
+    "pulumi-py": "python",
     "cloudformation": "yaml",
     "mermaid": "text",
     "d2": "text",
@@ -23,6 +27,26 @@ _SYNTAX_MAP = {
     "c4": "text",
     "sbom": "json",
     "aibom": "json",
+}
+
+# Formats that produce a multi-file project layout when --output points at a
+# directory (or any extensionless path). Keep in sync with the dispatch in
+# cloudwright.exporter.export_spec.
+_DIRECTORY_FORMATS = {
+    "terraform",
+    "pulumi-ts",
+    "pulumi-typescript",
+    "pulumi-python",
+    "pulumi-py",
+}
+
+# Primary entry filename per directory-format, used only for status messages.
+_DIRECTORY_ENTRY = {
+    "terraform": "main.tf",
+    "pulumi-ts": "index.ts",
+    "pulumi-typescript": "index.ts",
+    "pulumi-python": "__main__.py",
+    "pulumi-py": "__main__.py",
 }
 
 
@@ -39,9 +63,10 @@ def export(
     ],
     output: Annotated[Path | None, typer.Option("--output", "-o", help="Output file or directory")] = None,
 ) -> None:
-    """Export an architecture spec to Terraform, CloudFormation, Mermaid, SVG, PNG, SBOM, or AIBOM."""
+    """Export an architecture spec to Terraform, Pulumi (TS/Python), CloudFormation, Mermaid, SVG, PNG, SBOM, or AIBOM."""
     fmt = format.lower().strip()
-    if fmt not in FORMATS and fmt != "cfn":
+    _aliases = {"cfn", "pulumi-typescript", "pulumi-py"}
+    if fmt not in FORMATS and fmt not in _aliases:
         emit_error(ctx, ValueError(f"Unknown format {fmt!r}"), action=f"Use one of: {', '.join(FORMATS)}")
 
     if output:
@@ -55,11 +80,11 @@ def export(
     output_str = str(output) if output else None
     output_dir_str = None
 
-    # Terraform with a directory target writes main.tf inside the dir
-    if fmt == "terraform" and output and output.is_dir():
+    # Terraform / Pulumi with a directory target writes a project layout in the dir
+    if fmt in _DIRECTORY_FORMATS and output and output.is_dir():
         output_dir_str = output_str
         output_str = None
-    elif fmt == "terraform" and output and not output.suffix:
+    elif fmt in _DIRECTORY_FORMATS and output and not output.suffix:
         # Treat extensionless output as a directory path
         output_dir_str = output_str
         output_str = None
@@ -104,7 +129,8 @@ def export(
 
     if output:
         if output_dir_str:
-            console.print(f"[green]Written to {output_dir_str}/main.tf[/green]")
+            entry = _DIRECTORY_ENTRY.get(fmt, "main.tf")
+            console.print(f"[green]Written to {output_dir_str}/{entry}[/green]")
         else:
             console.print(f"[green]Written to {output}[/green]")
     else:

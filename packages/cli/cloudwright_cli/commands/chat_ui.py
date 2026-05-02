@@ -16,7 +16,7 @@ Commands:
   /yaml                     Show YAML for last architecture
   /cost                     Show cost estimate for last architecture
   /validate [fw]            Run compliance check (hipaa, pci-dss, soc2, fedramp, gdpr)
-  /export <fmt>             Export last architecture (terraform, mermaid, d2, cloudformation, sbom, aibom)
+  /export <fmt>             Export last architecture (terraform, pulumi-ts, pulumi-python, mermaid, d2, cloudformation, sbom, aibom)
   /terraform                Export last architecture as Terraform
   /new                      Start a new architecture from scratch
   /help, /?                 Show this help

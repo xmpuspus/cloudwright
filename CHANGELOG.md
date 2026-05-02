@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Live AWS import.** New `cloudwright import-live --provider aws --region us-east-1 [--profile NAME] [--services ec2,rds,s3] [-o spec.yaml]` walks `boto3 describe-*` calls (EC2, VPC + subnets + security groups, RDS, S3, Lambda, ECS, EKS, DynamoDB, ALB/NLB, CloudFront, SQS, API Gateway, CloudTrail) and produces an ArchSpec from running infrastructure. Captures security posture (S3 encryption + versioning + public-access-block, RDS multi-AZ + storage_encrypted + backup_retention, EC2 IMDSv2 http_tokens, SG ingress 0.0.0.0/0). Best-effort connection inference: ALB → EC2 (via target groups) and CloudFront → S3 (via origin domains). Per-service permission denials are non-fatal — other services keep scanning. GCP and Azure surface a clear "not yet implemented" error. Optional dep: `pip install 'cloudwright-ai[live-import]'` (boto3 1.34+).
+
 ## [1.3.0] - 2026-05-02
 
 ### Added

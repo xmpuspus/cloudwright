@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-05-02
+
+### Added
+
+- **Safe-by-default Terraform output.** AWS exporter now emits `aws_s3_bucket_public_access_block` (all four blocks true), `aws_s3_bucket_server_side_encryption_configuration` (AES256), `aws_s3_bucket_versioning`, RDS `storage_encrypted = true` + `backup_retention_period = 7` + `deletion_protection`, EC2 IMDSv2 `metadata_options { http_tokens = "required" }` + encrypted root EBS, DynamoDB SSE + PITR, SQS managed SSE, Kinesis KMS encryption, ECR scan-on-push + AES256, CloudFront `minimum_protocol_version = "TLSv1.2_2021"`, and CloudTrail log-file validation. The README "safe defaults" claim now matches the rendered HCL.
+- **HCL injection-safe escaping** across every Terraform exporter (`aws.py`, `azure.py`, `gcp.py`, `databricks.py`, `__init__.py`). New `_hcl_quote()` helper escapes `"`, `\`, and newlines on every interpolated user-controlled string (`c.label`, `spec.region`, `spec.metadata.gcp_project`, module-instance metadata). 152 escape sites converted.
+- **Per-model LLM pricing.** `BaseLLM.pricing_for(model)` returns the right rate per model. `claude-haiku-4-5*` = `{input: 0.0008, output: 0.004}`; `claude-sonnet-4-6*` = `{input: 0.003, output: 0.015}`; `gpt-5*` and `gpt-5.2` = `{input: 0.0025, output: 0.01}`; `gpt-5-mini*` = `{input: 0.0005, output: 0.002}`. Cost numbers shown to users are no longer 10x wrong on Haiku-routed traffic.
+- **Anthropic prompt caching surgery.** System prompt is now sent as a list of blocks with `cache_control: {"type": "ephemeral"}` on a stable prefix and a separate variable block for per-turn hints. Cache hit-rate on follow-up chat turns goes from near-zero to high, surfaced via `usage.cached_tokens`.
+- **OpenAI cache parity.** `stream_options={"include_usage": True}` is now set so `usage.prompt_tokens_details.cached_tokens` is captured and surfaced.
+- **Cost transparency in API.** `/api/design`, `/api/design/stream`, `/api/modify`, `/api/modify/stream` now return a `usage` object: `{model, input_tokens, output_tokens, cached_tokens, cost_usd, latency_ms}`. Previously only `/api/chat` returned it.
+- **Atomic SessionStore writes.** `SessionStore.save()` writes to a temp file in the same directory, calls `fsync`, then `os.replace` for an atomic rename. SIGKILL mid-write no longer corrupts session JSON.
+- **Robust JSON extraction.** `_extract_json` now uses `json.JSONDecoder().raw_decode` instead of a hand-rolled brace counter. Handles nested-JSON-strings, escapes, and `<json>` XML wrappers correctly.
+- **Health endpoint with version + readiness.** `/api/health` now returns `{status, version, build_sha, llm_provider, llm_model, catalog_loaded, catalog_size, uptime_s}`. Returns 503 when the catalog fails to load (Kubernetes readiness probes are now correct). New `/api/version` endpoint for lightweight polling.
+- **Request correlation IDs.** New `RequestIdMiddleware` reads `X-Request-Id` from incoming requests or mints a UUID, binds it to `structlog.contextvars`, and echoes it on the response. All log lines for a single request now share the same `request_id`.
+- **Hero demo + VHS tape.** New `examples/cloudwright-hero.gif` (under 1 MB, 12 seconds) shows init → cost → validate → export → ls in one continuous capture. Tape file at `examples/tapes/cloudwright-hero.tape` regenerates the GIF deterministically.
+
+### Changed
+
+- **README rewritten.** Reduced from 1,279 lines to 140 lines. Hero GIF + 3-line install in the first 100 words. Inline changelog moved to this file. Old release notes for v0.1 through v1.2.x trimmed from above-the-fold.
+- **`cloudwright chat --web` pinned to port 8765** (matches what the README always claimed). Pass `--port` to override. The previous 8000-8099 scan was a source of "the URL doesn't work" first-run friction.
+- **`--debug` flag works.** Previously `chat --debug` called `logging.basicConfig` which is a no-op against the already-configured structlog. Now sets the structlog log level correctly. Also accepts `CLOUDWRIGHT_LOG_LEVEL=DEBUG`.
+- **FedRAMP region check.** Replaced `region.startswith("us-")` heuristic with explicit per-provider allowlists. `us-east-1` and `us-west-2` now correctly pass FedRAMP Moderate; `us-iso-east-1` and `us-west-1` correctly fail. GCP and Azure use explicit lists too.
+
+### Security
+
+- **Constant-time API key comparison.** `check_api_key` now uses `hmac.compare_digest` instead of `!=`. Closes a timing-attack vector on `CLOUDWRIGHT_API_KEY`.
+- **Swagger UI gated by environment.** `/docs`, `/redoc`, `/openapi.json` are now disabled by default unless `CLOUDWRIGHT_DOCS_ENABLED=true` or `CLOUDWRIGHT_ENV` is unset (dev). Production deploys no longer expose a free reconnaissance map.
+- **OpenAI `Stream` connection-pool leak fix.** `Stream` is now closed via `try/finally: stream.close()`, fixing pool exhaustion when consumers disconnect mid-stream.
+
+### Notes
+
+The following audit unlocks are deferred to future releases because they require larger architectural shifts:
+
+- Live import (`cloudwright import-live --provider aws` boto3 sweep)
+- Two-stage prompting refactor (free-text reasoning then JSON projection)
+- Cancel-safe streaming via `AsyncAnthropic`/`AsyncOpenAI` (eliminates the worker-thread bridge)
+- GitHub App for arch-diff + cost-delta on PRs
+- Boundary-aware spec generation (VPC/subnet/SG promoted into the LLM schema)
+- Pulumi/CDK/Bicep/Crossplane export targets
+
+See `docs/audits/2026-05-01-product-audit.md` for the full audit + roadmap.
+
 ## [1.2.2] - 2026-04-26
 
 ### Fixed
@@ -16,6 +58,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `cloudwright-ai`'s `[cli]`, `[web]`, `[mcp]`, and `[all]` extras pinned to a non-existent `0.4.0` release, so `pip install 'cloudwright-ai[cli]'` and `pip install 'cloudwright-ai[web]'` failed with `No matching distribution`. Pins now match the current release. All four packages bumped together to keep extras in lockstep.
+
+## [1.1.0] - 2026-04-04
+
+### Added
+
+- OpenAI provider implementation (`OpenAILLM`) with `generate`, `generate_fast`, and streaming. Auto-detects from `OPENAI_API_KEY`; override the model with `CLOUDWRIGHT_MODEL`.
+- `SecurityHeadersMiddleware` adds `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Content-Security-Policy`, and `Referrer-Policy` to all web responses.
+- `Retry-After` header on 429 rate-limit responses.
+- `X-Forwarded-For` parsing behind reverse proxy via `CLOUDWRIGHT_TRUST_PROXY`.
+- Provider-aware service normalization: `redis` maps to `elasticache` on AWS, `memorystore` on GCP, `azure_cache` on Azure (same for `postgres`, `mongodb`, `kubernetes`, `docker`).
+- Dockerfile (`python:3.12-slim`) and `docker-compose.yml` for containerized web server.
+- Usage tracking on streaming responses.
+- Tab completions for provider and compliance flags.
+- GDPR validator now recognizes GCP `europe-*` and Azure `northeurope`/`westeurope` regions.
+
+### Changed
+
+- Web server fails fast at startup if `CLOUDWRIGHT_API_KEY` is missing (was previously optional).
+- Terraform exporter applies safer defaults: `username -> var.db_username`, `skip_final_snapshot -> false`, ECR `IMMUTABLE` tags. CloudFormation: `MasterUsername -> !Ref DBUsername`. Config validation applied to all export formats, not just IaC.
+- History trimming places summaries in the system prompt instead of injecting a synthetic user message (was causing Anthropic 400 errors on 50+ turn sessions).
+- PyPI publish workflow now requires the test job to pass (`needs: [test]`).
+- Coverage floor enforced at 70%.
+- `create_version()` is now called before `modify()`.
+- MCP lock scoped to store I/O only.
+- Health endpoint returns 503 when no LLM key is configured.
+- SSE queue bounded to 256 events.
+
+### Fixed
+
+- Client-supplied `assistant`-role messages are now rejected from chat history (prompt-injection guard).
+- `send()` and `send_stream()` pop orphaned history entries on LLM failure.
+- `generate_stream` retries on rate limits for both Anthropic and OpenAI providers.
+- `configure_logging()` is invoked in both CLI and web entrypoints.
+- Architecture review GitHub Action YAML.
 
 ## [1.2.0] - 2026-04-26
 
@@ -83,7 +159,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - MCP in-memory session storage, TTL cleanup, and max session eviction (replaced by SessionStore)
 
-## [Unreleased] - v0.4.0
+## [0.4.0] - 2026-03-20
 
 ### Added
 

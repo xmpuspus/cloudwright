@@ -69,7 +69,7 @@ class ConversationSession:
 
         self._trim_history()
         self.history.append({"role": "user", "content": message})
-        system = self._build_system_with_hints(CHAT_SYSTEM)
+        system = self._build_cacheable_system(CHAT_SYSTEM)
         try:
             text, usage = self.llm.generate(self.history, system, max_tokens=10000)
         except Exception:
@@ -91,7 +91,7 @@ class ConversationSession:
         """Stream a response token-by-token. Yields text chunks."""
         self._trim_history()
         self.history.append({"role": "user", "content": message})
-        system = self._build_system_with_hints(CHAT_SYSTEM)
+        system = self._build_cacheable_system(CHAT_SYSTEM)
 
         accumulated = []
         try:
@@ -133,7 +133,7 @@ class ConversationSession:
 
         self._trim_history()
         self.history.append({"role": "user", "content": prompt})
-        system = self._build_system_with_hints(MODIFY_SYSTEM)
+        system = self._build_cacheable_system(MODIFY_SYSTEM)
 
         max_tokens = 10000
 
@@ -200,14 +200,34 @@ class ConversationSession:
         self.last_usage = dict(usage)
         inp = usage.get("input_tokens", 0)
         out = usage.get("output_tokens", 0)
+        model = usage.get("model")
         self.cumulative_usage["input_tokens"] += inp
         self.cumulative_usage["output_tokens"] += out
-        cost = self._estimate_cost(inp, out)
+        cost = self._estimate_cost(inp, out, model)
         self.last_usage["estimated_cost"] = cost
+        # Mirror under cost_usd for API consumers — keeps the new web payload
+        # shape consistent with the older estimated_cost field.
+        self.last_usage["cost_usd"] = cost
         self.cumulative_usage["total_cost"] += cost
 
-    def _estimate_cost(self, input_tokens: int, output_tokens: int) -> float:
-        pricing = self.llm.pricing
+    def _estimate_cost(self, input_tokens: int, output_tokens: int, model: str | None = None) -> float:
+        # Bill against the model that actually served the call, not the
+        # session's default — Haiku-routed calls are 4x cheaper than Sonnet.
+        pricing_for = getattr(self.llm, "pricing_for", None)
+        pricing: dict | None = None
+        if callable(pricing_for):
+            try:
+                candidate = pricing_for(model)
+            except TypeError:
+                candidate = None
+            # Mock LLMs (used in tests) often have ``pricing_for`` as an
+            # auto-configured MagicMock that returns another MagicMock; fall
+            # back to the legacy ``pricing`` attribute when the candidate
+            # doesn't look like a real pricing dict.
+            if isinstance(candidate, dict) and "input" in candidate and "output" in candidate:
+                pricing = candidate
+        if pricing is None:
+            pricing = self.llm.pricing
         return round((input_tokens / 1000) * pricing["input"] + (output_tokens / 1000) * pricing["output"], 6)
 
     def get_usage_summary(self) -> dict:
@@ -303,6 +323,57 @@ class ConversationSession:
             hints = "\n".join(f"- {h}" for h in self._error_hints[-_MAX_ERROR_HINTS:])
             parts.append(f"\nLEARNINGS FROM THIS SESSION (avoid repeating):\n{hints}")
         return "\n".join(parts)
+
+    def _build_variable_hints(self) -> str:
+        """Per-turn hint suffix appended to the stable system prompt.
+
+        Pulled out of ``_build_system_with_hints`` so we can send the stable
+        prefix as its own cache-controlled block on Anthropic — the cache key
+        is content-addressed, so we want the big prompt to be byte-identical
+        across turns.
+        """
+        parts: list[str] = []
+        if getattr(self, "_trim_summary", None):
+            parts.append(f"\nCONVERSATION CONTEXT:\n{self._trim_summary}")
+        if self._error_hints:
+            hints = "\n".join(f"- {h}" for h in self._error_hints[-_MAX_ERROR_HINTS:])
+            parts.append(f"\nLEARNINGS FROM THIS SESSION (avoid repeating):\n{hints}")
+        return "\n".join(parts)
+
+    def _build_cacheable_system(self, base_system: str):
+        """Return a system payload optimized for the active provider.
+
+        Anthropic accepts a list of blocks with per-block ``cache_control`` —
+        we send the stable ``base_system`` as a cached prefix and the
+        per-turn hints as an uncached suffix, so the prompt is re-used across
+        follow-up turns instead of re-billed every call.
+
+        Other providers (OpenAI) get the joined string; OpenAI auto-caches
+        identical prefixes >1024 tokens automatically as long as the system
+        message is byte-identical, which it will be for the leading content.
+
+        The provider check uses class name rather than ``isinstance`` so it
+        survives ``importlib.reload`` of the anthropic module (used by some
+        existing tests for env-var override coverage).
+        """
+        variable = self._build_variable_hints()
+        if type(self.llm).__name__ == "AnthropicLLM":
+            # Only attach cache_control when the stable prefix is large enough
+            # for the cache to actually kick in (Anthropic's 1024-token floor).
+            from cloudwright.llm.anthropic import SYSTEM_CACHE_MIN_TOKENS
+
+            base_tokens = self.llm.estimate_tokens(base_system)
+            blocks: list[dict] = []
+            stable_block: dict = {"type": "text", "text": base_system}
+            if base_tokens >= SYSTEM_CACHE_MIN_TOKENS:
+                stable_block["cache_control"] = {"type": "ephemeral"}
+            blocks.append(stable_block)
+            if variable:
+                blocks.append({"type": "text", "text": variable})
+            return blocks
+        if not variable:
+            return base_system
+        return base_system + variable
 
 
 def _slim_for_modify(spec: ArchSpec) -> str:

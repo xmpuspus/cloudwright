@@ -12,10 +12,32 @@ class BaseLLM(ABC):
     def model_name(self) -> str:
         """Primary model identifier (e.g. 'claude-sonnet-4-6')."""
 
+    def pricing_for(self, model: str | None = None) -> dict[str, float]:
+        """Per-1K-token pricing for the given model.
+
+        Override in subclasses to map model -> {"input": ..., "output": ...}.
+        Falling back to the default model's rate when ``model`` is unknown or
+        ``None`` keeps callers safe even if the LLM returns an unexpected name.
+        """
+        return self._pricing_table().get(model or self.model_name, self._default_pricing())
+
     @property
-    @abstractmethod
     def pricing(self) -> dict[str, float]:
-        """Per-1K-token pricing: {"input": ..., "output": ...}."""
+        """Backwards-compatible default-model pricing.
+
+        Older callers (and tests) read ``llm.pricing`` directly. Returning the
+        default model's rate keeps them working while new code can call
+        ``pricing_for(model)`` to bill the actual model used per call.
+        """
+        return self._default_pricing()
+
+    def _pricing_table(self) -> dict[str, dict[str, float]]:
+        """Subclasses override with their per-model pricing table."""
+        return {}
+
+    def _default_pricing(self) -> dict[str, float]:
+        """Subclasses override with the default model's per-1K-token rate."""
+        return {"input": 0.003, "output": 0.015}
 
     @abstractmethod
     def generate(

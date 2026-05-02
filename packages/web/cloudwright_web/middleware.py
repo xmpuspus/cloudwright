@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import hmac
 import os
 import threading
 import time
+import uuid
 from collections import deque
 from urllib.parse import unquote
 
+import structlog
 from fastapi import HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -20,6 +23,32 @@ class PathTraversalMiddleware(BaseHTTPMiddleware):
         if ".." in raw_path or ".." in unquote(raw_path):
             return JSONResponse(status_code=404, content={"detail": "Not found"})
         return await call_next(request)
+
+
+class RequestIdMiddleware(BaseHTTPMiddleware):
+    """Attach a request correlation ID to every request.
+
+    - Reads X-Request-Id from incoming headers, otherwise mints a UUID4 hex.
+    - Binds the value into structlog's contextvars for the duration of the
+      request so every log line carries it.
+    - Echoes the same value back as the X-Request-Id response header.
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        incoming = request.headers.get("x-request-id", "").strip()
+        request_id = incoming or uuid.uuid4().hex
+
+        # Stash on request.state so handlers can read it if they need to.
+        request.state.request_id = request_id
+
+        structlog.contextvars.bind_contextvars(request_id=request_id)
+        try:
+            response = await call_next(request)
+        finally:
+            structlog.contextvars.unbind_contextvars("request_id")
+
+        response.headers["X-Request-Id"] = request_id
+        return response
 
 
 def add_cors(app):
@@ -38,10 +67,21 @@ _API_KEY = os.environ.get("CLOUDWRIGHT_API_KEY")
 
 
 def check_api_key(request: Request):
+    """Validate the X-API-Key header in constant time.
+
+    Using ``hmac.compare_digest`` prevents timing-based recovery of the
+    configured key. Both sides are encoded to bytes (utf-8); mismatched
+    lengths are rejected by ``compare_digest`` itself but we short-circuit
+    empty input first to avoid leaking even a length signal.
+    """
     if not _API_KEY:
         return None
     provided = request.headers.get("x-api-key", "")
-    if provided != _API_KEY:
+    if not provided:
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
+    expected_bytes = _API_KEY.encode("utf-8")
+    provided_bytes = provided.encode("utf-8")
+    if not hmac.compare_digest(provided_bytes, expected_bytes):
         raise HTTPException(status_code=401, detail="Invalid or missing API key")
     return None
 

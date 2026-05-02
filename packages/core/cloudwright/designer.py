@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 
 from cloudwright.llm import get_llm
 from cloudwright.llm.base import BaseLLM
@@ -28,8 +29,13 @@ _STOPWORDS = {"a", "an", "the", "on", "in", "for", "with", "and", "or", "to", "m
 class Architect:
     def __init__(self, llm: BaseLLM | None = None):
         self.llm = llm or get_llm()
+        # Side-channel for the most recent usage dict produced by design()/modify().
+        # The web routers read this to surface model/tokens/cost in API responses
+        # without a breaking signature change to design().
+        self.last_usage: dict = {}
 
     def design(self, description: str, constraints: Constraints | None = None) -> ArchSpec:
+        self.last_usage = {}
         provider = constraints.regions[0].split("-")[0] if constraints and constraints.regions else None
         template_result = _match_template_for_design(description, provider)
         if template_result is not None:
@@ -57,8 +63,9 @@ class Architect:
         max_tokens = 10000
         messages = [{"role": "user", "content": description}]
 
+        start = time.perf_counter()
         try:
-            text, _usage = self.llm.generate(messages, system, max_tokens=max_tokens)
+            text, usage = self.llm.generate(messages, system, max_tokens=max_tokens)
             data = _extract_json(text)
         except (ValueError, json.JSONDecodeError) as first_err:
             log.warning("First design attempt failed: %s — retrying", first_err)
@@ -69,14 +76,33 @@ class Architect:
                     "content": "You must respond with ONLY a valid JSON object. No markdown, no explanation.",
                 }
             )
-            text, _usage = self.llm.generate(messages, system, max_tokens=max_tokens)
+            text, usage = self.llm.generate(messages, system, max_tokens=max_tokens)
             data = _extract_json(text)
+
+        self.last_usage = self._enrich_usage(usage, start)
 
         spec = _parse_arch_spec(data, constraints)
         if template_result is not None:
             _, confidence = template_result
             spec = spec.model_copy(update={"metadata": {**spec.metadata, "template_confidence": confidence}})
         return spec
+
+    def _enrich_usage(self, usage: dict, start: float) -> dict:
+        if not usage:
+            return {}
+        enriched = dict(usage)
+        model = enriched.get("model") or self.llm.model_name
+        enriched.setdefault("model", model)
+        pricing_for = getattr(self.llm, "pricing_for", None)
+        if callable(pricing_for):
+            pricing = pricing_for(model)
+        else:
+            pricing = self.llm.pricing
+        inp = enriched.get("input_tokens", 0) or 0
+        out = enriched.get("output_tokens", 0) or 0
+        enriched["cost_usd"] = round((inp / 1000) * pricing["input"] + (out / 1000) * pricing["output"], 6)
+        enriched["latency_ms"] = round((time.perf_counter() - start) * 1000)
+        return enriched
 
     @staticmethod
     def _select_system_prompt(description: str) -> str:
@@ -131,6 +157,7 @@ class Architect:
     def modify(self, spec: ArchSpec, instruction: str) -> ArchSpec:
         from cloudwright.session import _slim_for_modify
 
+        self.last_usage = {}
         current = _slim_for_modify(spec)
         prompt = f"Current architecture:\n{current}\n\nModification: {instruction}"
         messages = [{"role": "user", "content": prompt}]
@@ -142,8 +169,9 @@ class Architect:
         else:
             generate = self.llm.generate
 
+        start = time.perf_counter()
         try:
-            text, _usage = generate(messages, MODIFY_SYSTEM, max_tokens=max_tokens)
+            text, usage = generate(messages, MODIFY_SYSTEM, max_tokens=max_tokens)
             data = _extract_json(text)
         except (ValueError, json.JSONDecodeError) as first_err:
             log.warning("First modify attempt failed: %s — retrying", first_err)
@@ -154,8 +182,9 @@ class Architect:
                     "content": "You must respond with ONLY a valid JSON object. No markdown, no explanation.",
                 }
             )
-            text, _usage = self.llm.generate(messages, MODIFY_SYSTEM, max_tokens=max_tokens)
+            text, usage = self.llm.generate(messages, MODIFY_SYSTEM, max_tokens=max_tokens)
             data = _extract_json(text)
+        self.last_usage = self._enrich_usage(usage, start)
         updated = _parse_arch_spec(data, spec.constraints)
 
         original_ids = {c.id for c in spec.components}

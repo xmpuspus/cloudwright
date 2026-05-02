@@ -52,7 +52,8 @@ async def design(req: DesignRequest, request: Request):
             spec = spec.model_copy(update={"cost_estimate": cost_estimate})
         except Exception:
             log.warning("Cost estimation failed in design endpoint", exc_info=True)
-        return {"spec": spec.model_dump(exclude_none=True), "yaml": spec.to_yaml()}
+        usage = getattr(architect, "last_usage", None) or {}
+        return {"spec": spec.model_dump(exclude_none=True), "yaml": spec.to_yaml(), "usage": usage}
     except RuntimeError as e:
         if "No LLM provider" in str(e):
             return error_response("missing_api_key", str(e), "Set an LLM provider API key in your environment", 503)
@@ -83,7 +84,8 @@ async def design_stream(req: DesignRequest, request: Request):
             yield sse_event("error", message=str(e))
             return
 
-        yield sse_event("generated", spec=spec.model_dump(exclude_none=True), yaml=spec.to_yaml())
+        usage = getattr(architect, "last_usage", None) or {}
+        yield sse_event("generated", spec=spec.model_dump(exclude_none=True), yaml=spec.to_yaml(), usage=usage)
 
         yield sse_event("costing", message="Estimating cost...")
         try:
@@ -107,7 +109,7 @@ async def design_stream(req: DesignRequest, request: Request):
             log.warning("Validation failed in design stream", exc_info=True)
             yield sse_event("validated", passed=None, total=None)
 
-        yield sse_event("done", spec=spec.model_dump(exclude_none=True), yaml=spec.to_yaml())
+        yield sse_event("done", spec=spec.model_dump(exclude_none=True), yaml=spec.to_yaml(), usage=usage)
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
@@ -124,7 +126,8 @@ async def modify(req: ModifyRequest, request: Request):
             updated = await asyncio.wait_for(asyncio.to_thread(architect.modify, spec, req.instruction), timeout=120)
         except asyncio.TimeoutError:
             return error_response("llm_timeout", "Request timed out", "Try a simpler architecture description", 504)
-        return {"spec": updated.model_dump(exclude_none=True), "yaml": updated.to_yaml()}
+        usage = getattr(architect, "last_usage", None) or {}
+        return {"spec": updated.model_dump(exclude_none=True), "yaml": updated.to_yaml(), "usage": usage}
     except Exception:
         log.exception("Modify endpoint failed")
         return error_response("internal_error", "Internal server error", "Check server logs for details", 500)
@@ -148,7 +151,8 @@ async def modify_stream(req: ModifyRequest, request: Request):
             yield sse_event("error", message=str(e))
             return
 
-        yield sse_event("modified", spec=updated.model_dump(exclude_none=True), yaml=updated.to_yaml())
+        usage = getattr(architect, "last_usage", None) or {}
+        yield sse_event("modified", spec=updated.model_dump(exclude_none=True), yaml=updated.to_yaml(), usage=usage)
 
         yield sse_event("costing", message="Estimating cost...")
         try:
@@ -159,6 +163,6 @@ async def modify_stream(req: ModifyRequest, request: Request):
             log.warning("Cost estimation failed in modify stream", exc_info=True)
             yield sse_event("costed", cost_estimate=None)
 
-        yield sse_event("done", spec=updated.model_dump(exclude_none=True), yaml=updated.to_yaml())
+        yield sse_event("done", spec=updated.model_dump(exclude_none=True), yaml=updated.to_yaml(), usage=usage)
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

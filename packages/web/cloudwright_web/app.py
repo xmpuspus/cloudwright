@@ -14,6 +14,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from cloudwright_web import __version__
 from cloudwright_web.middleware import (  # noqa: F401
     PathTraversalMiddleware,
+    RequestIdMiddleware,
     _rate_limiter,
     _RateLimiter,
     add_cors,
@@ -44,16 +45,37 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
+def _docs_enabled() -> bool:
+    """Whether to expose /docs, /redoc, and /openapi.json.
+
+    Disabled by default in production (CLOUDWRIGHT_ENV=production) to reduce
+    reconnaissance surface. Override with CLOUDWRIGHT_DOCS_ENABLED=true.
+    """
+    explicit = os.environ.get("CLOUDWRIGHT_DOCS_ENABLED")
+    if explicit is not None:
+        return explicit.lower() == "true"
+    env = os.environ.get("CLOUDWRIGHT_ENV", "").lower()
+    return env != "production"
+
+
 def create_app() -> FastAPI:
+    docs_on = _docs_enabled()
     application = FastAPI(
         title="Cloudwright",
         version=__version__,
         description="Architecture intelligence for cloud engineers",
+        docs_url="/docs" if docs_on else None,
+        redoc_url="/redoc" if docs_on else None,
+        openapi_url="/openapi.json" if docs_on else None,
     )
 
+    # RequestIdMiddleware MUST be added LAST so Starlette dispatches it FIRST
+    # (Starlette runs middleware in reverse-add order). This way every later
+    # middleware's log lines carry the request_id.
     application.add_middleware(SecurityHeadersMiddleware)
     application.add_middleware(PathTraversalMiddleware)
     add_cors(application)
+    application.add_middleware(RequestIdMiddleware)
 
     application.include_router(health_router, prefix="/api")
     application.include_router(design_router, prefix="/api")

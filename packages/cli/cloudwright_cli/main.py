@@ -6,6 +6,7 @@ from cloudwright_cli.commands.analyze_cmd import analyze
 from cloudwright_cli.commands.catalog_cmd import catalog_app
 from cloudwright_cli.commands.chat import chat
 from cloudwright_cli.commands.compare import compare
+from cloudwright_cli.commands.compliance_cmd import compliance_scan
 from cloudwright_cli.commands.cost import cost
 from cloudwright_cli.commands.databricks_cmd import databricks_validate
 from cloudwright_cli.commands.design import design
@@ -18,6 +19,7 @@ from cloudwright_cli.commands.init_cmd import init
 from cloudwright_cli.commands.lint_cmd import lint
 from cloudwright_cli.commands.mcp_cmd import mcp_serve
 from cloudwright_cli.commands.modify_cmd import modify
+from cloudwright_cli.commands.plan_cmd import plan
 from cloudwright_cli.commands.policy import policy
 from cloudwright_cli.commands.refresh_cmd import refresh
 from cloudwright_cli.commands.schema_cmd import schema
@@ -72,6 +74,7 @@ app.command(name="import")(import_infra)
 app.command(name="import-live")(import_live)
 app.command()(chat)
 app.command()(init)
+app.command()(plan)
 app.command()(policy)
 app.command()(score)
 app.command()(analyze)
@@ -79,6 +82,7 @@ app.command()(refresh)
 app.command()(lint)
 app.command()(databricks_validate)
 app.command(name="security")(security_scan)
+app.command(name="compliance")(compliance_scan)
 app.command(name="adr")(adr)
 app.command()(schema)
 app.command(name="mcp")(mcp_serve)

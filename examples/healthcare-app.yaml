@@ -1,0 +1,35 @@
+name: HealthApp
+version: 1
+provider: aws
+region: us-east-1
+constraints:
+  compliance:
+  - HIPAA
+  - FedRAMP
+  latency_ms: 0
+  throughput_rps: 0
+components:
+- id: api
+  service: ec2
+  provider: aws
+  label: API
+  tier: 2
+  config:
+    ingress_open: true
+- id: db
+  service: rds
+  provider: aws
+  label: DB
+  tier: 3
+- id: store
+  service: s3
+  provider: aws
+  label: Store
+  tier: 4
+- id: lb
+  service: alb
+  provider: aws
+  label: LB
+  tier: 1
+  config:
+    https: false

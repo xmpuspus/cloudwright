@@ -18,3 +18,5 @@ node_modules/
 CLAUDE.md
 packages/*/CLAUDE.md
 docs/fix-plan.md
+tmp/
+_recording*/

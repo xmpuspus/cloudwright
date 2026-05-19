@@ -29,13 +29,33 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-cli = ["cloudwright-ai-cli==1.4.0"]
-web = ["cloudwright-ai-cli==1.4.0", "cloudwright-ai-web==1.4.0"]
-mcp = ["cloudwright-ai-mcp==1.4.0"]
-all = ["cloudwright-ai-cli==1.4.0", "cloudwright-ai-web==1.4.0", "cloudwright-ai-mcp==1.4.0", "databricks-sdk>=0.38.0"]
+cli = ["cloudwright-ai-cli==1.5.0"]
+web = ["cloudwright-ai-cli==1.5.0", "cloudwright-ai-web==1.5.0"]
+mcp = ["cloudwright-ai-mcp==1.5.0"]
+all = ["cloudwright-ai-cli==1.5.0", "cloudwright-ai-web==1.5.0", "cloudwright-ai-mcp==1.5.0", "databricks-sdk>=0.38.0"]
 pdf = ["weasyprint", "markdown2"]
 databricks = ["databricks-sdk>=0.38.0"]
-live-import = ["boto3>=1.34,<2"]
+live-import = [
+    "boto3>=1.34,<2",
+    "google-cloud-compute>=1.15,<2",
+    "google-cloud-storage>=2.10,<4",
+    "google-auth>=2.20,<3",
+    "azure-identity>=1.15,<2",
+    "azure-mgmt-compute>=30,<40",
+    "azure-mgmt-storage>=21,<24",
+    "azure-mgmt-sql>=3,<5",
+    "azure-mgmt-containerservice>=28,<40",
+]
+live-import-aws = ["boto3>=1.34,<2"]
+live-import-gcp = ["google-cloud-compute>=1.15,<2", "google-cloud-storage>=2.10,<4", "google-auth>=2.20,<3"]
+live-import-azure = [
+    "azure-identity>=1.15,<2",
+    "azure-mgmt-compute>=30,<40",
+    "azure-mgmt-storage>=21,<24",
+    "azure-mgmt-sql>=3,<5",
+    "azure-mgmt-containerservice>=28,<40",
+]
+compliance = ["checkov>=3,<4"]
 
 [project.urls]
 Homepage = "https://github.com/xmpuspus/cloudwright"
@@ -47,7 +67,7 @@ Changelog = "https://github.com/xmpuspus/cloudwright/blob/main/CHANGELOG.md"
 path = "cloudwright/__init__.py"
 
 [tool.hatch.build]
-artifacts = ["cloudwright/data/catalog.db", "cloudwright/data/icons/**/*.svg", "cloudwright/data/modules/**/*.yaml"]
+artifacts = ["cloudwright/data/catalog.db", "cloudwright/data/icons/**/*.svg", "cloudwright/data/modules/**/*.yaml", "cloudwright/data/compliance_controls.yaml"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["cloudwright"]

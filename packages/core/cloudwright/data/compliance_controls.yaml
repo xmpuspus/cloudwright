@@ -1,0 +1,203 @@
+# Compliance control catalog.
+#
+# Maps design-stage findings (built-in SecurityScanner rules, Terraform HCL
+# scan rules, and Checkov check IDs) to named framework control identifiers.
+# This is the layer competitors do not have at design time: every finding
+# carries the specific HIPAA / SOC 2 / FedRAMP / PCI-DSS / ISO 27001 control
+# it violates, before any infrastructure exists.
+#
+# Control IDs are sourced from:
+#   HIPAA        - 45 CFR 164.308 / 164.312 Security Rule citations
+#   SOC2         - AICPA Trust Services Criteria (2017, rev. 2022)
+#   PCI-DSS      - PCI DSS v4.0 requirement numbers
+#   FedRAMP      - NIST SP 800-53 Rev. 5 control identifiers (Moderate baseline)
+#   GDPR         - Regulation (EU) 2016/679 article references
+#   ISO27001     - ISO/IEC 27001:2022 Annex A control identifiers
+#   NIST-800-53  - NIST SP 800-53 Rev. 5 control identifiers
+
+categories:
+  encryption_at_rest:
+    title: Encryption of data at rest
+    default_severity: high
+    controls:
+      HIPAA: ["164.312(a)(2)(iv)"]
+      SOC2: ["CC6.1"]
+      PCI-DSS: ["3.5"]
+      FedRAMP: ["SC-28"]
+      GDPR: ["Art. 32(1)(a)"]
+      ISO27001: ["A.8.24"]
+      NIST-800-53: ["SC-28"]
+
+  encryption_in_transit:
+    title: Encryption of data in transit
+    default_severity: high
+    controls:
+      HIPAA: ["164.312(e)(1)"]
+      SOC2: ["CC6.7"]
+      PCI-DSS: ["4.2"]
+      FedRAMP: ["SC-8"]
+      GDPR: ["Art. 32(1)(a)"]
+      ISO27001: ["A.8.24"]
+      NIST-800-53: ["SC-8"]
+
+  network_exposure:
+    title: Unrestricted network ingress
+    default_severity: high
+    controls:
+      HIPAA: ["164.312(a)(1)"]
+      SOC2: ["CC6.6"]
+      PCI-DSS: ["1.3"]
+      FedRAMP: ["SC-7"]
+      GDPR: ["Art. 32(1)(b)"]
+      ISO27001: ["A.8.20"]
+      NIST-800-53: ["SC-7"]
+
+  public_access:
+    title: Resource publicly reachable from the internet
+    default_severity: critical
+    controls:
+      HIPAA: ["164.312(a)(1)"]
+      SOC2: ["CC6.6"]
+      PCI-DSS: ["1.3.1"]
+      FedRAMP: ["AC-3", "SC-7"]
+      GDPR: ["Art. 32(1)(b)"]
+      ISO27001: ["A.8.20"]
+      NIST-800-53: ["AC-3", "SC-7"]
+
+  least_privilege:
+    title: Excessive or wildcard permissions
+    default_severity: high
+    controls:
+      HIPAA: ["164.308(a)(4)"]
+      SOC2: ["CC6.3"]
+      PCI-DSS: ["7.2"]
+      FedRAMP: ["AC-6"]
+      GDPR: ["Art. 32(1)(b)"]
+      ISO27001: ["A.8.2"]
+      NIST-800-53: ["AC-6"]
+
+  backup:
+    title: No data backup configured
+    default_severity: medium
+    controls:
+      HIPAA: ["164.308(a)(7)(ii)(A)"]
+      SOC2: ["A1.2"]
+      FedRAMP: ["CP-9"]
+      ISO27001: ["A.8.13"]
+      NIST-800-53: ["CP-9"]
+
+  availability:
+    title: No multi-AZ / redundancy
+    default_severity: medium
+    controls:
+      SOC2: ["A1.2"]
+      FedRAMP: ["CP-10"]
+      ISO27001: ["A.8.14"]
+      NIST-800-53: ["CP-10"]
+
+  audit_logging:
+    title: No audit logging / monitoring
+    default_severity: medium
+    controls:
+      HIPAA: ["164.312(b)"]
+      SOC2: ["CC7.2"]
+      PCI-DSS: ["10.2"]
+      FedRAMP: ["AU-2"]
+      GDPR: ["Art. 32(1)(d)"]
+      ISO27001: ["A.8.15"]
+      NIST-800-53: ["AU-2"]
+
+# Built-in SecurityScanner + scan_terraform() rule IDs -> category
+rule_categories:
+  missing_encryption: encryption_at_rest
+  no_https: encryption_in_transit
+  open_ingress: network_exposure
+  open_security_group: network_exposure
+  public_database: public_access
+  iam_wildcard: least_privilege
+  overly_permissive_role: least_privilege
+  missing_backup: backup
+  no_multi_az: availability
+  missing_monitoring: audit_logging
+
+# High-signal Checkov check IDs -> category (explicit, precise mapping).
+checkov_ids:
+  # AWS
+  CKV_AWS_16: encryption_at_rest      # RDS encrypted
+  CKV_AWS_17: public_access           # RDS not publicly accessible
+  CKV_AWS_3: encryption_at_rest       # EBS encrypted
+  CKV_AWS_8: encryption_at_rest       # EC2 EBS encryption
+  CKV_AWS_19: encryption_at_rest      # S3 SSE
+  CKV_AWS_145: encryption_at_rest     # S3 KMS encryption
+  CKV_AWS_21: backup                  # S3 versioning
+  CKV_AWS_18: audit_logging           # S3 access logging
+  CKV_AWS_24: network_exposure        # SG ingress 22 from 0.0.0.0/0
+  CKV_AWS_25: network_exposure        # SG ingress 3389 from 0.0.0.0/0
+  CKV_AWS_260: network_exposure       # SG ingress 80 from 0.0.0.0/0
+  CKV_AWS_20: public_access           # S3 not public read
+  CKV_AWS_57: public_access           # S3 not public write
+  CKV_AWS_79: least_privilege         # EC2 IMDSv2 required
+  CKV_AWS_23: network_exposure        # SG rule description
+  CKV_AWS_61: least_privilege         # IAM no full admin
+  CKV_AWS_62: least_privilege         # IAM no wildcard resource
+  CKV_AWS_111: least_privilege        # IAM no write-without-constraint
+  CKV_AWS_40: least_privilege         # IAM policy not attached to user
+  CKV_AWS_144: backup                 # S3 cross-region replication
+  CKV_AWS_157: availability           # RDS multi-AZ
+  CKV_AWS_118: audit_logging          # RDS enhanced monitoring
+  CKV_AWS_158: audit_logging          # CloudWatch log group encrypted
+  # GCP
+  CKV_GCP_6: encryption_in_transit    # Cloud SQL require SSL
+  CKV_GCP_2: network_exposure         # GCP firewall no 0.0.0.0/0 to 22
+  CKV_GCP_3: network_exposure         # GCP firewall no 0.0.0.0/0 to 3389
+  CKV_GCP_38: encryption_at_rest      # GCE CSEK encryption
+  CKV_GCP_62: audit_logging           # GCS bucket logging
+  CKV_GCP_29: public_access           # GCS uniform bucket access
+  CKV_GCP_78: backup                  # GCS versioning
+  CKV_GCP_49: least_privilege         # no primitive IAM roles
+  # Azure
+  CKV_AZURE_2: backup                 # managed disk backup
+  CKV_AZURE_3: encryption_at_rest     # storage account secure transfer
+  CKV_AZURE_33: audit_logging         # storage queue logging
+  CKV_AZURE_35: network_exposure      # storage default network deny
+  CKV_AZURE_43: public_access         # storage account no public blob
+  CKV_AZURE_50: least_privilege       # VM no managed identity wildcard
+  CKV_AZURE_53: public_access         # SQL server no public access
+  CKV_AZURE_59: public_access         # storage no public access
+  CKV_AZURE_30: encryption_in_transit # SQL TLS minimum
+
+# Fallback: substring match on Checkov check_name (lowercased) -> category.
+# Used when a Checkov check ID is not in checkov_ids above. Ordered: first match wins.
+checkov_keywords:
+  - {match: "publicly", category: public_access}
+  - {match: "public access", category: public_access}
+  - {match: "public read", category: public_access}
+  - {match: "public write", category: public_access}
+  - {match: "0.0.0.0", category: network_exposure}
+  - {match: "ingress", category: network_exposure}
+  - {match: "security group", category: network_exposure}
+  - {match: "firewall", category: network_exposure}
+  - {match: "in transit", category: encryption_in_transit}
+  - {match: "ssl", category: encryption_in_transit}
+  - {match: "tls", category: encryption_in_transit}
+  - {match: "https", category: encryption_in_transit}
+  - {match: "encrypt", category: encryption_at_rest}
+  - {match: "kms", category: encryption_at_rest}
+  - {match: "cmk", category: encryption_at_rest}
+  - {match: "backup", category: backup}
+  - {match: "versioning", category: backup}
+  - {match: "replication", category: backup}
+  - {match: "multi-az", category: availability}
+  - {match: "multi az", category: availability}
+  - {match: "availability zone", category: availability}
+  - {match: "logging", category: audit_logging}
+  - {match: "logs", category: audit_logging}
+  - {match: "log group", category: audit_logging}
+  - {match: "audit", category: audit_logging}
+  - {match: "monitoring", category: audit_logging}
+  - {match: "performance insight", category: audit_logging}
+  - {match: "cloudtrail", category: audit_logging}
+  - {match: "least privilege", category: least_privilege}
+  - {match: "wildcard", category: least_privilege}
+  - {match: "admin", category: least_privilege}
+  - {match: "iam", category: least_privilege}

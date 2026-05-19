@@ -1,7 +1,10 @@
 """Import live cloud infrastructure into an ArchSpec via provider APIs.
 
-Currently supports AWS via boto3 (``cloudwright import-live --provider aws``).
-GCP and Azure surface a clear ``not yet implemented`` error.
+Supports AWS (boto3), GCP (google-cloud SDKs), and Azure (azure-mgmt SDKs):
+
+    cloudwright import-live --provider aws   --region us-east-1
+    cloudwright import-live --provider gcp   --project my-project
+    cloudwright import-live --provider azure --subscription <SUB_ID>
 """
 
 from __future__ import annotations
@@ -24,21 +27,29 @@ def import_live(
     ctx: typer.Context,
     provider: Annotated[
         str,
-        typer.Option("--provider", help="Cloud provider to scan: aws (gcp, azure not yet implemented)"),
+        typer.Option("--provider", help="Cloud provider to scan: aws | gcp | azure"),
     ] = "aws",
     region: Annotated[
         str,
-        typer.Option("--region", help="Cloud region (e.g. us-east-1)"),
+        typer.Option("--region", help="Cloud region (e.g. us-east-1). Recorded in metadata for gcp/azure."),
     ] = "us-east-1",
     profile: Annotated[
         str | None,
         typer.Option("--profile", help="AWS named profile (~/.aws/credentials)"),
     ] = None,
+    project: Annotated[
+        str | None,
+        typer.Option("--project", help="GCP project ID (or set GOOGLE_CLOUD_PROJECT)"),
+    ] = None,
+    subscription: Annotated[
+        str | None,
+        typer.Option("--subscription", help="Azure subscription ID (or set AZURE_SUBSCRIPTION_ID)"),
+    ] = None,
     services: Annotated[
         str | None,
         typer.Option(
             "--services",
-            help="Comma-separated subset of services to scan (e.g. ec2,rds,s3). Default: all.",
+            help="Comma-separated subset of services to scan. Default: all for the provider.",
         ),
     ] = None,
     output: Annotated[
@@ -50,39 +61,21 @@ def import_live(
         typer.Option("--name", help="Override the architecture name"),
     ] = None,
 ) -> None:
-    """Walk live AWS APIs and produce an ArchSpec from running infrastructure."""
+    """Walk live cloud APIs and produce an ArchSpec from running infrastructure."""
     try:
         provider_norm = (provider or "aws").lower()
-        if provider_norm in {"gcp", "google", "azure"}:
-            raise typer.BadParameter(
-                f"--provider {provider!r} is not yet implemented. Only --provider aws is supported in v1.4."
-            )
-        if provider_norm != "aws":
-            raise typer.BadParameter(f"Unknown --provider {provider!r}. Supported: aws.")
+        if provider_norm == "google":
+            provider_norm = "gcp"
+        if provider_norm not in {"aws", "gcp", "azure"}:
+            raise typer.BadParameter(f"Unknown --provider {provider!r}. Supported: aws, gcp, azure.")
 
         try:
-            from cloudwright.importer.live_aws import (
-                SUPPORTED_SERVICES,
-                LiveImportError,
-                import_live_aws,
-            )
+            from cloudwright.importer.live_aws import LiveImportError
         except ImportError as exc:
-            # boto3 not installed at all (cloudwright.importer.live_aws import boto3 lazily,
-            # but a missing core import surfaces here as a final fallback).
             err_console.print(
-                "[red]boto3 is required for live AWS import.[/red] "
-                "Install with: pip install 'cloudwright-ai[live-import]'"
+                "[red]Live import core is unavailable.[/red] Install with: pip install 'cloudwright-ai[live-import]'"
             )
             raise typer.Exit(code=1) from exc
-
-        services_list: list[str] | None = None
-        if services:
-            services_list = [s.strip().lower() for s in services.split(",") if s.strip()]
-            unknown = [s for s in services_list if s not in SUPPORTED_SERVICES]
-            if unknown:
-                raise typer.BadParameter(
-                    f"Unknown service(s): {sorted(set(unknown))}. Supported: {list(SUPPORTED_SERVICES)}"
-                )
 
         json_mode = is_json_mode(ctx)
 
@@ -90,16 +83,49 @@ def import_live(
             if not json_mode:
                 err_console.print(msg)
 
+        services_list: list[str] | None = None
+        if services:
+            services_list = [s.strip().lower() for s in services.split(",") if s.strip()]
+
+        scope_label = region
         try:
-            spec = import_live_aws(
-                region=region,
-                profile=profile,
-                services=services_list,
-                progress=_progress,
-                name=name,
-            )
+            if provider_norm == "aws":
+                from cloudwright.importer.live_aws import SUPPORTED_SERVICES, import_live_aws
+
+                _check_services(services_list, SUPPORTED_SERVICES)
+                spec = import_live_aws(
+                    region=region,
+                    profile=profile,
+                    services=services_list,
+                    progress=_progress,
+                    name=name,
+                )
+                scope_label = region
+            elif provider_norm == "gcp":
+                from cloudwright.importer.live_gcp import SUPPORTED_SERVICES, import_live_gcp
+
+                _check_services(services_list, SUPPORTED_SERVICES)
+                spec = import_live_gcp(
+                    project=project,
+                    region=region,
+                    services=services_list,
+                    progress=_progress,
+                    name=name,
+                )
+                scope_label = project or "project"
+            else:  # azure
+                from cloudwright.importer.live_azure import SUPPORTED_SERVICES, import_live_azure
+
+                _check_services(services_list, SUPPORTED_SERVICES)
+                spec = import_live_azure(
+                    subscription=subscription,
+                    region=region,
+                    services=services_list,
+                    progress=_progress,
+                    name=name,
+                )
+                scope_label = subscription or "subscription"
         except LiveImportError as exc:
-            # Clean error path — credentials missing, profile not found, etc.
             err_console.print(f"[red]error:[/red] {exc}")
             raise typer.Exit(code=1) from exc
 
@@ -120,13 +146,15 @@ def import_live(
             err_console.print()
             err_console.print(
                 f"[green]Imported[/green] {n_comps} component(s), {n_bounds} boundary(ies) "
-                f"from {region} -> [bold]{output}[/bold]"
+                f"from {scope_label} -> [bold]{output}[/bold]"
             )
             err_console.print(f"Run [bold]cloudwright cost {output}[/bold] to estimate.")
         else:
             sys.stdout.write(content)
             err_console.print()
-            err_console.print(f"[green]Imported[/green] {n_comps} component(s), {n_bounds} boundary(ies) from {region}")
+            err_console.print(
+                f"[green]Imported[/green] {n_comps} component(s), {n_bounds} boundary(ies) from {scope_label}"
+            )
 
     except typer.Exit:
         raise
@@ -134,3 +162,11 @@ def import_live(
         raise
     except Exception as e:
         handle_error(ctx, e)
+
+
+def _check_services(services_list: list[str] | None, supported: tuple[str, ...]) -> None:
+    if not services_list:
+        return
+    unknown = [s for s in services_list if s not in supported]
+    if unknown:
+        raise typer.BadParameter(f"Unknown service(s): {sorted(set(unknown))}. Supported: {list(supported)}")

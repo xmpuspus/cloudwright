@@ -20,9 +20,9 @@ export ANTHROPIC_API_KEY=sk-ant-...
 cloudwright design "HIPAA healthcare API on AWS with Postgres and Redis"
 ```
 
-Cloudwright takes a one-line description of a cloud system and produces a structured architecture spec, a per-component cost breakdown, a compliance report, and ready-to-apply Terraform, Pulumi (TypeScript or Python), or CloudFormation. It works across AWS, GCP, Azure, and Databricks. Version 1.4 adds live AWS import (`cloudwright import-live`), the Pulumi exporter, two-stage prompting with first-class network boundaries, and a drop-in GitHub Action that posts arch-diff plus cost-delta on every infra PR.
+Cloudwright takes a one-line description of a cloud system and produces a structured architecture spec, a per-component cost breakdown, a compliance report, and ready-to-apply Terraform, Pulumi (TypeScript or Python), or CloudFormation. It works across AWS, GCP, Azure, and Databricks. The latest work adds compliance scanning that maps every finding to the framework control it violates (HIPAA / SOC 2 / FedRAMP / PCI-DSS / ISO 27001 / NIST), a `cloudwright plan` step that proves the exported infrastructure actually deploys, and live import for GCP and Azure alongside AWS.
 
-[Try it](#quickstart) - [What's new in v1.4](#whats-new-in-v140) - [Docs](docs/) - [MCP server](#mcp-server-claude--cursor--cline)
+[Try it](#quickstart) - [What's new](#whats-new) - [Docs](docs/) - [MCP server](#mcp-server-claude--cursor--cline)
 
 ## What you get
 
@@ -94,7 +94,7 @@ cloudwright mcp --transport sse              # SSE for HTTP clients
 
 ## Analysis
 
-`cloudwright lint` (10 anti-pattern checks), `cloudwright score` (5-dimension quality grade), `cloudwright analyze` (blast radius and SPOF), `cloudwright drift <spec> <tfstate>` (design vs deployed), `cloudwright policy --rules policy.yaml` (policy-as-code with 9 built-in checks), and `cloudwright security` (security anti-patterns; also scans exported Terraform HCL). Every command supports `--json`. See [docs/](docs/) and the `examples/` directory for end-to-end samples.
+`cloudwright lint` (10 anti-pattern checks), `cloudwright score` (5-dimension quality grade), `cloudwright analyze` (blast radius and SPOF), `cloudwright drift <spec> <tfstate>` (design vs deployed), `cloudwright policy --rules policy.yaml` (policy-as-code with 9 built-in checks), `cloudwright security` (security anti-patterns; also scans exported Terraform HCL), `cloudwright compliance <spec> --frameworks hipaa,soc2,fedramp` (every finding mapped to its HIPAA / SOC 2 / FedRAMP / PCI-DSS / ISO 27001 / NIST control ID, with optional Checkov deep scan), and `cloudwright plan <spec> --target terraform` (proves the exported artifact validates / plans). Every command supports `--json`. See [docs/](docs/) and the `examples/` directory for end-to-end samples.
 
 ## Python API
 
@@ -109,6 +109,35 @@ priced = CostEngine().estimate(spec, workload_profile="medium")
 results = Validator().validate(spec, compliance=["hipaa", "pci-dss"])
 hcl = export_spec(spec, "terraform", output_dir="./infra")
 ```
+
+<a id="whats-new"></a>
+
+## What's new
+
+Terminal — `cloudwright compliance` maps every finding to its framework control ID, then `cloudwright plan` proves the Terraform validates:
+
+<p align="center">
+  <img src="examples/cloudwright-controls-demo.gif" alt="cloudwright compliance maps each finding to HIPAA/SOC2/FedRAMP control IDs, then cloudwright plan proves the Terraform validates" width="900">
+</p>
+
+Web canvas — the same checks as Compliance and Plan tabs:
+
+<p align="center">
+  <img src="examples/cloudwright-controls-web-demo.gif" alt="Compliance and Plan tabs in the web canvas: control-mapped findings and a DEPLOYABLE verdict" width="900">
+</p>
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/cloudwright-compliance-tab.png" alt="Compliance tab: per-framework posture table with controls satisfied/violated, scanner builtin+checkov, findings with control-ID chips"></td>
+    <td width="50%"><img src="docs/screenshots/cloudwright-plan-tab.png" alt="Plan tab: DEPLOYABLE verdict from terraform validate against the exported artifact"></td>
+  </tr>
+</table>
+
+- **Compliance scanner with framework control-ID mapping.** `cloudwright compliance spec.yaml --frameworks hipaa,soc2,fedramp` maps every design-stage finding to the exact control it violates — HIPAA `164.312(a)(2)(iv)`, SOC 2 `CC6.1`, FedRAMP `SC-28`, plus PCI-DSS, GDPR, ISO 27001, NIST 800-53 — before any infrastructure exists. No competitor maps findings to control IDs at design time. The mapping runs on the built-in scanner with zero external tooling; when the Checkov binary is present it is run against the exported Terraform and its `CKV_*` findings fold into the same control-mapped report. Per-framework posture table, audit-ready markdown report (`-o report.md`), `POST /api/compliance`, and a Compliance tab in the canvas. `pip install 'cloudwright-ai[compliance]'` for the Checkov deep scan; the control mapping works without it.
+- **`cloudwright plan` — prove it deploys.** `cloudwright plan spec.yaml --target terraform` runs `terraform validate` (and `terraform plan` when credentials are present) against the generated artifact; `--target pulumi-python|pulumi-ts` runs `pulumi preview`. Read-only — nothing is applied. `validate` needs no credentials and is the offline proof of deployability; `plan` adds a real `+add ~change -destroy` diff when credentials resolve. DEPLOYABLE / NOT DEPLOYABLE verdict in the CLI, `POST /api/plan`, and a Plan tab in the canvas.
+- **Live GCP and Azure import.** `cloudwright import-live --provider gcp --project PROJECT` (Compute Engine, Cloud Storage, Cloud SQL) and `--provider azure --subscription SUB_ID` (Virtual Machines, Storage Accounts, Azure SQL, AKS) join the existing AWS importer — same lazy-SDK, fast-fail-on-credentials, non-fatal-per-service-permission-guard pattern, with security posture captured per resource. `pip install 'cloudwright-ai[live-import]'`.
+
+The demos above are reproducible: `vhs scripts/controls_demo.tape` (terminal) and `python scripts/record_controls_demo.py` against a local web server (template-matched prompt, no API key required).
 
 ## What's new in v1.4.0
 

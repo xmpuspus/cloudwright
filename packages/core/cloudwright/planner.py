@@ -26,6 +26,43 @@ if TYPE_CHECKING:
 _PLAN_RE = re.compile(r"Plan:\s+(\d+) to add,\s+(\d+) to change,\s+(\d+) to destroy")
 _NO_CHANGES_RE = re.compile(r"No changes\.|0 to add, 0 to change, 0 to destroy")
 
+# LLM/app secrets that terraform and pulumi never need. Kept out of the
+# subprocess environment so they cannot surface in provider error output.
+_APP_SECRET_KEYS = frozenset({"ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "OPENAI_API_KEY", "CLOUDWRIGHT_API_KEY"})
+# Only credential-shaped keys are merged from a project .env into the subprocess.
+_CLOUD_CRED_PREFIXES = (
+    "AWS_",
+    "GOOGLE_",
+    "GCLOUD_",
+    "CLOUDSDK_",
+    "AZURE_",
+    "ARM_",
+    "DATABRICKS_",
+    "TF_VAR_",
+    "TF_",
+    "PULUMI_",
+)
+_SECRET_KEY_RE = re.compile(r"KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL", re.I)
+
+
+def _secret_values() -> set[str]:
+    """Values of every secret-shaped env var, for redacting subprocess output."""
+    vals: set[str] = set()
+    for env in (dict(os.environ), _subprocess_env()):
+        for key, val in env.items():
+            if val and len(val) >= 8 and _SECRET_KEY_RE.search(key):
+                vals.add(val)
+    return vals
+
+
+def _scrub(text: str) -> str:
+    """Redact any secret-shaped env value that leaked into subprocess output."""
+    if not text:
+        return text
+    for val in _secret_values():
+        text = text.replace(val, "***REDACTED***")
+    return text
+
 
 @dataclass
 class PlanResult:
@@ -53,7 +90,7 @@ class PlanResult:
 
 def _tail(text: str, n: int = 40) -> str:
     lines = (text or "").strip().splitlines()
-    return "\n".join(lines[-n:])
+    return _scrub("\n".join(lines[-n:]))
 
 
 def _run(cmd: list[str], cwd: str, timeout: int, env: dict | None = None) -> subprocess.CompletedProcess:
@@ -69,8 +106,13 @@ def _run(cmd: list[str], cwd: str, timeout: int, env: dict | None = None) -> sub
 
 
 def _subprocess_env() -> dict[str, str]:
-    """Process env plus any cloud credentials defined in a project .env."""
-    env = dict(os.environ)
+    """Process env (minus LLM/app secrets) plus cloud creds from a project .env.
+
+    terraform/pulumi never need the LLM API key, so app secrets are stripped from
+    the subprocess environment to keep them out of any provider error output, and
+    only credential-shaped keys are merged from a project ``.env``.
+    """
+    env = {k: v for k, v in os.environ.items() if k not in _APP_SECRET_KEYS}
     for base in (Path.cwd(), Path(__file__).resolve().parents[3]):
         dotenv = base / ".env"
         if dotenv.is_file():
@@ -80,10 +122,29 @@ def _subprocess_env() -> dict[str, str]:
                     continue
                 key, _, val = line.partition("=")
                 key = key.strip()
-                if key and key not in env:
+                if not key or key in env or key in _APP_SECRET_KEYS:
+                    continue
+                if key.startswith(_CLOUD_CRED_PREFIXES):
                     env[key] = val.strip().strip('"').strip("'")
             break
     return env
+
+
+def _terraform_binary() -> tuple[str | None, str]:
+    """Resolve the IaC binary, preferring OpenTofu.
+
+    OpenTofu (`tofu`) is a drop-in for the same generated HCL, so honour it when
+    present (or when CLOUDWRIGHT_TF_BINARY points at one). Falls back to
+    `terraform`. Returns (path_or_None, tool_label).
+    """
+    override = os.environ.get("CLOUDWRIGHT_TF_BINARY", "").strip()
+    if override:
+        path = shutil.which(override) or (override if Path(override).is_file() else None)
+        return path, ("opentofu" if "tofu" in override else "terraform")
+    tofu = shutil.which("tofu")
+    if tofu:
+        return tofu, "opentofu"
+    return shutil.which("terraform"), "terraform"
 
 
 def plan_terraform(
@@ -92,18 +153,20 @@ def plan_terraform(
     run_plan: bool = True,
     timeout: int = 180,
 ) -> PlanResult:
-    """`terraform init -backend=false` + `validate` (+ optional `plan`)."""
+    """`terraform`/`tofu` init -backend=false + validate (+ optional plan)."""
     from cloudwright.exporter import export_spec
 
-    tf = shutil.which("terraform")
+    tf, tool = _terraform_binary()
     if not tf:
         return PlanResult(
-            tool="terraform",
+            tool=tool,
             available=False,
             validated=False,
             plan_ran=False,
             ok=False,
-            messages=["terraform binary not found on PATH. Install Terraform to enable plan/preview."],
+            messages=[
+                "Neither tofu nor terraform found on PATH. Install OpenTofu or Terraform to enable plan/preview."
+            ],
         )
 
     env = _subprocess_env()
@@ -112,7 +175,7 @@ def plan_terraform(
             export_spec(spec, "terraform", output_dir=tmp)
         except Exception as exc:
             return PlanResult(
-                tool="terraform",
+                tool=tool,
                 available=True,
                 validated=False,
                 plan_ran=False,
@@ -135,7 +198,7 @@ def plan_terraform(
             else:
                 init_msg = "terraform init failed (provider download / network?)."
             return PlanResult(
-                tool="terraform",
+                tool=tool,
                 available=True,
                 validated=False,
                 plan_ran=False,
@@ -151,7 +214,7 @@ def plan_terraform(
         else:
             messages.append("terraform validate: configuration is INVALID.")
             return PlanResult(
-                tool="terraform",
+                tool=tool,
                 available=True,
                 validated=False,
                 plan_ran=False,
@@ -162,7 +225,7 @@ def plan_terraform(
 
         if not run_plan:
             return PlanResult(
-                tool="terraform",
+                tool=tool,
                 available=True,
                 validated=True,
                 plan_ran=False,
@@ -193,7 +256,7 @@ def plan_terraform(
                 summary = None
                 messages.append("terraform plan: completed.")
             return PlanResult(
-                tool="terraform",
+                tool=tool,
                 available=True,
                 validated=True,
                 plan_ran=True,
@@ -221,7 +284,7 @@ def plan_terraform(
             reason = "terraform plan did not complete (see output)."
         messages.append(reason)
         return PlanResult(
-            tool="terraform",
+            tool=tool,
             available=True,
             validated=True,
             plan_ran=False,

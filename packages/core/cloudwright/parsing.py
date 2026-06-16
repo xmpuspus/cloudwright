@@ -42,12 +42,17 @@ def _extract_json(text: str) -> dict:
     arr_start = text.find("[")
     candidates = [i for i in (obj_start, arr_start) if i != -1]
     if not candidates:
+        # The full response is the single most useful artifact for reproducing a
+        # parse failure, so log it in full (recoverable via --debug) before
+        # raising a short message.
+        log.debug("LLM response with no JSON object (full):\n%s", text)
         raise ValueError(f"No JSON object found in LLM response: {text[:300]}")
     start = min(candidates)
 
     try:
         parsed, _end = _JSON_DECODER.raw_decode(text[start:])
     except json.JSONDecodeError as exc:
+        log.debug("LLM response with invalid JSON (full):\n%s", text)
         raise ValueError(f"Unterminated or invalid JSON in LLM response: {text[:300]}") from exc
     return parsed
 
@@ -132,15 +137,18 @@ def _profile_requires_ha(spec: ArchSpec, constraints: Constraints | None) -> boo
     profile = ""
     if spec.metadata and isinstance(spec.metadata, dict):
         profile = str(spec.metadata.get("workload_profile", "")).lower()
+    # Compliance frameworks override the workload profile — a HIPAA/PCI/FedRAMP
+    # workload gets HA even when someone labelled it a sandbox. This check MUST
+    # come before the _NON_HA_PROFILES early-return or the invariant is silently
+    # defeated for sandbox/dev/test profiles.
+    if constraints and any(f.lower() in _HA_REQUIRING_FRAMEWORKS for f in constraints.compliance):
+        return True
     if profile in _NON_HA_PROFILES:
         return False
     if profile in _HA_PROFILES:
         return True
     if constraints is None:
         # No signal either way — default to production posture (back-compat).
-        return True
-    # Compliance frameworks always pull in HA.
-    if any(f.lower() in _HA_REQUIRING_FRAMEWORKS for f in constraints.compliance):
         return True
     if constraints.availability and constraints.availability >= 0.995:
         return True
@@ -156,13 +164,14 @@ def _profile_requires_encryption(spec: ArchSpec, constraints: Constraints | None
     profile = ""
     if spec.metadata and isinstance(spec.metadata, dict):
         profile = str(spec.metadata.get("workload_profile", "")).lower()
+    # Compliance frameworks override the workload profile — encryption-at-rest is
+    # non-negotiable under HIPAA/PCI/SOC2/FedRAMP/GDPR/ISO even if the spec is
+    # labelled a sandbox. This MUST precede the _NON_HA_PROFILES early-return.
+    if constraints and any(f.lower() in _ENCRYPTION_REQUIRING_FRAMEWORKS for f in constraints.compliance):
+        return True
     if profile in _NON_HA_PROFILES:
         # Sandboxes get whatever the LLM picked — no forced encryption override.
         return False
-    if constraints is None:
-        return True  # back-compat default
-    if any(f.lower() in _ENCRYPTION_REQUIRING_FRAMEWORKS for f in constraints.compliance):
-        return True
     return True  # default true — better safe than encrypted-after-the-breach
 
 

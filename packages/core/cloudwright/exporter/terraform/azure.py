@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from cloudwright.exporter.terraform.common import _hcl_quote
+from cloudwright.exporter.terraform.common import _hcl_num, _hcl_quote
 
 if TYPE_CHECKING:
     from cloudwright.spec import ArchSpec, Component
@@ -118,7 +118,7 @@ def render_resource(c: "Component", spec: "ArchSpec") -> str:
             f"  dns_prefix          = {_hcl_quote(safe_id)}",
             "  default_node_pool {",
             '    name       = "default"',
-            f"    node_count = {cfg.get('node_count', 1)}",
+            f"    node_count = {_hcl_num(cfg.get('node_count', 1), 1)}",
             f"    vm_size    = {_hcl_quote(cfg.get('vm_size', 'Standard_D2_v2'))}",
             "  }",
             "  identity {",
@@ -191,7 +191,7 @@ def render_resource(c: "Component", spec: "ArchSpec") -> str:
             f"  name                = {_hcl_quote(safe_id)}",
             f"  location            = {_LOCATION}",
             f"  resource_group_name = {_RG}",
-            f"  capacity            = {cfg.get('capacity', 1)}",
+            f"  capacity            = {_hcl_num(cfg.get('capacity', 1), 1)}",
             '  family              = "C"',
             f"  sku_name            = {_hcl_quote(cfg.get('sku_name', 'Basic'))}",
             "  tags = {",

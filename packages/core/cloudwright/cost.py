@@ -42,6 +42,106 @@ _SERVICE_EGRESS_OVERRIDES = {
 _DEFAULT_EGRESS_RATE = 0.09
 
 # ---------------------------------------------------------------------------
+# Regional price multipliers relative to us-east-1 = 1.00 baseline.
+# Source: public AWS/GCP/Azure pricing pages as of 2025.
+# Matched by prefix so "eu-west-2" hits "eu-west" if not listed explicitly.
+# ---------------------------------------------------------------------------
+_REGION_MULTIPLIERS: dict[str, float] = {
+    # AWS
+    "us-east-1": 1.00,
+    "us-east-2": 1.00,
+    "us-west-1": 1.10,
+    "us-west-2": 1.02,
+    "ca-central-1": 1.05,
+    "eu-west-1": 1.08,
+    "eu-west-2": 1.10,
+    "eu-west-3": 1.12,
+    "eu-central-1": 1.10,
+    "eu-north-1": 1.05,
+    "ap-southeast-1": 1.15,
+    "ap-southeast-2": 1.16,
+    "ap-northeast-1": 1.18,
+    "ap-northeast-2": 1.13,
+    "ap-south-1": 1.10,
+    "sa-east-1": 1.25,
+    "me-south-1": 1.20,
+    "af-south-1": 1.20,
+    # GCP (region codes)
+    "us-central1": 1.00,
+    "us-east1": 1.00,
+    "us-west1": 1.02,
+    "europe-west1": 1.08,
+    "europe-west2": 1.10,
+    "europe-west3": 1.12,
+    "europe-west4": 1.08,
+    "asia-southeast1": 1.15,
+    "asia-northeast1": 1.18,
+    "asia-south1": 1.10,
+    "southamerica-east1": 1.25,
+    # Azure (region codes)
+    "eastus": 1.00,
+    "eastus2": 1.00,
+    "westus": 1.02,
+    "westus2": 1.02,
+    "westus3": 1.05,
+    "centralus": 1.00,
+    "northcentralus": 1.00,
+    "southcentralus": 1.00,
+    "canadacentral": 1.05,
+    "westeurope": 1.08,
+    "northeurope": 1.08,
+    "uksouth": 1.10,
+    "ukwest": 1.10,
+    "germanywestcentral": 1.12,
+    "francecentral": 1.12,
+    "southeastasia": 1.15,
+    "eastasia": 1.15,
+    "japaneast": 1.18,
+    "koreacentral": 1.13,
+    "centralindia": 1.10,
+    "brazilsouth": 1.25,
+    "southafricanorth": 1.20,
+    "uaenorth": 1.20,
+}
+
+# Prefix-based fallbacks when an exact region code isn't in the table above
+_REGION_PREFIX_MULTIPLIERS: list[tuple[str, float]] = [
+    ("us-east", 1.00),
+    ("us-west", 1.05),
+    ("us-", 1.02),
+    ("eu-", 1.10),
+    ("europe-", 1.10),
+    ("ap-", 1.15),
+    ("asia-", 1.15),
+    ("sa-", 1.25),
+    ("southamerica-", 1.25),
+    ("me-", 1.20),
+    ("af-", 1.20),
+    ("ca-", 1.05),
+    ("eastus", 1.00),
+    ("westus", 1.02),
+    ("westeurope", 1.08),
+    ("northeurope", 1.08),
+    ("southeastasia", 1.15),
+    ("japaneast", 1.18),
+    ("brazilsouth", 1.25),
+]
+
+
+def _region_multiplier(region: str) -> float:
+    """Return a price multiplier for the given region, relative to us-east-1 = 1.00."""
+    if not region:
+        return 1.00
+    r = region.lower().strip()
+    if r in _REGION_MULTIPLIERS:
+        return _REGION_MULTIPLIERS[r]
+    for prefix, mult in _REGION_PREFIX_MULTIPLIERS:
+        if r.startswith(prefix):
+            return mult
+    return 1.00  # unknown region — assume baseline
+
+
+# ---------------------------------------------------------------------------
 # Workload profiles — realistic sizing defaults per environment tier
 # ---------------------------------------------------------------------------
 
@@ -231,10 +331,14 @@ class CostEngine:
                 node counts, and data transfer that match production workloads.
         """
         breakdown: list[ComponentCost] = []
+        region = spec.region or "us-east-1"
+        rmult = _region_multiplier(region)
 
         for comp in spec.components:
             effective = _apply_profile(comp, workload_profile) if workload_profile else comp
-            monthly = self._price_component(effective, spec.provider, spec.region, pricing_tier)
+            monthly, confidence, is_estimated = self._price_component_with_meta(
+                effective, spec.provider, region, pricing_tier, rmult
+            )
             hourly = round(monthly / 730, 4) if monthly > 0 else None
             notes = self._cost_notes(effective)
             breakdown.append(
@@ -244,6 +348,8 @@ class CostEngine:
                     monthly=monthly,
                     hourly=hourly,
                     notes=notes,
+                    confidence=confidence,
+                    estimated=is_estimated,
                 )
             )
 
@@ -251,12 +357,19 @@ class CostEngine:
         data_transfer = self._estimate_data_transfer(spec, workload_profile=workload_profile)
         total = round(component_total + data_transfer, 2)
 
+        # Aggregate confidence: "high" only when every billed line item used catalog data
+        billed = [c for c in breakdown if c.monthly > 0]
+        pricing_confidence = "high" if billed and all(c.confidence == "high" for c in billed) else "low"
+
         return CostEstimate(
             monthly_total=total,
             breakdown=breakdown,
             data_transfer_monthly=data_transfer,
             currency="USD",
             as_of=date.today().isoformat(),
+            pricing_confidence=pricing_confidence,
+            region=region,
+            region_multiplier=rmult,
         )
 
     def price(
@@ -366,16 +479,42 @@ class CostEngine:
     def _price_component(
         self, comp: Component, default_provider: str, region: str, pricing_tier: str = "on_demand"
     ) -> float:
-        """Get monthly cost for a single component using 3-tier resolution + multipliers."""
+        """Get monthly cost for a single component. Kept for backward compatibility."""
+        monthly, _conf, _est = self._price_component_with_meta(
+            comp, default_provider, region, pricing_tier, _region_multiplier(region)
+        )
+        return monthly
+
+    def _price_component_with_meta(
+        self,
+        comp: Component,
+        default_provider: str,
+        region: str,
+        pricing_tier: str = "on_demand",
+        region_mult: float = 1.0,
+    ) -> tuple[float, str, bool]:
+        """Return (monthly_cost, confidence, is_estimated) for a single component.
+
+        confidence: "high" when the price came from a real catalog row, "low" otherwise.
+        is_estimated: True when the price is a formula/fallback, not catalog data.
+        region_mult: pre-computed regional multiplier to apply to formula/fallback tiers.
+        """
         provider = comp.provider or default_provider
         config = comp.config or {}
         base: float | None = None
         from_catalog = False
+        confidence = "low"
+        is_estimated = False
 
         # Tier 1: catalog DB (has instance-level pricing and pricing_tier support)
         base = self.catalog.get_service_pricing(comp.service, provider, config, pricing_tier=pricing_tier)
         if base is not None:
             from_catalog = True
+            confidence = "high"
+            # The catalog stores us-east-1 baseline prices and does not vary by
+            # region, so the regional multiplier is applied here too (not only on
+            # the formula/fallback tiers below).
+            base *= region_mult
 
         if base is None:
             # Tier 2: registry formula dispatch
@@ -387,14 +526,16 @@ class CostEngine:
                     merged_config.update(config)
                     result = formula_fn(merged_config)
                     if result is not None and result > 0:
-                        multiplier = _PRICING_MULTIPLIERS.get(pricing_tier, 1.0)
-                        base = result * multiplier
+                        tier_mult = _PRICING_MULTIPLIERS.get(pricing_tier, 1.0)
+                        base = result * tier_mult * region_mult
+                        is_estimated = True
 
         if base is None:
-            # Tier 3: static fallback table
+            # Tier 3: static fallback — mark as low-confidence estimated
             base = default_managed_price(comp.service, config)
-            multiplier = _PRICING_MULTIPLIERS.get(pricing_tier, 1.0)
-            base = base * multiplier
+            tier_mult = _PRICING_MULTIPLIERS.get(pricing_tier, 1.0)
+            base = base * tier_mult * region_mult
+            is_estimated = True
 
         # Post-resolution multipliers (only for non-catalog tiers — catalog handles these internally)
         if not from_catalog and config.get("multi_az"):
@@ -407,7 +548,7 @@ class CostEngine:
             if not has_explicit_count:
                 base *= 3
 
-        return round(base, 2)
+        return round(base, 2), confidence, is_estimated
 
     def _estimate_data_transfer(self, spec: ArchSpec, workload_profile: str | None = None) -> float:
         """Estimate monthly data transfer (egress) costs from connections."""

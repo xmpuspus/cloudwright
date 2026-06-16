@@ -28,12 +28,24 @@ def compliance_scan(
     ] = None,
     fail_on: Annotated[str, typer.Option("--fail-on", help="Fail on: critical, high, medium, none")] = "high",
     output: Annotated[str | None, typer.Option("--output", "-o", help="Write a markdown control report")] = None,
+    oscal: Annotated[
+        bool,
+        typer.Option("--oscal", "-O", help="Emit OSCAL 1.1.2 component-definition JSON alongside the scan"),
+    ] = False,
+    traceability: Annotated[
+        bool,
+        typer.Option("--traceability", help="Show the control traceability chain: component -> resource -> control"),
+    ] = False,
 ) -> None:
     """Scan an ArchSpec and map every finding to framework control IDs.
 
     Maps design-stage findings to HIPAA / SOC 2 / PCI-DSS / FedRAMP / GDPR /
     ISO 27001 / NIST 800-53 controls before any infrastructure exists. Folds in
     a Checkov deep scan against the exported Terraform when Checkov is on PATH.
+
+    Use --oscal / -O to also emit an OSCAL 1.1.2 component-definition document.
+    When --output is set the OSCAL JSON is written to <output>.oscal.json;
+    otherwise it is printed to stdout after the standard report.
     """
     try:
         from cloudwright import ArchSpec
@@ -46,12 +58,34 @@ def compliance_scan(
         if output:
             Path(output).write_text(render_markdown(spec, report))
 
+        if oscal:
+            import json as _json
+
+            from cloudwright.oscal import to_oscal
+
+            scanner = ComplianceScanner()
+            resolved_fws = scanner.resolve_frameworks(spec, fw_list or None)
+            oscal_doc = to_oscal(spec, report, resolved_fws)
+            oscal_text = _json.dumps(oscal_doc, indent=2)
+            if output:
+                oscal_path = str(output) + ".oscal.json"
+                Path(oscal_path).write_text(oscal_text)
+                if not is_json_mode(ctx):
+                    console.print(f"OSCAL document written to {oscal_path}", style="dim")
+            else:
+                print(oscal_text)
+
         if is_json_mode(ctx):
             if should_stream(ctx):
                 for f in report.findings:
                     emit_stream(f.as_dict())
             else:
-                emit_success(ctx, report.as_dict())
+                payload = report.as_dict()
+                if traceability:
+                    from cloudwright.compliance import build_traceability
+
+                    payload["traceability"] = build_traceability(spec, report)
+                emit_success(ctx, payload)
             _maybe_exit(report, fail_on)
             return
 
@@ -78,6 +112,21 @@ def compliance_scan(
                     console.print(f"           Controls: {ctrl}", style="cyan")
                 console.print(f"           Remediation: {f.remediation}", style="dim")
                 console.print()
+
+        if traceability and report.findings:
+            from cloudwright.compliance import build_traceability
+
+            chain_table = Table("Component", "Resource", "Controls", "Status", title="Control Traceability")
+            for row in build_traceability(spec, report):
+                ctrls = ", ".join(f"{c['framework']} {c['control_id']}" for c in row["controls"]) or "-"
+                chain_table.add_row(
+                    f"{row['label'] or row['component_id'] or '-'} ({row['service'] or '-'})",
+                    row["resource_type"] or "-",
+                    ctrls,
+                    f"[red]{row['status']}[/red]",
+                )
+            console.print(chain_table)
+            console.print()
 
         crit = report.critical_count
         high = report.high_count

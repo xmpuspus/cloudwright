@@ -27,9 +27,9 @@ Cloudwright takes a one-line description of a cloud system and produces a struct
 ## What you get
 
 - Architecture spec (typed YAML, version-controlled, the single source of truth)
-- Cost breakdown across AWS, GCP, Azure, Databricks (multi-region, per-component, four pricing tiers)
-- Compliance report covering HIPAA, SOC 2, PCI-DSS, FedRAMP Moderate, GDPR, and Well-Architected
-- Terraform and CloudFormation export with safe defaults (encryption, IMDSv2, locked-down S3, sensible RDS settings)
+- Cost breakdown across AWS, GCP, Azure, Databricks (region-aware, per-component, four pricing tiers, optional carbon + FOCUS CSV export). Each line carries a confidence flag — `high` from the bundled price catalog (deepest on AWS), `low` from formula/fallback — so an estimate never silently passes off a guess as a quote.
+- Compliance report covering HIPAA, SOC 2, PCI-DSS, FedRAMP Moderate, GDPR, NIST 800-53, and Well-Architected, with OSCAL 1.1.2 export and control traceability
+- Terraform, OpenTofu, Pulumi (TypeScript or Python), and CloudFormation export with safe defaults (encryption, IMDSv2, locked-down S3, sensible RDS settings)
 - Diagrams in ASCII, Mermaid, D2, and a fully editable web canvas
 - MCP server for AI agents (Claude Desktop, Cursor, Cline, and any MCP-compatible client)
 
@@ -112,7 +112,32 @@ hcl = export_spec(spec, "terraform", output_dir="./infra")
 
 <a id="whats-new"></a>
 
-## What's new
+## What's new in v1.6.0
+
+<p align="center">
+  <img src="examples/cloudwright-review-demo.gif" alt="cloudwright review gives an offline, severity-ranked architecture critique; cloudwright compliance --oscal emits an OSCAL component-definition" width="900">
+</p>
+
+<p align="center"><em>`cloudwright review` — offline scorer + linter + validator in one report — then the same findings exported as OSCAL.</em></p>
+
+The design engine now reviews and repairs its own output, compliance binds at design time with OSCAL output, and the cost estimate stops guessing silently.
+
+- **The architect self-corrects.** Every `cloudwright design` runs the built-in critics (scorer, linter, validator) against the generated spec and, when blocking findings remain, repairs it in one bounded pass before you ever see it — recorded in `spec.metadata.critique`. The same engine is a free, offline command: `cloudwright review spec.yaml` gives a severity-ranked architecture review with no API key.
+- **OSCAL + control traceability.** `cloudwright compliance spec.yaml --frameworks fedramp --oscal` emits an OSCAL 1.1.2 component-definition — control mapping a CSPM or evidence tool cannot produce before deploy. `--traceability` prints the chain design intent -> component -> Terraform resource -> control ID -> status.
+- **Cost you can defend.** Region-aware pricing (every region used to be priced as us-east-1), data-transfer/egress estimation, a per-line pricing confidence (`high` = catalog, `low` = fallback), design-time carbon (`cloudwright cost --carbon`), and FOCUS-spec CSV export (`--focus`).
+- **Drift -> remediation and OpenTofu.** `cloudwright drift ... --remediate` turns drift into a cost + compliance + plan preview (read-only). `cloudwright export --format opentofu` and a tofu-aware `plan`.
+- **Hardening.** Terraform exporter injection hardening, `cloudwright plan` no longer carries the LLM key into the IaC subprocess, the WAF export is deployable, and the "compliance overrides workload profile" guarantee is now actually enforced for sandbox specs.
+
+```bash
+cloudwright review spec.yaml                                   # offline, no API key
+cloudwright compliance spec.yaml --frameworks fedramp --oscal  # OSCAL component-definition
+cloudwright cost spec.yaml --carbon --focus                    # region-aware + carbon + FOCUS CSV
+cloudwright export spec.yaml --format opentofu -o ./infra
+```
+
+See [docs/](docs/) for getting-started, CLI, MCP, and troubleshooting guides.
+
+## What's new in v1.5.0
 
 Terminal — `cloudwright compliance` maps every finding to its framework control ID, then `cloudwright plan` proves the Terraform validates:
 

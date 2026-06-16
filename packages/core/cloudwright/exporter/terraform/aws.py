@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from cloudwright.exporter.terraform.common import _hcl_quote
+from cloudwright.exporter.terraform.common import _hcl_num, _hcl_quote
 
 if TYPE_CHECKING:
     from cloudwright.spec import ArchSpec, Component
@@ -88,7 +88,7 @@ def render_resource(c: "Component", spec: "ArchSpec") -> str:
             f"  identifier              = {_hcl_quote(c.id)}",
             f"  engine                  = {_hcl_quote(engine)}",
             f"  instance_class          = {_hcl_quote(instance_class)}",
-            f"  allocated_storage       = {cfg.get('allocated_storage', 20)}",
+            f"  allocated_storage       = {_hcl_num(cfg.get('allocated_storage', 20), 20)}",
             "  username                = var.db_username",
             "  password                = var.db_password",
             # Safe-by-default hardening for FedRAMP / HIPAA / PCI baselines.
@@ -217,7 +217,7 @@ def render_resource(c: "Component", spec: "ArchSpec") -> str:
             f"  cluster_id           = {_hcl_quote(_bucket_name(c))}",
             f"  engine               = {_hcl_quote(engine)}",
             f"  node_type            = {_hcl_quote(node_type)}",
-            f"  num_cache_nodes      = {cfg.get('num_cache_nodes', 1)}",
+            f"  num_cache_nodes      = {_hcl_num(cfg.get('num_cache_nodes', 1), 1)}",
             f"  parameter_group_name = {_hcl_quote(f'default.{engine}7')}",
             "  tags = {",
             f"    Name = {_hcl_quote(c.label)}",
@@ -276,7 +276,11 @@ def render_resource(c: "Component", spec: "ArchSpec") -> str:
             f'resource "aws_wafv2_web_acl" "{c.id}" {{',
             f"  name  = {_hcl_quote(c.id)}",
             '  scope = "REGIONAL"',
-            "  default_action { allow {} }",
+            # Terraform rejects a single-line block that contains a nested block,
+            # so default_action must be emitted multi-line.
+            "  default_action {",
+            "    allow {}",
+            "  }",
             "  visibility_config {",
             "    cloudwatch_metrics_enabled = true",
             f"    metric_name                = {_hcl_quote(c.id)}",
@@ -321,7 +325,7 @@ def render_resource(c: "Component", spec: "ArchSpec") -> str:
             f'resource "aws_ecs_service" "{c.id}_service" {{',
             f"  name            = {_hcl_quote(c.id + '-service')}",
             f"  cluster         = aws_ecs_cluster.{c.id}.id",
-            f"  desired_count   = {cfg.get('desired_count', 1)}",
+            f"  desired_count   = {_hcl_num(cfg.get('desired_count', 1), 1)}",
             f"  launch_type     = {_hcl_quote(launch_type)}",
             "  task_definition = var.task_definition_arn",
         ]
@@ -393,7 +397,7 @@ def render_resource(c: "Component", spec: "ArchSpec") -> str:
         lines += [
             f'resource "aws_kinesis_stream" "{c.id}" {{',
             f"  name        = {_hcl_quote(_bucket_name(c))}",
-            f"  shard_count = {cfg.get('shard_count', 2)}",
+            f"  shard_count = {_hcl_num(cfg.get('shard_count', 2), 2)}",
             # Enforce server-side encryption with the AWS-managed KMS key.
             '  encryption_type = "KMS"',
             '  kms_key_id      = "alias/aws/kinesis"',
@@ -435,7 +439,7 @@ def render_resource(c: "Component", spec: "ArchSpec") -> str:
         lines += [
             f'resource "aws_ebs_volume" "{c.id}" {{',
             "  availability_zone = data.aws_availability_zones.available.names[0]",
-            f"  size              = {cfg.get('size', 100)}",
+            f"  size              = {_hcl_num(cfg.get('size', 100), 100)}",
             '  type              = "gp3"',
             # Encryption at rest enforced by default.
             "  encrypted         = true",

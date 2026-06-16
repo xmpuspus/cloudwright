@@ -272,7 +272,11 @@ def default_managed_price(service: str, config: dict) -> float:
     """Fallback pricing when catalog doesn't have specific data."""
     base = _FALLBACK_PRICES.get(service, 10.0)
     if service not in _FALLBACK_PRICES:
-        log.debug("No fallback price for service '%s', using default $10.00", service)
+        # $10 placeholder is fabricated — warn so callers can mark confidence=low
+        log.warning(
+            "No pricing data for service '%s' — using $10.00 placeholder. This number is not from a real price list.",
+            service,
+        )
     else:
         log.debug("Using fallback price for '%s': $%.2f", service, base)
     # Multiplier from various count-like config keys

@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+from cloudwright.critique import (  # noqa: F401
+    CritiqueFinding,
+    CritiqueReport,
+    critique,
+)
+
 # Re-export everything for backward compatibility
 from cloudwright.designer import (  # noqa: F401
     Architect,

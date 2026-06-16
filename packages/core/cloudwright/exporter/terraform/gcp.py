@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from cloudwright.exporter.terraform.common import _hcl_quote
+from cloudwright.exporter.terraform.common import _hcl_num, _hcl_quote
 
 if TYPE_CHECKING:
     from cloudwright.spec import ArchSpec, Component
@@ -90,7 +90,7 @@ def render_resource(c: "Component", spec: "ArchSpec") -> str:
             f'resource "google_container_cluster" "{c.id}" {{',
             f"  name     = {_hcl_quote(safe_id)}",
             f"  location = {_hcl_quote(cfg.get('location', 'us-central1'))}",
-            f"  initial_node_count = {cfg.get('initial_node_count', 1)}",
+            f"  initial_node_count = {_hcl_num(cfg.get('initial_node_count', 1), 1)}",
             "  node_config {",
             f"    machine_type = {_hcl_quote(cfg.get('machine_type', 'e2-medium'))}",
             "  }",
@@ -113,7 +113,7 @@ def render_resource(c: "Component", spec: "ArchSpec") -> str:
             "    }",
             "  }",
             "  service_config {",
-            f"    max_instance_count = {cfg.get('max_instances', 10)}",
+            f"    max_instance_count = {_hcl_num(cfg.get('max_instances', 10), 10)}",
             "  }",
             "}",
         ]
@@ -146,7 +146,7 @@ def render_resource(c: "Component", spec: "ArchSpec") -> str:
             f'resource "google_redis_instance" "{c.id}" {{',
             f"  name           = {_hcl_quote(safe_id)}",
             '  tier           = "BASIC"',
-            f"  memory_size_gb = {cfg.get('memory_size_gb', 1)}",
+            f"  memory_size_gb = {_hcl_num(cfg.get('memory_size_gb', 1), 1)}",
             f"  region         = {_hcl_quote(cfg.get('region', 'us-central1'))}",
             "}",
         ]

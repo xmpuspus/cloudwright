@@ -135,6 +135,44 @@ class ComplianceReport:
         }
 
 
+def _resource_type_map() -> dict[str, str]:
+    """service -> Terraform resource type, merged across provider renderers."""
+    res: dict[str, str] = {}
+    from cloudwright.exporter.terraform import aws, azure, databricks, gcp
+
+    for mod in (aws, gcp, azure, databricks):
+        res.update(getattr(mod, "RESOURCES", {}) or {})
+    return res
+
+
+def build_traceability(spec: "ArchSpec", report: "ComplianceReport") -> list[dict[str, Any]]:
+    """Control traceability chain: design intent -> component -> IaC resource -> control -> status.
+
+    Auditors (and OSCAL/EU AI Act technical documentation) need to follow a control
+    from the requirement down to the exact resource that does or does not satisfy it.
+    Each entry links a finding's component to the Terraform resource it renders to and
+    the framework control IDs it touches.
+    """
+    comps = {c.id: c for c in spec.components}
+    res_map = _resource_type_map()
+    chains: list[dict[str, Any]] = []
+    for f in report.findings:
+        comp = comps.get(f.component_id) if f.component_id else None
+        chains.append(
+            {
+                "component_id": f.component_id,
+                "service": comp.service if comp else None,
+                "label": comp.label if comp else None,
+                "resource_type": res_map.get(comp.service) if comp else None,
+                "rule": f.rule,
+                "severity": f.severity,
+                "controls": [c.as_dict() for c in f.controls],
+                "status": "violated",
+            }
+        )
+    return chains
+
+
 class ControlCatalog:
     """Loads and resolves the rule/Checkov -> framework-control mapping."""
 

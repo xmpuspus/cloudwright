@@ -7,6 +7,7 @@ import CompliancePanel from "./components/CompliancePanel";
 import PlanPanel from "./components/PlanPanel";
 import ExportPanel from "./components/ExportPanel";
 import SpecPanel from "./components/SpecPanel";
+import { parseApiError, formatApiError } from "./lib/apiError";
 
 interface ArchSpec {
   name: string;
@@ -53,6 +54,14 @@ interface CostEstimate {
   monthly_total: number;
   breakdown: { component_id: string; service: string; monthly: number; notes: string }[];
   currency: string;
+}
+
+interface UsageInfo {
+  model?: string;
+  input_tokens?: number;
+  output_tokens?: number;
+  cost_usd?: number;
+  latency_ms?: number;
 }
 
 interface Message {
@@ -146,6 +155,7 @@ async function streamDesignOrModify(
     onCost: (estimate: CostEstimate | null) => void;
     onValidation: (passed: number | null, total: number | null) => void;
     onDone: (spec: ArchSpec, yaml: string) => void;
+    onUsage?: (usage: UsageInfo) => void;
     onError: (message: string) => void;
   }
 ) {
@@ -157,8 +167,7 @@ async function streamDesignOrModify(
   });
 
   if (!response.ok) {
-    const data = await response.json();
-    callbacks.onError(data.detail || "Request failed");
+    callbacks.onError(await parseApiError(response));
     return;
   }
 
@@ -188,6 +197,7 @@ async function streamDesignOrModify(
             break;
           case "generated":
             callbacks.onSpec(event.spec, event.yaml);
+            if (event.usage && callbacks.onUsage) callbacks.onUsage(event.usage);
             break;
           case "costed":
             callbacks.onCost(event.cost_estimate);
@@ -197,6 +207,7 @@ async function streamDesignOrModify(
             break;
           case "done":
             callbacks.onDone(event.spec, event.yaml);
+            if (event.usage && callbacks.onUsage) callbacks.onUsage(event.usage);
             break;
           case "error":
             callbacks.onError(event.message);
@@ -218,6 +229,7 @@ function App() {
 
   const [modifyInput, setModifyInput] = useState("");
   const [validationSummary, setValidationSummary] = useState<{ passed: number; total: number } | null>(null);
+  const [lastUsage, setLastUsage] = useState<UsageInfo | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -272,6 +284,7 @@ function App() {
             setCurrentSpec(spec);
             setLoadingStage("done");
           },
+          onUsage: (usage) => setLastUsage(usage),
           onError: (msg) => { throw new Error(msg); },
         });
         streamSucceeded = finalSpec !== null;
@@ -294,9 +307,10 @@ function App() {
               body: JSON.stringify({ description: input }),
             });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || "Request failed");
+        if (!res.ok) throw new Error(formatApiError(data));
         finalSpec = data.spec as ArchSpec;
         finalYaml = data.yaml;
+        if (data.usage) setLastUsage(data.usage as UsageInfo);
 
         setLoadingStage("costing");
         finalSpec = await enrichSpec(finalSpec, setValidationSummary);
@@ -529,6 +543,7 @@ function App() {
               onDownloadTerraform={currentSpec ? () => handleDownload("terraform") : undefined}
               onDownloadYaml={currentSpec ? () => handleDownload("yaml") : undefined}
               validationSummary={validationSummary}
+              usage={lastUsage}
             />
           </div>
           <div style={{ flex: 1, overflow: "auto" }}>
@@ -654,6 +669,7 @@ function App() {
                               setCurrentSpec(spec);
                               setLoadingStage("done");
                             },
+                            onUsage: (usage) => setLastUsage(usage),
                             onError: (msg) => { throw new Error(msg); },
                           });
                           streamSucceeded = finalSpec !== null;
@@ -668,7 +684,8 @@ function App() {
                             body: JSON.stringify({ spec: currentSpec, instruction }),
                           });
                           const data = await res.json();
-                          if (!res.ok) throw new Error(data.detail || "Modification failed");
+                          if (!res.ok) throw new Error(formatApiError(data, "Modification failed"));
+                          if (data.usage) setLastUsage(data.usage as UsageInfo);
                           const rawSpec = data.spec as ArchSpec;
                           finalYaml = data.yaml;
                           setLoadingStage("costing");

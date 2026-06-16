@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-06-16
+
+This release closes the defensibility + relevance gaps from the June 2026 product audit:
+the design engine now self-corrects, compliance binds at design time with OSCAL output, cost
+estimates stop fabricating numbers, and the credibility holes a security review would flag
+first are fixed.
+
+### Added
+
+- **Generate -> critique -> repair loop + `cloudwright review`.** `Architect.design()` now runs the deterministic critics that already lived in the tree (scorer, linter, validator) against every generated spec and, when blocking (high/critical) findings remain, asks the model once to fix them — bounded, fails safe to the original spec, and records a `critique` block in `spec.metadata` (score, grade, findings/blocking before and after, repair iterations). The same engine is exposed standalone as `cloudwright review spec.yaml [--compliance hipaa,soc2] [--well-architected]` — a free, offline, severity-ranked architecture review with no API key. Disable repair with `Architect(repair=False)`.
+- **OSCAL 1.1.2 export.** `cloudwright compliance spec.yaml --frameworks fedramp --oscal [-o report.md]` also emits an OSCAL `component-definition` document (deterministic UUIDs, NIST-style lowercased control IDs, per-component `control-implementations` with satisfied / not-satisfied status). Targets the FedRAMP 20x / OSCAL direction — control mapping a CSPM or evidence tool cannot produce at design time.
+- **Control traceability.** `cloudwright compliance spec.yaml --traceability` shows the full chain design intent -> component -> Terraform resource type -> framework control ID -> status, as an audit artifact (`build_traceability()` in `compliance.py`).
+- **Compliance-gated component patterns.** New `cloudwright/patterns.py` tags the bundled templates and modules with the frameworks they satisfy; `suggest_compliant_patterns("hipaa")` returns pre-blessed architectures so the tool proposes compliant designs instead of only flagging violations after the fact.
+- **Agentic drift -> remediation.** New `cloudwright/remediation.py` `remediate(current, desired)` closes the loop read-only: drift diff -> monthly cost delta -> critique quality delta -> terraform/tofu plan preview, with an honest summary. Exposed via `cloudwright drift ... --remediate`. Never applies; `skip_plan=True` skips the IaC toolchain entirely.
+- **Credible cost estimates.** Region-aware pricing (every region was previously priced as us-east-1), per-connection data-transfer/egress estimation, a per-line-item pricing `confidence` (`high` = catalog row, `low` = formula/fallback) with a top-level `pricing_confidence`, design-time carbon estimation (`cloudwright cost --carbon`), and FOCUS-spec CSV export (`cloudwright cost --focus`) for downstream FinOps tools.
+- **OpenTofu support.** `cloudwright export spec.yaml --format opentofu` (alias for the Terraform HCL) and a tofu-aware planner that prefers `tofu` when present (override with `CLOUDWRIGHT_TF_BINARY`), falling back to `terraform`.
+- **Self-serve docs.** New `docs/getting-started.md`, `docs/cli-reference.md`, `docs/troubleshooting.md`, `docs/mcp-reference.md`.
+- **Surfaced telemetry.** The web canvas now renders the model / tokens / cost / latency the backend already computed, and a shared `parseApiError()` makes the canvas show the backend's structured `{code, message, suggestion}` errors and `Retry-After` instead of a generic "Request failed".
+
+### Fixed
+
+- **Compliance now overrides the workload profile.** A `sandbox`/`dev` spec carrying a compliance framework (e.g. HIPAA) no longer skips forced encryption / HA — the framework check moved ahead of the non-production early-return in `parsing.py`, with a real regression test (the prior test passed only because it set `production`).
+- **WAF Terraform export is deployable.** `aws_wafv2_web_acl` now emits a multi-line `default_action { allow {} }`; the previous single-line nested block was rejected by `terraform validate`.
+- **Cost region + fabricated prices.** The `region` parameter is now applied to catalog, formula, and fallback prices; the silent `$10` fallback for unknown services is marked low-confidence/estimated and logged at WARNING.
+- **LLM parse failures keep the full response.** `_extract_json` logs the complete model output at debug before raising, instead of discarding everything past 300 characters — the one artifact needed to reproduce the most common LLM bug.
+
+### Security
+
+- **Terraform exporter injection hardening.** The 13 numeric resource fields (e.g. `allocated_storage`) are now coerced to real numbers via `_hcl_num`, and the export validator rejects newlines and braces in string values — closing a path where a string-typed numeric field could inject a `provisioner "local-exec"` into the generated HCL. Pulumi and CloudFormation paths were already safe. Regression test included.
+- **`cloudwright plan` secret scoping.** The subprocess environment no longer carries the LLM/app API keys (terraform never needs them), only credential-shaped keys are merged from a project `.env`, and any secret-shaped value is redacted from returned `output_tail`.
+
 ## [1.5.0] - 2026-05-19
 
 ### Added

@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from "react";
+import { parseApiError } from "../lib/apiError";
 
 interface ControlRef {
   framework: string;
@@ -74,10 +75,7 @@ export default function CompliancePanel({ spec, apiBase }: CompliancePanelProps)
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ spec, frameworks: selected }),
       });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j.detail || `Request failed (${res.status})`);
-      }
+      if (!res.ok) throw new Error(await parseApiError(res));
       setReport((await res.json()) as ComplianceReport);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Compliance scan failed");

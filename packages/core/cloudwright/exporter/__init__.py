@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 FORMATS = (
     "terraform",
+    "opentofu",
     "pulumi-ts",
     "pulumi-python",
     "cloudformation",
@@ -52,7 +53,13 @@ def _get_all_formats() -> dict[str, object]:
     return formats
 
 
-_DANGEROUS_PATTERNS = re.compile(r"[;|&`]|\$\(|\$\{|%\{")
+# Reject shell metacharacters AND HCL-structural characters. Numeric exporter
+# fields are interpolated without quotes, and string fields without _hcl_quote
+# would be too — so a value containing a newline or a brace could close the
+# current block and inject a new resource / provisioner. Config values for IaC
+# are simple scalars (instance types, engines, counts), so none of these
+# characters appear legitimately.
+_DANGEROUS_PATTERNS = re.compile(r"[;|&`{}\n\r]|\$\(|\$\{|%\{")
 
 
 def validate_export_config(config: dict, path: str = "") -> None:
@@ -94,7 +101,8 @@ def export_spec(spec: ArchSpec, fmt: str, output: str | None = None, output_dir:
     for comp in spec.components:
         validate_export_config(comp.config, path=f"component[{comp.id}].config")
 
-    if fmt == "terraform":
+    if fmt in ("terraform", "opentofu", "tofu"):
+        # OpenTofu consumes the same generated HCL; the alias just signals intent.
         from cloudwright.exporter.terraform import render
 
         content = render(spec)

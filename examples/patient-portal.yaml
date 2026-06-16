@@ -1,0 +1,41 @@
+name: Patient Portal
+version: 1
+provider: aws
+region: us-east-1
+components:
+- id: api
+  service: ec2
+  provider: aws
+  label: API Server
+  tier: 2
+  config:
+    instance_type: t3.large
+- id: db
+  service: rds
+  provider: aws
+  label: Patient DB
+  tier: 3
+  config:
+    engine: postgres
+    instance_class: db.r5.large
+    allocated_storage: 200
+- id: cache
+  service: elasticache
+  provider: aws
+  label: Session Cache
+  tier: 3
+  config:
+    engine: redis
+connections:
+- source: api
+  target: db
+  protocol: TCP
+  port: 5432
+- source: api
+  target: cache
+  protocol: TCP
+  port: 6379
+metadata:
+  compliance:
+  - hipaa
+  workload_profile: production

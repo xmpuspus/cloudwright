@@ -95,7 +95,9 @@ class TestTwoStagePrompting:
 
     def test_design_calls_both_stages(self):
         llm = _two_stage_mock_llm()
-        architect = Architect(llm=llm, two_stage=True)
+        # repair=False isolates the two-stage call pattern; the v1.6 critique/repair
+        # loop (which can add a generate_fast call) is covered by test_critique.py.
+        architect = Architect(llm=llm, two_stage=True, repair=False)
 
         spec = architect.design("Build a serverless orders API on AWS")
 
@@ -138,7 +140,7 @@ class TestTwoStagePrompting:
             {"input_tokens": 800, "output_tokens": 600, "model": "claude-sonnet-4-6"},
         )
 
-        architect = Architect(llm=llm, two_stage=False)
+        architect = Architect(llm=llm, two_stage=False, repair=False)
         spec = architect.design("Build a serverless orders API on AWS")
 
         assert llm.generate.call_count == 1

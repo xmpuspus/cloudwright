@@ -93,6 +93,8 @@ class ComponentCost(BaseModel):
     monthly: float
     hourly: float | None = None
     notes: str = ""
+    confidence: str = "high"  # "high" = real catalog row; "low" = formula/fallback
+    estimated: bool = False  # True when price comes from a fallback, not catalog data
 
 
 class CostEstimate(BaseModel):
@@ -101,6 +103,9 @@ class CostEstimate(BaseModel):
     data_transfer_monthly: float = 0.0
     currency: str = "USD"
     as_of: str = Field(default_factory=lambda: date.today().isoformat())
+    pricing_confidence: str = "high"  # "high" only when every line item is high
+    region: str = "us-east-1"
+    region_multiplier: float = 1.0  # multiplier applied relative to us-east-1 baseline
 
 
 class Alternative(BaseModel):

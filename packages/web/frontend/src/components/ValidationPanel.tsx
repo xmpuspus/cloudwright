@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from "react";
+import { parseApiError } from "../lib/apiError";
 
 interface ValidationCheck {
   name: string;
@@ -243,8 +244,8 @@ export default function ValidationPanel({ spec, apiBase }: ValidationPanelProps)
             well_architected: isWA,
           }),
         });
+        if (!res.ok) throw new Error(await parseApiError(res));
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || "Validation failed");
         setResults(data.results);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Validation failed");

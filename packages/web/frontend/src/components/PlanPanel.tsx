@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from "react";
+import { parseApiError } from "../lib/apiError";
 
 interface PlanResult {
   tool: string;
@@ -38,10 +39,7 @@ export default function PlanPanel({ spec, apiBase }: PlanPanelProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ spec, target, run_plan: true }),
       });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j.detail || `Request failed (${res.status})`);
-      }
+      if (!res.ok) throw new Error(await parseApiError(res));
       setResult((await res.json()) as PlanResult);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Plan failed");

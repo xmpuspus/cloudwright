@@ -48,6 +48,27 @@ def hcl_string(value: str) -> str:
     return _hcl_quote(value)
 
 
+def _hcl_num(value: object, default: float, *, allow_float: bool = False) -> str:
+    """Return a safe numeric HCL literal for ``value``.
+
+    Numeric config fields are interpolated into HCL without surrounding quotes,
+    so a string value (e.g. from LLM drift or a hand-edited spec) would be
+    emitted verbatim and could break out into arbitrary HCL — including a
+    ``provisioner "local-exec"`` that runs on ``terraform apply``. Coercing to
+    a real number here makes the numeric paths injection-proof regardless of the
+    input type; uncoercible values fall back to ``default``.
+    """
+    try:
+        num = float(value)  # type: ignore[arg-type]
+        if not allow_float:
+            num = int(num)
+        else:
+            num = int(num) if num.is_integer() else num
+    except (TypeError, ValueError):
+        num = int(default) if (not allow_float and float(default).is_integer()) else default
+    return str(num)
+
+
 def provider_block(provider: str, spec: "ArchSpec") -> str:
     if provider == "aws":
         return f'provider "aws" {{\n  region = {_hcl_quote(spec.region)}\n}}'

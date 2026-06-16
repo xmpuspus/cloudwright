@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef } from "react";
+import { parseApiError } from "../lib/apiError";
 
 interface ExportPanelProps {
   spec: Record<string, unknown>;
@@ -74,8 +75,8 @@ export default function ExportPanel({ spec, apiBase }: ExportPanelProps) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ spec, format: fmt }),
         });
+        if (!res.ok) throw new Error(await parseApiError(res));
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || "Export failed");
         setContent(data.content || JSON.stringify(data, null, 2));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Export failed");

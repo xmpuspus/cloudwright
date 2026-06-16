@@ -22,6 +22,7 @@ from cloudwright_cli.commands.modify_cmd import modify
 from cloudwright_cli.commands.plan_cmd import plan
 from cloudwright_cli.commands.policy import policy
 from cloudwright_cli.commands.refresh_cmd import refresh
+from cloudwright_cli.commands.review_cmd import review
 from cloudwright_cli.commands.schema_cmd import schema
 from cloudwright_cli.commands.score_cmd import score
 from cloudwright_cli.commands.security_cmd import security_scan
@@ -77,6 +78,7 @@ app.command()(init)
 app.command()(plan)
 app.command()(policy)
 app.command()(score)
+app.command()(review)
 app.command()(analyze)
 app.command()(refresh)
 app.command()(lint)

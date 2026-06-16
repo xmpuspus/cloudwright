@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from cloudwright.exporter.terraform.common import _hcl_quote
+from cloudwright.exporter.terraform.common import _hcl_num, _hcl_quote
 
 if TYPE_CHECKING:
     from cloudwright.spec import ArchSpec, Component
@@ -40,7 +40,7 @@ def render_resource(c: "Component", spec: "ArchSpec") -> str:
             f'resource "databricks_sql_endpoint" "{c.id}" {{',
             f"  name         = {_hcl_quote(c.label)}",
             f"  cluster_size = {_hcl_quote(cfg.get('cluster_size', 'Small'))}",
-            f"  auto_stop_mins = {cfg.get('auto_stop_mins', 30)}",
+            f"  auto_stop_mins = {_hcl_num(cfg.get('auto_stop_mins', 30), 30)}",
             "}",
         ]
 
@@ -50,8 +50,8 @@ def render_resource(c: "Component", spec: "ArchSpec") -> str:
             f"  cluster_name            = {_hcl_quote(c.label)}",
             f"  spark_version           = {_hcl_quote(cfg.get('spark_version', '13.3.x-scala2.12'))}",
             f"  node_type_id            = {_hcl_quote(cfg.get('node_type_id', 'i3.xlarge'))}",
-            f"  autotermination_minutes = {cfg.get('autotermination_minutes', 60)}",
-            f"  num_workers             = {cfg.get('num_workers', 2)}",
+            f"  autotermination_minutes = {_hcl_num(cfg.get('autotermination_minutes', 60), 60)}",
+            f"  num_workers             = {_hcl_num(cfg.get('num_workers', 2), 2)}",
             "}",
         ]
 

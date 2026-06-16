@@ -1,14 +1,30 @@
 import React from 'react';
 
+interface UsageInfo {
+  model?: string;
+  input_tokens?: number;
+  output_tokens?: number;
+  cost_usd?: number;
+  latency_ms?: number;
+}
+
 interface SummaryBarProps {
   spec: any | null;
   onDownloadTerraform?: () => void;
   onDownloadYaml?: () => void;
   validationSummary?: { passed: number; total: number } | null;
+  usage?: UsageInfo | null;
 }
 
-export default function SummaryBar({ spec, onDownloadTerraform, onDownloadYaml, validationSummary }: SummaryBarProps) {
+export default function SummaryBar({ spec, onDownloadTerraform, onDownloadYaml, validationSummary, usage }: SummaryBarProps) {
   if (!spec) return null;
+
+  const usageParts: string[] = [];
+  if (usage?.model) usageParts.push(usage.model.replace("claude-", "").replace("anthropic.", ""));
+  if (usage?.input_tokens != null && usage?.output_tokens != null)
+    usageParts.push(`${((usage.input_tokens + usage.output_tokens) / 1000).toFixed(1)}k tokens`);
+  if (usage?.cost_usd != null) usageParts.push(`$${usage.cost_usd.toFixed(4)}`);
+  if (usage?.latency_ms != null) usageParts.push(`${(usage.latency_ms / 1000).toFixed(1)}s`);
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem 1rem',
@@ -30,6 +46,9 @@ export default function SummaryBar({ spec, onDownloadTerraform, onDownloadYaml, 
         }}>
           WA: {validationSummary.passed}/{validationSummary.total}
         </span>
+      )}
+      {usageParts.length > 0 && (
+        <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{usageParts.join(' · ')}</span>
       )}
       <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
         {onDownloadTerraform && (

@@ -28,9 +28,25 @@ log = get_logger(__name__)
 
 _STOPWORDS = {"a", "an", "the", "on", "in", "for", "with", "and", "or", "to", "my", "our", "that", "this", "using"}
 
+_REPAIR_SYSTEM = (
+    "You are revising an existing cloud architecture spec to fix specific issues. "
+    "You receive the current ArchSpec JSON and a list of blocking findings from an "
+    "automated review. Return ONLY a corrected ArchSpec JSON object that resolves "
+    "those findings while preserving the user's intent and existing component ids "
+    "where possible. Add missing safety components (monitoring, WAF, backups, auth, "
+    "load balancing) when a finding calls for one. Output only the JSON object, "
+    "starting with {."
+)
+
 
 class Architect:
-    def __init__(self, llm: BaseLLM | None = None, two_stage: bool = True):
+    def __init__(
+        self,
+        llm: BaseLLM | None = None,
+        two_stage: bool = True,
+        repair: bool = True,
+        max_repair_iters: int = 1,
+    ):
         self.llm = llm or get_llm()
         # Side-channel for the most recent usage dict produced by design()/modify().
         # The web routers read this to surface model/tokens/cost in API responses
@@ -42,6 +58,12 @@ class Architect:
         # single-shot JSON-schema constraints. Flip to False to use the legacy
         # single-shot path (kept around for benchmarking and emergency fallback).
         self.two_stage = two_stage
+        # v1.6 generate -> critique -> repair: after a spec is produced, the
+        # deterministic critics (scorer/linter/validator) review it and, when
+        # blocking (high/critical) findings remain, the model is asked once to
+        # fix them. Bounded by max_repair_iters; fails safe to the original spec.
+        self.repair = repair
+        self.max_repair_iters = max_repair_iters
 
     def design(self, description: str, constraints: Constraints | None = None) -> ArchSpec:
         self.last_usage = {}
@@ -73,7 +95,70 @@ class Architect:
         if template_result is not None:
             _, confidence = template_result
             spec = spec.model_copy(update={"metadata": {**spec.metadata, "template_confidence": confidence}})
+        if self.repair:
+            spec = self._critique_repair(spec, description, constraints)
         return spec
+
+    def _critique_repair(self, spec: ArchSpec, description: str, constraints: Constraints | None) -> ArchSpec:
+        """Run the deterministic critics and, on blocking findings, repair once."""
+        from cloudwright.critique import critique
+
+        try:
+            report = critique(spec)
+        except Exception as exc:  # critics must never break design()
+            log.debug("critique skipped: %s", exc)
+            return spec
+
+        meta = {
+            "score": round(report.score, 1),
+            "grade": report.grade,
+            "findings_before": len(report.findings),
+            "blocking_before": len(report.blocking),
+            "repair_iterations": 0,
+        }
+        iters = 0
+        while report.blocking and iters < self.max_repair_iters:
+            repaired = self._repair_once(spec, description, constraints, report)
+            iters += 1
+            if repaired is None:
+                break
+            try:
+                new_report = critique(repaired)
+            except Exception:
+                break
+            if len(new_report.blocking) <= len(report.blocking):
+                spec, report = repaired, new_report
+            else:
+                break  # repair regressed the spec — keep the prior one
+        meta["repair_iterations"] = iters
+        meta["findings_after"] = len(report.findings)
+        meta["blocking_after"] = len(report.blocking)
+        return spec.model_copy(update={"metadata": {**spec.metadata, "critique": meta}})
+
+    def _repair_once(
+        self, spec: ArchSpec, description: str, constraints: Constraints | None, report
+    ) -> ArchSpec | None:
+        """One LLM repair pass: feed the blocking findings back and re-parse."""
+        findings_text = "\n".join(
+            f"- [{f.severity}] {f.message}" + (f" — fix: {f.recommendation}" if f.recommendation else "")
+            for f in report.blocking[:12]
+        )
+        user = (
+            f"Original request:\n{description}\n\n"
+            f"Current ArchSpec JSON:\n{spec.to_json()}\n\n"
+            f"Blocking findings to resolve:\n{findings_text}\n\n"
+            "Return the corrected ArchSpec JSON now."
+        )
+        try:
+            start = time.perf_counter()
+            text, usage = self.llm.generate_fast([{"role": "user", "content": user}], _REPAIR_SYSTEM, max_tokens=10000)
+            data = _extract_json(text)
+            repaired = _parse_arch_spec(data, constraints)
+        except Exception as exc:  # a failed repair is non-fatal
+            log.warning("repair pass failed: %s", exc)
+            return None
+        self.last_usage = {**self.last_usage, "repair_usage": self._enrich_usage(usage, start)}
+        return repaired
 
     def _design_two_stage(self, description: str, constraints: Constraints | None) -> ArchSpec:
         """Two-stage: free-text reasoning -> strict JSON projection."""

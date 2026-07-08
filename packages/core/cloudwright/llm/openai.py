@@ -217,12 +217,13 @@ class OpenAILLM(BaseLLM):
                     "output_tokens": response.usage.completion_tokens,
                     "cached_tokens": cached,
                 }
+                # stdlib logger: kwargs-style fields crash Logger._log, use %-style
                 log.info(
-                    "llm_call",
-                    model=model,
-                    duration_ms=round((time.perf_counter() - start) * 1000),
-                    tokens=usage["input_tokens"] + usage["output_tokens"],
-                    cached=cached,
+                    "llm_call model=%s duration_ms=%s tokens=%s cached=%s",
+                    model,
+                    round((time.perf_counter() - start) * 1000),
+                    usage["input_tokens"] + usage["output_tokens"],
+                    cached,
                 )
                 return content, usage
             except _RETRYABLE:

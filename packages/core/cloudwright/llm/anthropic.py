@@ -190,13 +190,14 @@ class AnthropicLLM(BaseLLM):
                     "cached_tokens": cache_read,
                     "cache_creation_tokens": cache_write,
                 }
+                # stdlib logger: kwargs-style fields crash Logger._log, use %-style
                 log.info(
-                    "llm_call",
-                    model=model,
-                    duration_ms=round((time.perf_counter() - start) * 1000),
-                    tokens=usage["input_tokens"] + usage["output_tokens"],
-                    cache_read=cache_read,
-                    cache_write=cache_write,
+                    "llm_call model=%s duration_ms=%s tokens=%s cache_read=%s cache_write=%s",
+                    model,
+                    round((time.perf_counter() - start) * 1000),
+                    usage["input_tokens"] + usage["output_tokens"],
+                    cache_read,
+                    cache_write,
                 )
                 return response.content[0].text, usage
             except _RETRYABLE:

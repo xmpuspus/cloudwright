@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import functools
-import traceback
 from typing import Any, Callable
 
 import typer
 from rich.console import Console
+
+from cloudwright_cli.output import emit_error
 
 err_console = Console(stderr=True)
 
@@ -13,8 +14,14 @@ err_console = Console(stderr=True)
 def cloudwright_command(json_output: bool = True, dry_run: bool = False) -> Callable:
     """Decorator that wraps command functions with standard output handling.
 
-    Handles: JSON envelope wrapping, Rich console formatting, --verbose stack
-    traces, --dry-run interception, and exit codes.
+    Catches any exception the command function doesn't already handle and
+    renders it cleanly instead of letting a raw traceback reach the user:
+    a JSON envelope (via `output.emit_error`) in --json mode, a plain
+    `Error: ...` on stderr otherwise, full traceback only under --verbose.
+
+    Commands that already call `output.emit_error` themselves for specific
+    known failures are unaffected — that path raises `typer.Exit`, which
+    this decorator re-raises untouched.
 
     Args:
         json_output: Whether the command supports --json output mode.
@@ -26,13 +33,6 @@ def cloudwright_command(json_output: bool = True, dry_run: bool = False) -> Call
         def wrapper(*args: Any, **kwargs: Any) -> None:
             # Extract typer context from positional or keyword args
             ctx = _extract_ctx(fn, args, kwargs)
-            verbose = bool(ctx and ctx.obj and ctx.obj.get("verbose"))
-            is_dry = dry_run and bool(ctx and ctx.obj and ctx.obj.get("dry_run"))
-
-            if is_dry:
-                # Commands that handle dry_run themselves will see ctx.obj["dry_run"]
-                # This outer gate lets the inner function emit_dry_run and exit.
-                pass
 
             try:
                 fn(*args, **kwargs)
@@ -41,13 +41,13 @@ def cloudwright_command(json_output: bool = True, dry_run: bool = False) -> Call
             except SystemExit:
                 raise
             except Exception as e:
-                if verbose:
-                    err_console.print_exception()
-                else:
+                if ctx is None:
+                    # Commands without a ctx param (e.g. mcp_serve) can't
+                    # report JSON mode or verbosity — fall back to a plain
+                    # stderr message.
                     err_console.print(f"[red]Error:[/red] {e}")
-                    if verbose:
-                        err_console.print(traceback.format_exc())
-                raise typer.Exit(1)
+                    raise typer.Exit(1) from None
+                emit_error(ctx, e)
 
         return wrapper
 

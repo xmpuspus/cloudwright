@@ -338,3 +338,54 @@ class TestErrorHandling:
     def test_verbose_flag_accepted(self, spec_file: Path):
         result = runner.invoke(app, ["--verbose", "cost", str(spec_file)])
         assert result.exit_code == 0
+
+    def test_missing_field_renders_clean_error_not_raw_traceback(self, tmp_path: Path):
+        """A spec missing a required field must not leak an unhandled exception
+        through Click — it should be caught and rendered as `Error: ...` on stderr."""
+        bad = tmp_path / "missing_name.yaml"
+        bad.write_text("version: 1\nprovider: aws\nregion: us-east-1\ncomponents: []\n")
+        result = runner.invoke(app, ["cost", str(bad)])
+        assert result.exit_code == 1
+        # A clean exit raises typer.Exit -> SystemExit; anything else means the
+        # underlying exception (e.g. pydantic ValidationError) leaked uncaught.
+        assert isinstance(result.exception, SystemExit), f"exception leaked uncaught: {result.exception!r}"
+        assert "Error:" in result.stderr
+        assert "name" in result.stderr
+
+    def test_missing_field_json_envelope(self, tmp_path: Path):
+        """Same malformed spec under global --json prints a parseable error envelope."""
+        bad = tmp_path / "missing_name.yaml"
+        bad.write_text("version: 1\nprovider: aws\nregion: us-east-1\ncomponents: []\n")
+        result = runner.invoke(app, ["--json", "cost", str(bad)])
+        assert result.exit_code == 1
+        # A clean exit raises typer.Exit -> SystemExit; anything else means the
+        # underlying exception (e.g. pydantic ValidationError) leaked uncaught.
+        assert isinstance(result.exception, SystemExit), f"exception leaked uncaught: {result.exception!r}"
+        data = json.loads(result.stdout)
+        assert "error" in data
+        assert "code" in data["error"]
+        assert "message" in data["error"]
+        assert "name" in data["error"]["message"]
+
+    def test_validate_missing_field_no_raw_traceback(self, tmp_path: Path):
+        bad = tmp_path / "missing_name.yaml"
+        bad.write_text("version: 1\nprovider: aws\nregion: us-east-1\ncomponents: []\n")
+        result = runner.invoke(app, ["validate", str(bad), "--compliance", "hipaa"])
+        assert result.exit_code == 1
+        # A clean exit raises typer.Exit -> SystemExit; anything else means the
+        # underlying exception (e.g. pydantic ValidationError) leaked uncaught.
+        assert isinstance(result.exception, SystemExit), f"exception leaked uncaught: {result.exception!r}"
+        assert "Error:" in result.stderr
+
+    def test_valid_spec_cost_still_succeeds(self, spec_file: Path):
+        """Success path output must be unaffected by the error-handling change."""
+        result = runner.invoke(app, ["cost", str(spec_file)])
+        assert result.exit_code == 0
+        assert "Cost Breakdown" in result.stdout
+
+    def test_valid_spec_cost_json_still_succeeds(self, spec_file: Path):
+        result = runner.invoke(app, ["--json", "cost", str(spec_file)])
+        assert result.exit_code == 0
+        data = json.loads(result.stdout)
+        assert "data" in data
+        assert "error" not in data

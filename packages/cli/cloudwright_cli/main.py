@@ -27,6 +27,7 @@ from cloudwright_cli.commands.schema_cmd import schema
 from cloudwright_cli.commands.score_cmd import score
 from cloudwright_cli.commands.security_cmd import security_scan
 from cloudwright_cli.commands.validate import validate
+from cloudwright_cli.decorators import cloudwright_command
 
 
 def _version_callback(value: bool) -> None:
@@ -63,29 +64,29 @@ def main(
     ctx.obj["stream"] = stream
 
 
-app.command()(design)
-app.command()(cost)
-app.command()(compare)
-app.command()(validate)
-app.command()(export)
-app.command()(diff)
-app.command()(drift)
-app.command()(modify)
-app.command(name="import")(import_infra)
-app.command(name="import-live")(import_live)
-app.command()(chat)
-app.command()(init)
-app.command()(plan)
-app.command()(policy)
-app.command()(score)
-app.command()(review)
-app.command()(analyze)
-app.command()(refresh)
-app.command()(lint)
-app.command()(databricks_validate)
-app.command(name="security")(security_scan)
-app.command(name="compliance")(compliance_scan)
-app.command(name="adr")(adr)
-app.command()(schema)
-app.command(name="mcp")(mcp_serve)
+app.command()(cloudwright_command()(design))
+app.command()(cloudwright_command()(cost))
+app.command()(cloudwright_command()(compare))
+app.command()(cloudwright_command()(validate))
+app.command()(cloudwright_command()(export))
+app.command()(cloudwright_command()(diff))
+app.command()(cloudwright_command()(drift))
+app.command()(cloudwright_command()(modify))
+app.command(name="import")(cloudwright_command()(import_infra))
+app.command(name="import-live")(cloudwright_command()(import_live))
+app.command()(cloudwright_command()(chat))
+app.command()(cloudwright_command()(init))
+app.command()(cloudwright_command()(plan))
+app.command()(cloudwright_command()(policy))
+app.command()(cloudwright_command()(score))
+app.command()(cloudwright_command()(review))
+app.command()(cloudwright_command()(analyze))
+app.command()(cloudwright_command()(refresh))
+app.command()(cloudwright_command()(lint))
+app.command()(cloudwright_command()(databricks_validate))
+app.command(name="security")(cloudwright_command()(security_scan))
+app.command(name="compliance")(cloudwright_command()(compliance_scan))
+app.command(name="adr")(cloudwright_command()(adr))
+app.command()(cloudwright_command()(schema))
+app.command(name="mcp")(cloudwright_command()(mcp_serve))
 app.add_typer(catalog_app, name="catalog")

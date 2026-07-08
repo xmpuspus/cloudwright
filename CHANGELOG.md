@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-07-08
+
+Hotfix for a crash in the flagship command, found by the July 2026 product audit.
+
+### Fixed
+
+- **`cloudwright design` no longer crashes on a live API key.** The per-call telemetry line passed structlog-style keyword arguments (`model=`, `tokens=`, ...) to a stdlib logger, so the CLI (which enables root INFO logging) raised `TypeError: Logger._log() got an unexpected keyword argument 'model'` right after the model responded and tokens were billed, producing no spec. The line now uses `%`-style stdlib formatting in both the Anthropic and OpenAI providers. Latent since v1.1.0: the test suite leaves the root logger at WARNING, so the line silently never emitted and never crashed under pytest. Regression test `test_llm_telemetry_logging.py` runs both providers under `configure_logging()`. As a side effect, per-call LLM telemetry (model, latency, tokens, cache hits) now actually emits.
+
 ## [1.6.0] - 2026-06-16
 
 This release closes the defensibility + relevance gaps from the June 2026 product audit:

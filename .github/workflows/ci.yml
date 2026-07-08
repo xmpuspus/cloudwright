@@ -46,6 +46,39 @@ jobs:
         run: pytest packages/mcp/tests/ -x -q --timeout=30
         if: hashFiles('packages/mcp/tests/') != ''
 
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install packages
+        run: |
+          pip install --upgrade pip
+          pip install -e ./packages/core
+          pip install -e ./packages/cli
+          pip install -e ./packages/web
+          pip install -e ./packages/mcp
+      - run: pip install pip-audit
+      - name: Audit dependencies for known CVEs
+        # Blocking gate: verified locally (2026-07) that the real dependency
+        # tree (anthropic, openai, pydantic, pyyaml, fastapi, ...) is clean;
+        # the only prior noise was pip itself on an unpatched runner image,
+        # which the pip upgrade above resolves. The 4 cloudwright-ai-* local
+        # editable packages are skipped as "not found on PyPI", which is expected.
+        run: pip-audit
+
+  version-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check version markers agree
+        run: python3 scripts/check_version_sync.py
+
   build:
     runs-on: ubuntu-latest
     steps:

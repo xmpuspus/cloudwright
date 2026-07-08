@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-from cloudwright_web.middleware import check_api_key, check_rate_limit
+from cloudwright_web.middleware import check_api_key, check_component_limit, check_rate_limit
 
 log = logging.getLogger(__name__)
 router = APIRouter()
@@ -29,6 +29,8 @@ def export(req: ExportRequest, request: Request):
         return err
     try:
         spec = ArchSpec.model_validate(req.spec)
+        if err := check_component_limit(spec):
+            return err
         if req.format not in FORMATS:
             raise HTTPException(
                 status_code=400, detail=f"Unknown format: {req.format}. Supported: {', '.join(FORMATS)}"
@@ -50,6 +52,8 @@ async def download(request: Request):
     try:
         data = await request.json()
         spec = ArchSpec.model_validate(data["spec"])
+        if err := check_component_limit(spec):
+            return err
         fmt = data.get("format", "terraform")
         safe_name = re.sub(r"[^\w\-.]", "-", spec.name.lower())
         if fmt == "yaml":

@@ -39,7 +39,7 @@ def emit_error(
 
     if code is None:
         code = _classify_error(e)
-    msg = str(e)
+    msg = _friendly_message(e)
 
     if is_json_mode(ctx):
         envelope: dict[str, Any] = {
@@ -127,6 +127,30 @@ def confirm_overwrite(path: Path, *, ctx: typer.Context | None = None) -> bool:
 
 def _get_flag(ctx: typer.Context, key: str) -> bool:
     return bool(ctx.obj and ctx.obj.get(key))
+
+
+def _friendly_message(e: Exception) -> str:
+    """Render a readable message for an exception.
+
+    Pydantic ValidationError (raised by ArchSpec.from_file on a malformed
+    spec) dumps a multi-line repr with a docs URL — turn its first error
+    into a one-line "Invalid spec file: field 'x' is required" instead.
+    Anything else falls back to str(e).
+    """
+    errors_fn = getattr(e, "errors", None)
+    if not callable(errors_fn):
+        return str(e)
+    try:
+        errs = errors_fn()
+    except Exception:
+        return str(e)
+    if not errs:
+        return str(e)
+
+    first = errs[0]
+    loc = ".".join(str(p) for p in first.get("loc", ())) or "spec"
+    detail = "is required" if first.get("type") == "missing" else first.get("msg", "is invalid")
+    return f"Invalid spec file: field {loc!r} {detail}"
 
 
 def _classify_error(e: Exception) -> str:

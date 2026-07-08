@@ -93,7 +93,11 @@ class ComponentCost(BaseModel):
     monthly: float
     hourly: float | None = None
     notes: str = ""
-    confidence: str = "high"  # "high" = real catalog row; "low" = formula/fallback
+    # "high" = real catalog row (or a per-region row) backs this price;
+    # "medium" = catalog data exists but was rescaled by a static regional
+    # multiplier because the catalog has no real pricing row for this exact
+    # region; "low" = formula/fallback, not catalog data at all.
+    confidence: str = "high"
     estimated: bool = False  # True when price comes from a fallback, not catalog data
 
 
@@ -102,8 +106,15 @@ class CostEstimate(BaseModel):
     breakdown: list[ComponentCost] = Field(default_factory=list)
     data_transfer_monthly: float = 0.0
     currency: str = "USD"
+    # Historically stamped with date.today(), which claimed same-day freshness
+    # for pricing data that may be months stale. Now set from the catalog's own
+    # refresh timestamp when available (see CostEngine.estimate), falling back
+    # to today only when the catalog carries no refresh history at all.
     as_of: str = Field(default_factory=lambda: date.today().isoformat())
-    pricing_confidence: str = "high"  # "high" only when every line item is high
+    prices_as_of: str | None = None  # catalog pricing-data vintage; None if unknown
+    estimated_on: str = Field(default_factory=lambda: date.today().isoformat())  # when this estimate ran
+    pricing_confidence: str = "high"  # "high" only when every billed line item is catalog-backed
+    pricing_confidence_detail: str = ""  # e.g. "17/20 line items catalog-backed"
     region: str = "us-east-1"
     region_multiplier: float = 1.0  # multiplier applied relative to us-east-1 baseline
 
@@ -113,6 +124,11 @@ class Alternative(BaseModel):
     monthly_total: float
     spec: ArchSpec | None = None
     key_differences: list[str] = Field(default_factory=list)
+    # Propagated from the alternative's own CostEstimate so cross-provider
+    # comparisons don't present formula-priced non-AWS estimates as if they
+    # carried the same authority as catalog-backed AWS numbers.
+    pricing_confidence: str = "high"
+    pricing_confidence_detail: str = ""
 
 
 class ComponentChange(BaseModel):
@@ -173,6 +189,11 @@ class ArchSpec(BaseModel):
 
     name: str
     version: int = 1
+    # Format version of the ArchSpec schema itself (distinct from `version`,
+    # which is the user's architecture revision number). Additive field:
+    # specs persisted before this field existed have no such key and load
+    # with the default below.
+    schema_version: str = "1.0"
     provider: str = "aws"
     region: str = "us-east-1"
     constraints: Constraints | None = None

@@ -5,6 +5,7 @@ import SummaryBar from "./components/SummaryBar";
 import ValidationPanel from "./components/ValidationPanel";
 import CompliancePanel from "./components/CompliancePanel";
 import PlanPanel from "./components/PlanPanel";
+import ReviewPanel from "./components/ReviewPanel";
 import ExportPanel from "./components/ExportPanel";
 import SpecPanel from "./components/SpecPanel";
 import { parseApiError, formatApiError } from "./lib/apiError";
@@ -224,7 +225,7 @@ function App() {
   const [loadingStage, setLoadingStage] = useState<LoadingStage>("idle");
   const [currentSpec, setCurrentSpec] = useState<ArchSpec | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "diagram" | "cost" | "validate" | "compliance" | "plan" | "export" | "spec" | "modify"
+    "diagram" | "cost" | "validate" | "compliance" | "plan" | "review" | "export" | "spec" | "modify"
   >("diagram");
 
   const [modifyInput, setModifyInput] = useState("");
@@ -514,7 +515,7 @@ function App() {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#ffffff" }}>
         {/* Tabs */}
         <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", background: "#ffffff" }}>
-          {(["diagram", "cost", "validate", "compliance", "plan", "export", "spec", "modify"] as const).map((tab) => (
+          {(["diagram", "cost", "validate", "compliance", "plan", "review", "export", "spec", "modify"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -608,6 +609,13 @@ function App() {
             <PlanPanel spec={currentSpec as unknown as Record<string, unknown>} apiBase={API_BASE} />
           )}
           {activeTab === "plan" && !currentSpec && (
+            <div style={{ padding: 32, color: "#64748b" }}>Design an architecture first.</div>
+          )}
+
+          {activeTab === "review" && currentSpec && (
+            <ReviewPanel spec={currentSpec as unknown as Record<string, unknown>} apiBase={API_BASE} />
+          )}
+          {activeTab === "review" && !currentSpec && (
             <div style={{ padding: 32, color: "#64748b" }}>Design an architecture first.</div>
           )}
 

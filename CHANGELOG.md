@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-07-08
+
+Closes the July 2026 product audit findings. The differentiating features (offline review,
+compliance with OSCAL) now reach every MCP-capable coding agent, not just the CLI; the web tier
+is hardened against event-loop stalls and oversized payloads; cost output stops claiming
+freshness it does not have; and a new `integrate` command wires cloudwright into 11 coding
+harnesses.
+
+### Added
+
+- **`cloudwright integrate`.** Generates the exact MCP server config for each popular coding agent (Claude Code, Cursor, Cline, Windsurf, GitHub Copilot, Zed, OpenAI Codex CLI, JetBrains Junie, Kiro, Antigravity) in that client's own format (`mcpServers`, VS Code `servers`, Zed `context_servers`, or Codex TOML), plus a CLI-pipe path for Aider (not an MCP client). `--rules` emits a harness-agnostic gate block for AGENTS.md, CLAUDE.md, or GEMINI.md that tells any agent to run `cloudwright review`/`cost`/`compliance` before it writes infrastructure. `--write` merges into the right file without clobbering existing servers. See `docs/integrations.md`.
+- **Review, compliance, and plan as MCP tools.** The MCP server now exposes `review_architecture` (offline critique, no API key), `scan_compliance_controls` (control-mapped findings, with an `oscal` flag returning the OSCAL 1.1.2 component-definition), and `plan_infrastructure` (read-only, validate-only by default, never applies). Any MCP client gets cloudwright's design-time checks in its agent loop.
+- **Review and OSCAL on the web canvas.** New `POST /api/review` runs the offline critique; `POST /api/compliance` takes an `oscal` flag. The canvas gains a Review tab (score, grade, findings) and an OSCAL JSON download on the Compliance panel.
+- **Honest cost signals.** Cost estimates now report `prices_as_of` (the catalog vintage) and `estimated_on` (today) separately instead of stamping today's date on older price data, and expose a `pricing_confidence_detail` ratio ("17/20 line items catalog-backed"). Cross-provider `compare` carries a per-alternative confidence column. Region pricing uses a real regional catalog row when one exists (high confidence) and only falls back to the static multiplier (medium) when none does. New `docs/provider-coverage.md` states per-provider coverage plainly.
+- **MCP session TTL.** MCP sessions older than `CLOUDWRIGHT_MCP_SESSION_TTL_DAYS` (default 7) are swept on server start and session-list.
+- **Release and security docs.** `RELEASING.md` (the release runbook) and `SECURITY.md` (disclosure policy) are now committed, plus `schema_version` on the persisted spec for future migrations.
+
+### Fixed
+
+- **Web tier no longer stalls the event loop.** Diagram rendering (a d2 subprocess up to 300s) now runs via `asyncio.to_thread`, so one PNG request no longer freezes every other request on the worker. `/api/diagram` gained a request model, so bad input returns 4xx instead of a raw 500.
+- **Request-size and component-count caps.** A 1 MB body-size limit and a component-count cap protect the spec-accepting endpoints from resource-exhaustion payloads. The per-IP rate-limiter buckets are now evicted instead of growing without bound.
+- **Container no longer serves unauthenticated by accident.** With `CLOUDWRIGHT_REQUIRE_AUTH=1` (set in the Dockerfile) and no `CLOUDWRIGHT_API_KEY`, the app refuses to start; docker-compose fails fast on an empty key. Local `uvicorn` stays open-by-default for development.
+- **Structured logging activates on real launch paths.** `configure_logging()` now runs in `create_app()`, so `cloudwright chat --web` and bare `uvicorn` get structured logs and request-id correlation, not just `serve()`.
+- **Clean CLI errors.** A malformed spec file now prints `Error: Invalid spec file: field 'name' is required` instead of a Pydantic traceback, and `--json` mode emits `{"error": {"code": ..., "message": ...}}` on failure. Full tracebacks remain available with `--verbose`.
+- **CI gains a dependency-CVE gate and a version-sync check.** A `pip-audit` job and a `check_version_sync.py` job (asserting all 13 version markers agree) now run in CI.
+
 ## [1.6.1] - 2026-07-08
 
 Hotfix for a crash in the flagship command, found by the July 2026 product audit.

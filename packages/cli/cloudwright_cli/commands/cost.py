@@ -115,10 +115,11 @@ def _print_single_cost_table(spec: ArchSpec) -> None:
     table.add_column("Notes", style="dim")
 
     comp_map = {c.id: c for c in spec.components}
+    conf_styles = {"high": "green", "medium": "yellow"}
     for item in est.breakdown:
         comp = comp_map.get(item.component_id)
         svc_label = comp.service if comp else item.service
-        conf_style = "green" if item.confidence == "high" else "yellow"
+        conf_style = conf_styles.get(item.confidence, "red")
         table.add_row(
             item.component_id,
             svc_label,
@@ -128,6 +129,9 @@ def _print_single_cost_table(spec: ArchSpec) -> None:
         )
 
     console.print(table)
+
+    prices_as_of = est.prices_as_of or est.as_of
+    console.print(f"[dim]Prices as of {prices_as_of}. {est.pricing_confidence_detail}.[/dim]")
 
     if est.pricing_confidence != "high":
         console.print(
@@ -170,16 +174,24 @@ def _print_multi_cloud_table(spec: ArchSpec, providers: list[str]) -> None:
 
     # Totals row
     totals = []
+    confidences = []
     for p in all_providers:
         s = alternatives_map.get(p)
         if s and s.cost_estimate:
             totals.append(f"${s.cost_estimate.monthly_total:,.2f}")
+            confidences.append(s.cost_estimate.pricing_confidence)
         else:
             totals.append("-")
+            confidences.append("-")
     table.add_section()
     table.add_row("[bold]TOTAL[/bold]", *totals)
+    table.add_row("[dim]Confidence[/dim]", *[f"[dim]{c}[/dim]" for c in confidences])
 
     console.print(table)
+    console.print(
+        "[dim]Non-AWS totals lean heavily on formula/fallback pricing, not catalog data. "
+        "See the Confidence row above.[/dim]"
+    )
 
 
 def _print_carbon_table(spec: ArchSpec, carbon: dict) -> None:

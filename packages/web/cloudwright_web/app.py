@@ -13,6 +13,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from cloudwright_web import __version__
 from cloudwright_web.middleware import (  # noqa: F401
+    MAX_BODY_BYTES,
+    BodySizeLimitMiddleware,
     PathTraversalMiddleware,
     RequestIdMiddleware,
     _rate_limiter,
@@ -30,6 +32,7 @@ from cloudwright_web.routers import (
     health_router,
     modules_router,
     plan_router,
+    review_router,
     validate_router,
 )
 from cloudwright_web.singletons import get_architect, get_catalog, get_cost_engine  # noqa: F401
@@ -60,7 +63,38 @@ def _docs_enabled() -> bool:
     return env != "production"
 
 
+def _enforce_auth_requirement() -> None:
+    """Refuse to start unauthenticated when explicitly required.
+
+    ``check_api_key`` silently disables auth when CLOUDWRIGHT_API_KEY is
+    unset — a deliberate local-dev convenience. But the Dockerfile CMD runs
+    ``uvicorn cloudwright_web.app:app`` directly, which never calls
+    ``serve()`` (the only place that used to enforce the key), so a
+    container started without CLOUDWRIGHT_API_KEY silently serves every
+    route unauthenticated on 0.0.0.0.
+
+    The Dockerfile sets CLOUDWRIGHT_REQUIRE_AUTH=1 so that path now fails
+    fast at startup instead. Local uvicorn/pytest runs leave the flag unset
+    and stay open-by-default, unchanged.
+    """
+    require_auth = os.environ.get("CLOUDWRIGHT_REQUIRE_AUTH", "").strip().lower() in ("1", "true", "yes")
+    if require_auth and not os.environ.get("CLOUDWRIGHT_API_KEY"):
+        raise SystemExit(
+            "CLOUDWRIGHT_REQUIRE_AUTH is set but CLOUDWRIGHT_API_KEY is not. "
+            "Refusing to start an unauthenticated server. Set CLOUDWRIGHT_API_KEY."
+        )
+
+
 def create_app() -> FastAPI:
+    from cloudwright.logging import configure_logging
+
+    # Fire on every import of this module (bare `uvicorn cloudwright_web.app:app`,
+    # `cloudwright chat --web`, pytest), not just the CLI's serve() path.
+    # Idempotent — safe to call again from serve().
+    configure_logging()
+
+    _enforce_auth_requirement()
+
     docs_on = _docs_enabled()
     application = FastAPI(
         title="Cloudwright",
@@ -74,6 +108,7 @@ def create_app() -> FastAPI:
     # RequestIdMiddleware MUST be added LAST so Starlette dispatches it FIRST
     # (Starlette runs middleware in reverse-add order). This way every later
     # middleware's log lines carry the request_id.
+    application.add_middleware(BodySizeLimitMiddleware, max_bytes=MAX_BODY_BYTES)
     application.add_middleware(SecurityHeadersMiddleware)
     application.add_middleware(PathTraversalMiddleware)
     add_cors(application)
@@ -85,6 +120,7 @@ def create_app() -> FastAPI:
     application.include_router(validate_router, prefix="/api")
     application.include_router(compliance_router, prefix="/api")
     application.include_router(plan_router, prefix="/api")
+    application.include_router(review_router, prefix="/api")
     application.include_router(export_router, prefix="/api")
     application.include_router(catalog_router, prefix="/api")
     application.include_router(modules_router, prefix="/api")

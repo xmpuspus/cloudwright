@@ -513,7 +513,9 @@ class CostEngine:
     ) -> tuple[float, str, bool]:
         """Return (monthly_cost, confidence, is_estimated) for a single component.
 
-        confidence: "high" when the price came from a real catalog row, "low" otherwise.
+        confidence: "high" for a real catalog row, "medium" for a catalog row
+            rescaled by the static regional multiplier (no real row for that region),
+            "low" for a formula/fallback price.
         is_estimated: True when the price is a formula/fallback, not catalog data.
         region_mult: pre-computed regional multiplier to apply to formula/fallback tiers.
         """

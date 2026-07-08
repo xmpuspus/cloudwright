@@ -1,6 +1,6 @@
 # MCP Reference
 
-Cloudwright exposes 18 tools across 6 groups as a Model Context Protocol (MCP) server. Any MCP-compatible client (Claude Desktop, Cursor, Cline, and others) can call these tools directly.
+Cloudwright exposes 22 tools across 9 groups as a Model Context Protocol (MCP) server. Almost every popular coding agent is an MCP client (Claude Code, Cursor, Cline, Windsurf, GitHub Copilot, Zed, OpenAI Codex CLI, JetBrains Junie, Kiro, Antigravity), so one server puts these tools in all of their agent loops. Run `cloudwright integrate --harness <name>` to generate the wiring for your client. See [integrations.md](integrations.md).
 
 Related: [Getting Started](getting-started.md) | [CLI Reference](cli-reference.md) | [Troubleshooting](troubleshooting.md) | [README](../README.md)
 
@@ -47,7 +47,7 @@ Restart Claude Desktop after editing the file.
 ## Start the server manually
 
 ```bash
-# All 18 tools, stdio transport (default)
+# All 22 tools, stdio transport (default)
 cloudwright mcp
 
 # Subset of tool groups
@@ -57,7 +57,7 @@ cloudwright mcp --tools design,cost
 cloudwright mcp --transport sse
 ```
 
-Valid tool group names for `--tools`: `design`, `cost`, `validate`, `analyze`, `export`, `session`.
+Valid tool group names for `--tools`: `design`, `cost`, `validate`, `analyze`, `export`, `session`, `review`, `compliance`, `plan`.
 
 ---
 
@@ -132,7 +132,37 @@ Stateful multi-turn conversation sessions. `chat_send` calls an LLM (requires an
 | `chat_create_session` | Create a stateful design session. Returns a `session_id` handle. Accepts optional provider, monthly budget, and compliance constraints frozen for the session. |
 | `chat_send` | Send a message to an existing session. Returns the LLM response text, updated ArchSpec (if produced), and token usage for this turn and cumulative. |
 | `chat_list_sessions` | List all saved sessions with metadata: session_id, timestamps, token usage, and whether a spec is present. |
-| `chat_delete_session` | Delete a session and its history. Destructive — no undo. Returns `{deleted: true}` on success. |
+| `chat_delete_session` | Delete a session and its history. Destructive, no undo. Returns `{deleted: true}` on success. |
+
+---
+
+### review (1 tool)
+
+Offline architecture critique. No LLM, no network, no API key.
+
+| Tool | Description |
+|---|---|
+| `review_architecture` | Run the deterministic critics (scorer, linter, validator) against an ArchSpec and return a severity-ranked report: `{score, grade, findings, blocking_count, summary}`. Accepts optional `compliance` frameworks and a `well_architected` flag. This is the same engine as the `cloudwright review` CLI command. |
+
+---
+
+### compliance (1 tool)
+
+Control-mapped compliance scanning with optional OSCAL output. Offline, no API key.
+
+| Tool | Description |
+|---|---|
+| `scan_compliance_controls` | Scan an ArchSpec against compliance frameworks and map every finding to its control ID. With `oscal=true`, returns an OSCAL 1.1.2 `component-definition` document instead of the plain report. Optional `checkov` deep scan and `traceability` chain. |
+
+---
+
+### plan (1 tool)
+
+Read-only deployability check. Never applies changes.
+
+| Tool | Description |
+|---|---|
+| `plan_infrastructure` | Export an ArchSpec and run `terraform`/`tofu` `init -backend=false` + `validate` (default), or a full `plan`/`preview` with `run_plan=true`. Returns a structured result. Degrades to `{available: false}` when the IaC toolchain is absent; there is no apply path. |
 
 ---
 

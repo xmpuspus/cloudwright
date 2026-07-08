@@ -22,7 +22,7 @@ cloudwright design "HIPAA healthcare API on AWS with Postgres and Redis"
 
 Cloudwright takes a one-line description of a cloud system and produces a structured architecture spec, a per-component cost breakdown, a compliance report, and ready-to-apply Terraform, Pulumi (TypeScript or Python), or CloudFormation. It works across AWS, GCP, Azure, and Databricks. The latest work adds compliance scanning that maps every finding to the framework control it violates (HIPAA / SOC 2 / FedRAMP / PCI-DSS / ISO 27001 / NIST), a `cloudwright plan` step that proves the exported infrastructure actually deploys, and live import for GCP and Azure alongside AWS.
 
-[Try it](#quickstart) - [What's new](#whats-new) - [Docs](docs/) - [MCP server](#mcp-server-claude--cursor--cline)
+[Try it](#quickstart) - [What's new](#whats-new) - [Docs](docs/) - [MCP server](#mcp-server-works-with-every-mcp-client)
 
 ## What you get
 
@@ -68,18 +68,18 @@ cloudwright chat --web
 # Open http://localhost:8765, use the Catalog drawer, then Export -> Terraform
 ```
 
-## MCP server (Claude / Cursor / Cline)
+## MCP server (works with every MCP client)
 
-Expose Cloudwright as [Model Context Protocol](https://modelcontextprotocol.io/) tools so AI agents can design, cost, validate, and export architectures directly. 18 tools across 6 groups (design, cost, validate, analyze, export, session).
+Expose Cloudwright as [Model Context Protocol](https://modelcontextprotocol.io/) tools so AI agents can design, cost, validate, review, check compliance, plan, and export architectures directly. Almost every popular coding agent is an MCP client (Claude Code, Cursor, Cline, Windsurf, GitHub Copilot, Zed, OpenAI Codex CLI, JetBrains Junie, Kiro, Antigravity), so one server puts cloudwright inside all of their agent loops. Tool groups: design, cost, validate, analyze, export, session, review, compliance, plan.
 
 ```bash
 pip install cloudwright-ai-mcp
 cloudwright mcp                              # all tools, stdio
-cloudwright mcp --tools design,cost          # subset
+cloudwright mcp --tools design,cost,review   # subset
 cloudwright mcp --transport sse              # SSE for HTTP clients
 ```
 
-`claude_desktop_config.json` (same shape works for Cursor and Cline):
+Do not hand-write the config. `cloudwright integrate --harness <name>` prints the exact wiring for your agent in its own format, and `--write` merges it into the right file. For a manual setup, the base shape (Claude Code, Cursor, Cline, Windsurf, Copilot, Junie) is:
 
 ```json
 {
@@ -91,6 +91,8 @@ cloudwright mcp --transport sse              # SSE for HTTP clients
   }
 }
 ```
+
+Zed uses `context_servers`, VS Code Copilot uses `servers`, and Codex CLI uses a `[mcp_servers.cloudwright]` TOML table. `cloudwright integrate` emits the right one for each, and Aider (not an MCP client) gets a CLI-pipe recipe. Full matrix in [docs/integrations.md](docs/integrations.md).
 
 ## Analysis
 
@@ -111,6 +113,21 @@ hcl = export_spec(spec, "terraform", output_dir="./infra")
 ```
 
 <a id="whats-new"></a>
+
+## What's new in v1.7.0
+
+Cloudwright's design-time checks now reach every coding agent, not just its own CLI. Almost every popular AI coding harness speaks MCP, so one server puts `review`, `compliance`, and `plan` inside their agent loops.
+
+- **`cloudwright integrate` wires cloudwright into 11 harnesses.** It writes the MCP server config in each client's own format (Claude Code, Cursor, Cline, Windsurf, GitHub Copilot, Zed, OpenAI Codex CLI, JetBrains Junie, Kiro, Antigravity), and gives Aider the CLI-pipe path. `cloudwright integrate --rules` emits a gate block for AGENTS.md, CLAUDE.md, or GEMINI.md that tells any agent to run `cloudwright review`/`cost`/`compliance` before it writes infrastructure. See [docs/integrations.md](docs/integrations.md).
+- **The MCP server exposes the differentiators.** New `review_architecture` (offline critique, no key), `scan_compliance_controls` (control-mapped, with an `oscal` flag), and read-only `plan_infrastructure` tools. Every MCP client gets them.
+- **Review and OSCAL on the web canvas.** A Review tab (score, grade, findings) and an OSCAL JSON download on the Compliance panel.
+- **Cost stops overclaiming.** Estimates report `prices_as_of` (catalog vintage) separately from `estimated_on` (today), show a "17/20 catalog-backed" ratio, carry per-alternative confidence in `compare`, and use a real regional price row when the catalog has one. [docs/provider-coverage.md](docs/provider-coverage.md) states per-provider coverage plainly.
+- **Web hardening.** Diagram rendering no longer blocks the event loop, spec payloads are size- and component-capped, the container refuses to serve unauthenticated by accident, and malformed input returns a clean error instead of a traceback.
+
+```bash
+cloudwright integrate --harness claude-code      # MCP config for your agent
+cloudwright integrate --rules --agent-file claude # gate block for CLAUDE.md
+```
 
 ## What's new in v1.6.0
 

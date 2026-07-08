@@ -37,11 +37,15 @@ def compare(
 
     if is_json_mode(ctx):
         origin_total = spec.cost_estimate.monthly_total if spec.cost_estimate else 0.0
+        origin_confidence = spec.cost_estimate.pricing_confidence if spec.cost_estimate else "-"
+        origin_confidence_detail = spec.cost_estimate.pricing_confidence_detail if spec.cost_estimate else ""
         data = {
             "baseline": spec.provider,
             "providers": {
                 spec.provider: {
                     "monthly_total": origin_total,
+                    "pricing_confidence": origin_confidence,
+                    "pricing_confidence_detail": origin_confidence_detail,
                     "components": [c.model_dump() for c in spec.components],
                 }
             },
@@ -49,6 +53,8 @@ def compare(
         for alt in alts:
             data["providers"][alt.provider] = {
                 "monthly_total": alt.monthly_total,
+                "pricing_confidence": alt.pricing_confidence,
+                "pricing_confidence_detail": alt.pricing_confidence_detail,
                 "key_differences": alt.key_differences,
                 "components": [c.model_dump() for c in alt.spec.components] if alt.spec else [],
             }
@@ -79,12 +85,15 @@ def compare(
     totals_table = Table(title="Monthly Cost Totals", show_header=True)
     totals_table.add_column("Provider")
     totals_table.add_column("Monthly Total", justify="right")
+    totals_table.add_column("Confidence", justify="center")
     totals_table.add_column("Key Differences", style="dim")
 
     origin_total = spec.cost_estimate.monthly_total if spec.cost_estimate else 0.0
+    origin_confidence = spec.cost_estimate.pricing_confidence if spec.cost_estimate else "-"
     totals_table.add_row(
         spec.provider.upper(),
         f"${origin_total:,.2f}" if origin_total else "-",
+        origin_confidence,
         "(baseline)",
     )
     for alt in alts:
@@ -92,7 +101,12 @@ def compare(
         totals_table.add_row(
             alt.provider.upper(),
             f"${alt.monthly_total:,.2f}" if alt.monthly_total else "-",
+            alt.pricing_confidence,
             diffs,
         )
 
     console.print(totals_table)
+    console.print(
+        "[dim]Non-AWS estimates typically rely on formula/fallback pricing rather than "
+        "real catalog data. Check the Confidence column before treating totals as comparable.[/dim]"
+    )

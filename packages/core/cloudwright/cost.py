@@ -357,17 +357,33 @@ class CostEngine:
         data_transfer = self._estimate_data_transfer(spec, workload_profile=workload_profile)
         total = round(component_total + data_transfer, 2)
 
-        # Aggregate confidence: "high" only when every billed line item used catalog data
+        # Aggregate confidence: "high" only when every billed line item is catalog-backed
+        # (not formula/fallback). A "medium" per-line confidence — a real catalog price
+        # rescaled by a static regional multiplier — is still catalog data, not a formula
+        # guess, so it does not flip the aggregate to "low".
         billed = [c for c in breakdown if c.monthly > 0]
-        pricing_confidence = "high" if billed and all(c.confidence == "high" for c in billed) else "low"
+        pricing_confidence = "high" if billed and all(not c.estimated for c in billed) else "low"
+
+        catalog_backed = sum(1 for c in breakdown if not c.estimated)
+        pricing_confidence_detail = f"{catalog_backed}/{len(breakdown)} line items catalog-backed"
+
+        # The bundled catalog is refreshed on a schedule, not continuously — stamp
+        # as_of with the catalog's real refresh date so the estimate doesn't claim
+        # same-day freshness the price data doesn't have. estimated_on still records
+        # when this particular estimate ran.
+        today = date.today().isoformat()
+        refresh_date = self.catalog.get_catalog_refresh_date()
 
         return CostEstimate(
             monthly_total=total,
             breakdown=breakdown,
             data_transfer_monthly=data_transfer,
             currency="USD",
-            as_of=date.today().isoformat(),
+            as_of=refresh_date or today,
+            prices_as_of=refresh_date,
+            estimated_on=today,
             pricing_confidence=pricing_confidence,
+            pricing_confidence_detail=pricing_confidence_detail,
             region=region,
             region_multiplier=rmult,
         )
@@ -430,6 +446,8 @@ class CostEngine:
                     provider=target_provider,
                     monthly_total=alt_estimate.monthly_total,
                     spec=alt_spec,
+                    pricing_confidence=alt_estimate.pricing_confidence,
+                    pricing_confidence_detail=alt_estimate.pricing_confidence_detail,
                     key_differences=differences[:5],
                 )
             )
@@ -506,15 +524,25 @@ class CostEngine:
         confidence = "low"
         is_estimated = False
 
-        # Tier 1: catalog DB (has instance-level pricing and pricing_tier support)
-        base = self.catalog.get_service_pricing(comp.service, provider, config, pricing_tier=pricing_tier)
+        # Tier 1: catalog DB (has instance-level pricing and pricing_tier support).
+        # region_matched is True only when the catalog has a real pricing row for
+        # this exact region (currently only possible for instance-priced compute
+        # services) — otherwise we fall back to the us-east-1 baseline rescaled by
+        # a static multiplier, which is an estimate, not verified catalog data.
+        base, region_matched = self.catalog.get_service_pricing_with_match(
+            comp.service, provider, config, pricing_tier=pricing_tier, region=region
+        )
         if base is not None:
             from_catalog = True
-            confidence = "high"
-            # The catalog stores us-east-1 baseline prices and does not vary by
-            # region, so the regional multiplier is applied here too (not only on
-            # the formula/fallback tiers below).
-            base *= region_mult
+            if region_matched:
+                confidence = "high"
+            elif region_mult != 1.0:
+                confidence = "medium"
+                base *= region_mult
+            else:
+                # Baseline region (or an unlisted region defaulting to 1.0x) — the
+                # catalog price applies as-is, no multiplier guess involved.
+                confidence = "high"
 
         if base is None:
             # Tier 2: registry formula dispatch

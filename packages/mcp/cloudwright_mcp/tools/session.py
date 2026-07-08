@@ -7,6 +7,8 @@ from typing import Annotated
 from mcp.server.fastmcp import FastMCP
 from pydantic import Field
 
+from cloudwright_mcp.ttl import sweep_expired_sessions
+
 _lock = threading.Lock()
 
 
@@ -146,10 +148,15 @@ def register(mcp: FastMCP) -> None:
         When to use: Resuming prior work, cleaning up abandoned sessions, or
         auditing session token spend.
 
-        Behavior: Pure disk read — no LLM, no network. Read-only.
+        Behavior: Pure disk read, no LLM, no network. Read-only, except for an
+        age-based expiry sweep run first: sessions whose last save is older than
+        `CLOUDWRIGHT_MCP_SESSION_TTL_DAYS` (default 7 days) are deleted before the
+        remaining sessions are listed. Set the TTL to 0 or below to disable the sweep.
         """
         from cloudwright.session_store import SessionStore
 
+        with _lock:
+            sweep_expired_sessions()
         return SessionStore().list_sessions()
 
     @mcp.tool()

@@ -459,28 +459,102 @@ class Catalog:
             return self._row_to_dict(row) if row else None
 
     def get_service_pricing(
-        self, service: str, provider: str, config: dict | None = None, pricing_tier: str = "on_demand"
+        self,
+        service: str,
+        provider: str,
+        config: dict | None = None,
+        pricing_tier: str = "on_demand",
+        region: str | None = None,
     ) -> float | None:
         """Get monthly pricing for a service. Returns monthly cost or None."""
-        base = self._get_base_price(service, provider, config)
-        if base is None:
-            return None
-        multiplier = _PRICING_MULTIPLIERS.get(pricing_tier, 1.0)
-        return round(base * multiplier, 2)
+        price, _matched = self.get_service_pricing_with_match(
+            service, provider, config, pricing_tier=pricing_tier, region=region
+        )
+        return price
 
-    def _get_base_price(self, service: str, provider: str, config: dict | None = None) -> float | None:
-        """Compute on-demand monthly price for a service. Returns None if unknown."""
+    def get_service_pricing_with_match(
+        self,
+        service: str,
+        provider: str,
+        config: dict | None = None,
+        pricing_tier: str = "on_demand",
+        region: str | None = None,
+    ) -> tuple[float | None, bool]:
+        """Like get_service_pricing, but also reports whether the price came from a
+        real per-region catalog row (region_matched=True) versus the us-east-1
+        baseline that the caller must rescale with a static regional multiplier
+        (region_matched=False) if it wants a non-baseline-region number.
+        """
+        base, matched = self._get_base_price(service, provider, config, region=region)
+        if base is None:
+            return None, False
+        multiplier = _PRICING_MULTIPLIERS.get(pricing_tier, 1.0)
+        return round(base * multiplier, 2), matched
+
+    def get_instance_price_for_region(self, instance_name: str, provider: str, region: str) -> float | None:
+        """Return the real hourly price for instance_name in the given provider region
+        code, or None if the catalog has no pricing row for that exact region.
+
+        Callers should treat a None result as "no real regional data" and fall back
+        to the us-east-1 baseline rescaled by a static multiplier — and should mark
+        that fallback as a lower-confidence estimate, not catalog-verified pricing.
+        """
+        with self._connect() as conn:
+            row = conn.execute(
+                """SELECT p.price_per_hour
+                FROM instance_types i
+                JOIN pricing p ON p.instance_type_id = i.id AND p.os = 'linux' AND p.price_type = 'on_demand'
+                JOIN regions r ON r.id = p.region_id
+                WHERE (i.name = ? OR i.id = ?) AND i.provider_id = ? AND r.code = ?
+                LIMIT 1""",
+                (instance_name, instance_name, provider, region),
+            ).fetchone()
+            return row["price_per_hour"] if row and row["price_per_hour"] else None
+
+    def get_catalog_refresh_date(self) -> str | None:
+        """Return the most recent catalog_metadata refresh timestamp (YYYY-MM-DD),
+        or None when the catalog carries no refresh history at all.
+
+        Used to stamp cost estimates with the pricing data's real vintage instead
+        of the date the estimate happened to run — the bundled catalog is refreshed
+        on a schedule, not continuously, so "today" routinely overstates freshness.
+        """
+        with self._connect() as conn:
+            row = conn.execute("SELECT MAX(updated_at) as latest FROM catalog_metadata").fetchone()
+        if not row or not row["latest"]:
+            return None
+        latest = row["latest"]
+        # updated_at is an ISO 8601 timestamp; surface just the date portion to
+        # match the plain YYYY-MM-DD format `as_of` has always used.
+        return latest[:10] if len(latest) >= 10 else latest
+
+    def _get_base_price(
+        self, service: str, provider: str, config: dict | None = None, region: str | None = None
+    ) -> tuple[float | None, bool]:
+        """Compute on-demand monthly price for a service.
+
+        Returns (price, region_matched). region_matched is True only when the
+        price came from a real per-region catalog row — currently possible only
+        for instance-priced compute services (ec2/compute_engine/virtual_machines).
+        Managed services have no region column in the catalog schema at all, so
+        region_matched is always False for those; the caller applies a static
+        regional multiplier and downgrades confidence accordingly.
+        """
         config = config or {}
 
         # For compute instances, look up by instance_type
         if service in ("ec2", "compute_engine", "virtual_machines"):
             instance_type = config.get("instance_type", config.get("machine_type", config.get("vm_size")))
             if instance_type:
+                count = config.get("count", 1)
+                if region:
+                    regional_hourly = self.get_instance_price_for_region(instance_type, provider, region)
+                    if regional_hourly:
+                        return round(regional_hourly * 730 * count, 2), True
                 inst = self.find_instance(instance_type)
                 if inst and inst.get("price_per_hour"):
-                    count = config.get("count", 1)
-                    return round(inst["price_per_hour"] * 730 * count, 2)
-            return None
+                    return round(inst["price_per_hour"] * 730 * count, 2), False
+            return None, False
 
         # For managed services, look up in managed_services table
         with self._connect() as conn:
@@ -505,9 +579,9 @@ class Catalog:
                         # Multi-AZ doubles compute cost
                         if config.get("multi_az", False):
                             monthly = round(monthly + hourly * 730, 2)
-                        return monthly
+                        return monthly, False
                 # Fallback default pricing
-                return _default_managed_price(service, config)
+                return _default_managed_price(service, config), False
 
             # Storage
             if service in ("s3", "cloud_storage", "blob_storage"):
@@ -524,7 +598,7 @@ class Catalog:
                         per_gb = 0.023
                 else:
                     per_gb = 0.023
-                return round(storage_gb * per_gb, 2)
+                return round(storage_gb * per_gb, 2), False
 
             # Load balancers
             if service in ("alb", "nlb", "app_gateway", "azure_lb", "cloud_load_balancing"):
@@ -537,8 +611,8 @@ class Catalog:
                         round(row["price_per_month"], 2)
                         if row["price_per_month"] > 0
                         else _default_managed_price(service, config)
-                    )
-                return _default_managed_price(service, config)
+                    ), False
+                return _default_managed_price(service, config), False
 
             # CDN
             if service in ("cloudfront", "cloud_cdn", "azure_cdn"):
@@ -562,7 +636,7 @@ class Catalog:
                         rate = 0.085
                 else:
                     rate = 0.085
-                return round(estimated_gb * rate, 2)
+                return round(estimated_gb * rate, 2), False
 
             # Cache
             if service in ("elasticache", "memorystore", "azure_cache"):
@@ -573,8 +647,8 @@ class Catalog:
                         (provider, node_type),
                     ).fetchone()
                     if row:
-                        return round(row["price_per_hour"] * 730, 2)
-                return _default_managed_price(service, config)
+                        return round(row["price_per_hour"] * 730, 2), False
+                return _default_managed_price(service, config), False
 
             # Serverless (Lambda, Cloud Functions, Azure Functions)
             if service in ("lambda", "cloud_functions", "azure_functions"):
@@ -586,24 +660,24 @@ class Catalog:
                 # Compute cost: GB-seconds
                 gb_seconds = (monthly_requests * avg_duration_ms / 1000) * (memory_mb / 1024)
                 compute_cost = gb_seconds * 0.0000166667
-                return round(request_cost + compute_cost, 2)
+                return round(request_cost + compute_cost, 2), False
 
             # Queues
             if service in ("sqs", "pub_sub", "service_bus"):
                 monthly_requests = config.get("monthly_requests", 10_000_000)
                 per_million = 0.40 if service == "sqs" else 0.60
-                return round((monthly_requests / 1_000_000) * per_million, 2)
+                return round((monthly_requests / 1_000_000) * per_million, 2), False
 
             # DynamoDB
             if service in ("dynamodb", "firestore", "cosmos_db"):
                 if config.get("billing_mode") == "provisioned":
                     rcu = config.get("read_capacity", 5)
                     wcu = config.get("write_capacity", 5)
-                    return round(wcu * 0.00065 * 730 + rcu * 0.00013 * 730, 2)
-                return 25.0  # on-demand base
+                    return round(wcu * 0.00065 * 730 + rcu * 0.00013 * 730, 2), False
+                return 25.0, False  # on-demand base
 
             # Return None so cost.py Tier 2 (registry formulas) can fire
-            return None
+            return None, False
 
     def sync_from_registry(
         self, registry: ServiceRegistry | None = None, *, _conn: sqlite3.Connection | None = None

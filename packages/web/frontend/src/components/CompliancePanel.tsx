@@ -33,6 +33,7 @@ interface ComplianceReport {
   checkov_used: boolean;
   findings: Finding[];
   frameworks: FrameworkSummary[];
+  oscal?: Record<string, unknown>;
 }
 
 interface CompliancePanelProps {
@@ -59,6 +60,7 @@ const SEV_COLORS: Record<string, { bg: string; text: string; border: string }> =
 
 export default function CompliancePanel({ spec, apiBase }: CompliancePanelProps) {
   const [selected, setSelected] = useState<string[]>(["hipaa", "soc2", "fedramp"]);
+  const [includeOscal, setIncludeOscal] = useState(false);
   const [report, setReport] = useState<ComplianceReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +75,7 @@ export default function CompliancePanel({ spec, apiBase }: CompliancePanelProps)
       const res = await fetch(`${apiBase}/compliance`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ spec, frameworks: selected }),
+        body: JSON.stringify({ spec, frameworks: selected, oscal: includeOscal }),
       });
       if (!res.ok) throw new Error(await parseApiError(res));
       setReport((await res.json()) as ComplianceReport);
@@ -82,7 +84,20 @@ export default function CompliancePanel({ spec, apiBase }: CompliancePanelProps)
     } finally {
       setLoading(false);
     }
-  }, [spec, apiBase, selected]);
+  }, [spec, apiBase, selected, includeOscal]);
+
+  const downloadOscal = useCallback(() => {
+    if (!report?.oscal) return;
+    const blob = new Blob([JSON.stringify(report.oscal, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "compliance.oscal.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [report]);
 
   return (
     <div style={{ padding: 24, maxWidth: 920 }}>
@@ -114,22 +129,60 @@ export default function CompliancePanel({ spec, apiBase }: CompliancePanelProps)
         ))}
       </div>
 
-      <button
-        onClick={run}
-        disabled={loading || selected.length === 0}
+      <label
         style={{
-          padding: "10px 22px",
-          borderRadius: 8,
-          border: "none",
-          background: loading ? "#94a3b8" : "#0f172a",
-          color: "#ffffff",
-          fontSize: 14,
-          fontWeight: 600,
-          cursor: loading ? "default" : "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          fontSize: 13,
+          color: "#334155",
+          marginBottom: 16,
         }}
       >
-        {loading ? "Scanning…" : "Run compliance scan"}
-      </button>
+        <input
+          type="checkbox"
+          checked={includeOscal}
+          onChange={(e) => setIncludeOscal(e.target.checked)}
+        />
+        Include OSCAL 1.1.2 component-definition export
+      </label>
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          onClick={run}
+          disabled={loading || selected.length === 0}
+          style={{
+            padding: "10px 22px",
+            borderRadius: 8,
+            border: "none",
+            background: loading ? "#94a3b8" : "#0f172a",
+            color: "#ffffff",
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: loading ? "default" : "pointer",
+          }}
+        >
+          {loading ? "Scanning…" : "Run compliance scan"}
+        </button>
+
+        {report?.oscal && (
+          <button
+            onClick={downloadOscal}
+            style={{
+              padding: "10px 22px",
+              borderRadius: 8,
+              border: "1px solid #2563eb",
+              background: "#ffffff",
+              color: "#2563eb",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Download OSCAL JSON
+          </button>
+        )}
+      </div>
 
       {error && (
         <div

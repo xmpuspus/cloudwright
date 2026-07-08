@@ -173,6 +173,11 @@ class ArchSpec(BaseModel):
 
     name: str
     version: int = 1
+    # Format version of the ArchSpec schema itself (distinct from `version`,
+    # which is the user's architecture revision number). Additive field:
+    # specs persisted before this field existed have no such key and load
+    # with the default below.
+    schema_version: str = "1.0"
     provider: str = "aws"
     region: str = "us-east-1"
     constraints: Constraints | None = None

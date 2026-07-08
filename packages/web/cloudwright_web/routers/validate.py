@@ -10,7 +10,7 @@ from cloudwright.validator import Validator
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from cloudwright_web.middleware import check_api_key, check_rate_limit
+from cloudwright_web.middleware import check_api_key, check_component_limit, check_rate_limit
 from cloudwright_web.routers.cost import cache
 
 log = logging.getLogger(__name__)
@@ -36,6 +36,8 @@ async def validate(req: ValidateRequest, request: Request):
 
         validator = Validator()
         spec = ArchSpec.model_validate(req.spec)
+        if err := check_component_limit(spec):
+            return err
         frameworks = req.compliance if req.compliance else []
         results = await asyncio.to_thread(
             validator.validate, spec, compliance=frameworks or None, well_architected=req.well_architected

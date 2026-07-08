@@ -11,7 +11,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 import cloudwright_web.singletons as _singletons
-from cloudwright_web.middleware import check_api_key, check_rate_limit, error_response
+from cloudwright_web.middleware import check_api_key, check_component_limit, check_rate_limit, error_response
 from cloudwright_web.streaming import sse_event
 
 log = logging.getLogger(__name__)
@@ -145,6 +145,8 @@ async def modify(req: ModifyRequest, request: Request):
     try:
         architect = _singletons.get_architect()
         spec = ArchSpec.model_validate(req.spec)
+        if err := check_component_limit(spec):
+            return err
         try:
             updated = await asyncio.wait_for(asyncio.to_thread(architect.modify, spec, req.instruction), timeout=120)
         except asyncio.TimeoutError:
@@ -162,9 +164,18 @@ async def modify_stream(req: ModifyRequest, request: Request):
     if err := check_rate_limit(request):
         return err
 
+    # Validate and cap the spec before opening the SSE stream: once
+    # StreamingResponse starts, headers/status are already sent and we can no
+    # longer turn a bad or oversized spec into a plain 400/422 response.
+    try:
+        spec = ArchSpec.model_validate(req.spec)
+    except Exception as e:
+        return error_response("invalid_spec", str(e), "Check the spec matches the ArchSpec schema", 400)
+    if err := check_component_limit(spec):
+        return err
+
     async def event_generator():
         architect = _singletons.get_architect()
-        spec = ArchSpec.model_validate(req.spec)
 
         yield sse_event("modifying", message="Applying modifications...")
 

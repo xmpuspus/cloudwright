@@ -10,7 +10,7 @@ from cloudwright.compliance import ComplianceScanner
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from cloudwright_web.middleware import check_api_key, check_rate_limit
+from cloudwright_web.middleware import check_api_key, check_component_limit, check_rate_limit
 
 log = logging.getLogger(__name__)
 router = APIRouter()
@@ -29,6 +29,8 @@ async def compliance(req: ComplianceRequest, request: Request):
         return err
     try:
         spec = ArchSpec.model_validate(req.spec)
+        if err := check_component_limit(spec):
+            return err
         report = await asyncio.to_thread(
             ComplianceScanner().scan,
             spec,

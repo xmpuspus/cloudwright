@@ -10,7 +10,7 @@ from cloudwright.planner import plan as run_plan
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
-from cloudwright_web.middleware import check_api_key, check_rate_limit
+from cloudwright_web.middleware import check_api_key, check_component_limit, check_rate_limit
 
 log = logging.getLogger(__name__)
 router = APIRouter()
@@ -29,6 +29,8 @@ async def plan(req: PlanRequest, request: Request):
         return err
     try:
         spec = ArchSpec.model_validate(req.spec)
+        if err := check_component_limit(spec):
+            return err
         result = await asyncio.to_thread(run_plan, spec, req.target, run_plan=req.run_plan, timeout=180)
         return result.as_dict()
     except ValueError as e:

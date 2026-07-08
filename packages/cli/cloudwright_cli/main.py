@@ -16,6 +16,7 @@ from cloudwright_cli.commands.export import export
 from cloudwright_cli.commands.import_cmd import import_infra
 from cloudwright_cli.commands.import_live_cmd import import_live
 from cloudwright_cli.commands.init_cmd import init
+from cloudwright_cli.commands.integrate_cmd import integrate
 from cloudwright_cli.commands.lint_cmd import lint
 from cloudwright_cli.commands.mcp_cmd import mcp_serve
 from cloudwright_cli.commands.modify_cmd import modify
@@ -89,4 +90,5 @@ app.command(name="compliance")(cloudwright_command()(compliance_scan))
 app.command(name="adr")(cloudwright_command()(adr))
 app.command()(cloudwright_command()(schema))
 app.command(name="mcp")(cloudwright_command()(mcp_serve))
+app.command(name="integrate")(cloudwright_command()(integrate))
 app.add_typer(catalog_app, name="catalog")

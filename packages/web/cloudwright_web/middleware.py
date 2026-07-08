@@ -16,6 +16,76 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+MAX_BODY_BYTES = 1_000_000  # 1 MB
+
+
+class BodySizeLimitMiddleware:
+    """Reject request bodies over ``max_bytes`` before a route handler ever
+    buffers or parses them.
+
+    Pure ASGI middleware (not ``BaseHTTPMiddleware``) so we can check the
+    declared ``Content-Length`` up front AND wrap ``receive`` to enforce the
+    same cap against the actual bytes streamed in, since a client can lie
+    about (or omit) Content-Length.
+    """
+
+    def __init__(self, app, max_bytes: int = MAX_BODY_BYTES):
+        self.app = app
+        self._max_bytes = max_bytes
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        headers = dict(scope.get("headers") or [])
+        content_length = headers.get(b"content-length")
+        if content_length is not None:
+            try:
+                if int(content_length) > self._max_bytes:
+                    await self._reject(send)
+                    return
+            except ValueError:
+                pass
+
+        total = 0
+
+        async def limited_receive():
+            nonlocal total
+            message = await receive()
+            if message["type"] == "http.request":
+                total += len(message.get("body", b""))
+                if total > self._max_bytes:
+                    raise _BodyTooLargeError
+            return message
+
+        try:
+            await self.app(scope, limited_receive, send)
+        except _BodyTooLargeError:
+            await self._reject(send)
+
+    async def _reject(self, send):
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 413,
+                "headers": [(b"content-type", b"application/json")],
+            }
+        )
+        await send(
+            {
+                "type": "http.response.body",
+                "body": (
+                    b'{"code":"payload_too_large","message":"Request body too large",'
+                    b'"suggestion":"Reduce the request size"}'
+                ),
+            }
+        )
+
+
+class _BodyTooLargeError(Exception):
+    pass
+
 
 class PathTraversalMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -103,11 +173,20 @@ class _RateLimiter:
         now = time.time()
         cutoff = now - self._window
         with self._lock:
-            if ip not in self._buckets:
-                self._buckets[ip] = deque()
-            bucket = self._buckets[ip]
-            while bucket and bucket[0] < cutoff:
-                bucket.popleft()
+            # Sweep every IP's bucket, not just the one making this request.
+            # Pruning only the current IP's bucket never actually shrinks the
+            # dict: a one-off caller (rotating IP, scanner, CDN churn) is
+            # never seen again to trigger its own prune, so its entry sits
+            # forever. Sweeping all buckets here bounds dict size by the
+            # number of distinct IPs active within the last window, not the
+            # number ever seen over the life of the process.
+            for other_ip, other_bucket in list(self._buckets.items()):
+                while other_bucket and other_bucket[0] < cutoff:
+                    other_bucket.popleft()
+                if not other_bucket:
+                    del self._buckets[other_ip]
+
+            bucket = self._buckets.setdefault(ip, deque())
             if len(bucket) >= self._max:
                 retry_after = int(self._window - (now - bucket[0])) + 1 if bucket else int(self._window) + 1
                 return False, retry_after
@@ -146,5 +225,31 @@ def check_rate_limit(request: Request):
                 "suggestion": f"Wait {retry_after} seconds before retrying",
             },
             headers={"Retry-After": str(retry_after)},
+        )
+    return None
+
+
+# --- Spec size cap ---
+
+MAX_SPEC_COMPONENTS = 200
+
+
+def check_component_limit(spec) -> JSONResponse | None:
+    """Reject a validated ``ArchSpec`` with an unreasonable component count.
+
+    Downstream work (cost estimation, rendering, terraform export, LLM
+    modify calls) scales with component count, so an attacker-controlled
+    spec with thousands of components turns one request into unbounded
+    server-side work. Mirrors the ``check_rate_limit`` return-on-error
+    pattern so callers do ``if err := check_component_limit(spec): return err``
+    regardless of whether that router otherwise raises HTTPException.
+    """
+    count = len(spec.components)
+    if count > MAX_SPEC_COMPONENTS:
+        return error_response(
+            "spec_too_large",
+            f"Spec has {count} components; max allowed is {MAX_SPEC_COMPONENTS}",
+            "Split the architecture into smaller specs",
+            422,
         )
     return None

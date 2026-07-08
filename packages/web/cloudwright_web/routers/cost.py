@@ -13,7 +13,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 import cloudwright_web.singletons as _singletons
-from cloudwright_web.middleware import check_api_key, check_rate_limit
+from cloudwright_web.middleware import check_api_key, check_component_limit, check_rate_limit
 
 log = logging.getLogger(__name__)
 router = APIRouter()
@@ -84,6 +84,8 @@ async def cost(req: CostRequest, request: Request):
             result: dict = {"estimate": cached}
             if req.compare_providers:
                 spec = ArchSpec.model_validate(spec_dict)
+                if err := check_component_limit(spec):
+                    return err
                 architect = _singletons.get_architect()
                 alternatives = await asyncio.to_thread(architect.compare, spec, req.compare_providers)
                 result["alternatives"] = [a.model_dump(exclude_none=True) for a in alternatives]
@@ -91,6 +93,8 @@ async def cost(req: CostRequest, request: Request):
 
         engine = _singletons.get_cost_engine()
         spec = ArchSpec.model_validate(spec_dict)
+        if err := check_component_limit(spec):
+            return err
         estimate = await asyncio.to_thread(engine.estimate, spec)
         cache.set_cost(spec_dict, estimate.model_dump())
 

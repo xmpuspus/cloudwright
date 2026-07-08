@@ -258,3 +258,39 @@ connections: []
     # Re-serialize and confirm boundaries is not emitted (clean_empty strips it)
     output = spec.to_yaml()
     assert "boundaries" not in output
+
+
+def test_spec_without_schema_version_defaults():
+    """A spec dict with no schema_version key (pre-existing saved specs) still loads."""
+    yaml_str = """\
+name: Old Spec
+provider: aws
+region: us-east-1
+components:
+  - id: web
+    service: ec2
+    provider: aws
+    label: Web
+    tier: 2
+connections: []
+"""
+    spec = ArchSpec.from_yaml(yaml_str)
+    assert spec.schema_version == "1.0"
+
+
+def test_schema_version_roundtrip():
+    spec = ArchSpec(
+        name="Versioned Spec",
+        schema_version="2.0",
+        components=[Component(id="web", service="ec2", provider="aws", label="Web", tier=2)],
+    )
+    assert spec.schema_version == "2.0"
+
+    yaml_str = spec.to_yaml()
+    assert "schema_version: '2.0'" in yaml_str or "schema_version: 2.0" in yaml_str
+    restored = ArchSpec.from_yaml(yaml_str)
+    assert restored.schema_version == "2.0"
+
+    json_str = spec.to_json()
+    restored_json = ArchSpec.model_validate_json(json_str)
+    assert restored_json.schema_version == "2.0"

@@ -1,5 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { parseApiError } from "../lib/apiError";
+import EmptyState from "./EmptyState";
+import FindingCard from "./FindingCard";
 
 interface CritiqueFinding {
   severity: string;
@@ -22,13 +24,6 @@ interface ReviewPanelProps {
   spec: Record<string, unknown>;
   apiBase: string;
 }
-
-const SEV_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  critical: { bg: "#fef2f2", text: "#991b1b", border: "#fca5a5" },
-  high: { bg: "#fff7ed", text: "#9a3412", border: "#fdba74" },
-  medium: { bg: "#fffbeb", text: "#92400e", border: "#fcd34d" },
-  low: { bg: "#f0fdf4", text: "#166534", border: "#86efac" },
-};
 
 export default function ReviewPanel({ spec, apiBase }: ReviewPanelProps) {
   const [wellArchitected, setWellArchitected] = useState(false);
@@ -55,23 +50,14 @@ export default function ReviewPanel({ spec, apiBase }: ReviewPanelProps) {
   }, [spec, apiBase, wellArchitected]);
 
   return (
-    <div style={{ padding: 24, maxWidth: 920 }}>
-      <h2 style={{ fontSize: 18, marginBottom: 6, color: "#0f172a" }}>Architecture Review</h2>
-      <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>
-        Deterministic critique — scorer, linter, and validator merged into one severity-ranked
-        report. Runs offline, no LLM call.
+    <div className="panel__body">
+      <h2 className="panel__title">Architecture Review</h2>
+      <p className="panel__lede">
+        The scorer, the linter and the validator merged into one severity-ranked report. Runs
+        offline, with no LLM call, so the result is the same every time.
       </p>
 
-      <label
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          fontSize: 13,
-          color: "#334155",
-          marginBottom: 16,
-        }}
-      >
+      <label className="checkbox" style={{ marginBottom: "var(--space-4)" }}>
         <input
           type="checkbox"
           checked={wellArchitected}
@@ -80,109 +66,73 @@ export default function ReviewPanel({ spec, apiBase }: ReviewPanelProps) {
         Include Well-Architected checks
       </label>
 
-      <button
-        onClick={run}
-        disabled={loading}
-        style={{
-          padding: "10px 22px",
-          borderRadius: 8,
-          border: "none",
-          background: loading ? "#94a3b8" : "#0f172a",
-          color: "#ffffff",
-          fontSize: 14,
-          fontWeight: 600,
-          cursor: loading ? "default" : "pointer",
-        }}
-      >
-        {loading ? "Reviewing…" : "Run review"}
-      </button>
+      <div>
+        <button className="btn btn--primary" onClick={run} disabled={loading}>
+          {loading && <span className="spinner" />}
+          {loading ? "Reviewing..." : "Run review"}
+        </button>
+      </div>
 
       {error && (
-        <div
-          style={{
-            marginTop: 16,
-            padding: 12,
-            background: "#fef2f2",
-            border: "1px solid #fca5a5",
-            borderRadius: 8,
-            color: "#991b1b",
-            fontSize: 13,
-          }}
-        >
+        <div className="callout callout--danger" style={{ marginTop: "var(--space-4)" }}>
           {error}
         </div>
       )}
 
       {report && (
-        <div style={{ marginTop: 24 }}>
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 12,
-              padding: "8px 18px",
-              borderRadius: 8,
-              fontSize: 15,
-              fontWeight: 700,
-              background: report.blocking_count === 0 ? "#dcfce7" : "#fee2e2",
-              color: report.blocking_count === 0 ? "#166534" : "#991b1b",
-              marginBottom: 16,
-            }}
-          >
-            {report.score.toFixed(0)}/100 (grade {report.grade})
-            <span style={{ fontWeight: 500, fontSize: 12, marginLeft: 8 }}>
-              {report.blocking_count === 0
-                ? "no blocking findings"
-                : `${report.blocking_count} blocking finding(s)`}
-            </span>
+        <div style={{ marginTop: "var(--space-6)" }}>
+          <div className="stat-grid" style={{ marginBottom: "var(--space-5)" }}>
+            <div className="stat">
+              <div className="stat__value">
+                {report.score.toFixed(0)}
+                <span style={{ fontSize: "var(--text-md)", color: "var(--text-subtle)" }}>/100</span>
+              </div>
+              <div className="stat__label">Score, grade {report.grade}</div>
+            </div>
+            <div className="stat">
+              <div
+                className="stat__value"
+                style={{ color: report.blocking_count === 0 ? "var(--success)" : "var(--danger)" }}
+              >
+                {report.blocking_count}
+              </div>
+              <div className="stat__label">Blocking findings</div>
+            </div>
+            <div className="stat">
+              <div className="stat__value">{report.findings.length}</div>
+              <div className="stat__label">Findings in total</div>
+            </div>
           </div>
 
-          <h3 style={{ fontSize: 15, color: "#0f172a", marginBottom: 12 }}>
+          <h3 style={{ fontSize: "var(--text-lg)", marginBottom: "var(--space-3)" }}>
             Findings ({report.findings.length})
           </h3>
 
           {report.findings.length === 0 ? (
-            <div style={{ fontSize: 14, color: "#166534" }}>
+            <div className="callout callout--success">
               No findings. This architecture passes every critic.
             </div>
           ) : (
-            report.findings.map((f, i) => {
-              const c = SEV_COLORS[f.severity] || SEV_COLORS.low;
-              return (
-                <div
-                  key={i}
-                  style={{
-                    border: `1px solid ${c.border}`,
-                    background: c.bg,
-                    borderRadius: 8,
-                    padding: 14,
-                    marginBottom: 10,
-                  }}
-                >
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: c.text,
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      [{f.severity}]
-                    </span>
-                    <span style={{ fontSize: 14, color: "#0f172a" }}>{f.message}</span>
-                    <span style={{ fontSize: 11, color: "#64748b" }}>({f.source})</span>
-                  </div>
-                  {f.recommendation && (
-                    <div style={{ fontSize: 12, color: "#475569", marginTop: 8 }}>
-                      {f.recommendation}
-                    </div>
-                  )}
-                </div>
-              );
-            })
+            report.findings.map((f, i) => (
+              <FindingCard
+                key={i}
+                severity={f.severity}
+                title={f.message}
+                source={f.source}
+                detail={f.recommendation}
+                component={f.component}
+              />
+            ))
           )}
         </div>
+      )}
+
+      {!report && !loading && !error && (
+        <EmptyState
+          icon="alert"
+          title="No review has run yet."
+          hint="The review reads the current spec and ranks what it finds, from critical down to low."
+        />
       )}
     </div>
   );

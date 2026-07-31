@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useRef, useMemo } from "react";
+import React, { useState, useCallback, useRef, useMemo, useEffect } from "react";
+import Icon from "./Icon";
 
 interface Component {
   id: string;
@@ -45,6 +46,7 @@ type TabKey = "overview" | "yaml";
 interface SpecPanelProps {
   spec: ArchSpec;
   yaml: string;
+  apiBase: string;
 }
 
 const TIER_LABELS: Record<number, string> = {
@@ -55,11 +57,18 @@ const TIER_LABELS: Record<number, string> = {
   4: "Supporting",
 };
 
+/** YAML needs a quote around anything that would otherwise parse as another type.
+ *  Without this, `region: no` reads back as the boolean false. */
+const PLAIN_SAFE = /^[A-Za-z0-9_./:@-]+$/;
+const LOOKS_TYPED = /^(true|false|yes|no|on|off|null|~|-?\d+(\.\d+)?([eE][+-]?\d+)?)$/i;
+
 function scalarToYaml(value: unknown): string {
-  if (value === null) return "null";
+  if (value === null || value === undefined) return "null";
   if (typeof value === "number" || typeof value === "boolean") return String(value);
   const text = String(value);
-  if (/^[A-Za-z0-9_./:@-]+$/.test(text)) return text;
+  if (text === "") return '""';
+  if (text.includes("\n")) return JSON.stringify(text);
+  if (PLAIN_SAFE.test(text) && !LOOKS_TYPED.test(text) && !text.includes(": ")) return text;
   return JSON.stringify(text);
 }
 
@@ -67,74 +76,86 @@ function toYaml(value: unknown, indent = 0): string {
   const pad = " ".repeat(indent);
   if (Array.isArray(value)) {
     if (value.length === 0) return "[]";
-    return value.map((item) => {
-      if (item && typeof item === "object") {
-        const nested = toYaml(item, indent + 2);
-        return `${pad}- ${nested.trimStart()}`;
-      }
-      return `${pad}- ${scalarToYaml(item)}`;
-    }).join("\n");
+    return value
+      .map((item) => {
+        if (item && typeof item === "object") {
+          const nested = toYaml(item, indent + 2);
+          return `${pad}- ${nested.trimStart()}`;
+        }
+        return `${pad}- ${scalarToYaml(item)}`;
+      })
+      .join("\n");
   }
   if (value && typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>).filter(([, item]) => item !== undefined);
+    const entries = Object.entries(value as Record<string, unknown>).filter(
+      ([, item]) => item !== undefined,
+    );
     if (entries.length === 0) return "{}";
-    return entries.map(([key, item]) => {
-      if (item && typeof item === "object") {
-        const nested = toYaml(item, indent + 2);
-        return `${pad}${key}:\n${nested}`;
-      }
-      return `${pad}${key}: ${scalarToYaml(item)}`;
-    }).join("\n");
+    return entries
+      .map(([key, item]) => {
+        if (item && typeof item === "object") {
+          const nested = toYaml(item, indent + 2);
+          return `${pad}${key}:\n${nested}`;
+        }
+        return `${pad}${key}: ${scalarToYaml(item)}`;
+      })
+      .join("\n");
   }
   return scalarToYaml(value);
 }
 
-function StatCard({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-}) {
+function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
-    <div
-      style={{
-        padding: "14px 16px",
-        background: "#ffffff",
-        border: "1px solid #e2e8f0",
-        borderRadius: 8,
-        flex: 1,
-        minWidth: 120,
-      }}
-    >
-      <div style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", lineHeight: 1.2 }}>
-        {value}
-      </div>
-      <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{label}</div>
-      {sub && (
-        <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{sub}</div>
-      )}
+    <div className="stat">
+      <div className="stat__value">{value}</div>
+      <div className="stat__label">{label}</div>
+      {sub && <div className="stat__sub">{sub}</div>}
     </div>
   );
 }
 
-export default function SpecPanel({ spec, yaml }: SpecPanelProps) {
+export default function SpecPanel({ spec, yaml, apiBase }: SpecPanelProps) {
   const [tab, setTab] = useState<TabKey>("overview");
   const [copied, setCopied] = useState(false);
+  const [serverYaml, setServerYaml] = useState<string | null>(null);
+  const [yamlLoading, setYamlLoading] = useState(false);
   const preRef = useRef<HTMLPreElement>(null);
-  const source = useMemo(() => toYaml(spec) || yaml || "", [spec, yaml]);
 
-  const providers = useMemo(() => {
-    const s = new Set(spec.components.map((c) => c.provider));
-    return Array.from(s);
-  }, [spec.components]);
+  const fallback = useMemo(() => yaml?.trim() || toYaml(spec), [spec, yaml]);
+  const source = serverYaml ?? fallback;
 
-  const services = useMemo(() => {
-    const s = new Set(spec.components.map((c) => c.service));
-    return Array.from(s);
-  }, [spec.components]);
+  // The server is the authority on this format. Asking it keeps the tab identical
+  // to what `cloudwright export` writes, including after a canvas edit.
+  useEffect(() => {
+    if (tab !== "yaml") return;
+    let cancelled = false;
+    setYamlLoading(true);
+    fetch(`${apiBase}/download`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ spec, format: "yaml" }),
+    })
+      .then((res) => (res.ok ? res.text() : null))
+      .then((text) => {
+        if (!cancelled && text) setServerYaml(text);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setYamlLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, spec, apiBase]);
+
+  const providers = useMemo(
+    () => Array.from(new Set(spec.components.map((c) => c.provider))),
+    [spec.components],
+  );
+  const services = useMemo(
+    () => Array.from(new Set(spec.components.map((c) => c.service))),
+    [spec.components],
+  );
 
   const tierGroups = useMemo(() => {
     const groups: Record<number, Component[]> = {};
@@ -173,97 +194,53 @@ export default function SpecPanel({ spec, yaml }: SpecPanelProps) {
   }, [source, spec.name]);
 
   return (
-    <div style={{ padding: 32, maxWidth: 960 }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 20 }}>
-        <h2 style={{ fontSize: 18, color: "#0f172a", fontWeight: 700, margin: 0 }}>
-          {spec.name || "Architecture Spec"}
-        </h2>
-        {spec.provider && (
-          <span
-            style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: "#475569",
-              background: "#f1f5f9",
-              padding: "2px 8px",
-              borderRadius: 4,
-            }}
-          >
-            {spec.provider.toUpperCase()}
-          </span>
-        )}
-        {spec.region && (
-          <span style={{ fontSize: 12, color: "#94a3b8" }}>{spec.region}</span>
-        )}
+    <div className="panel__body panel__body--wide">
+      <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-3)", flexWrap: "wrap", marginBottom: "var(--space-4)" }}>
+        <h2 className="panel__title">{spec.name || "Architecture Spec"}</h2>
+        {spec.provider && <span className="badge badge--neutral">{spec.provider}</span>}
+        {spec.region && <code className="inline">{spec.region}</code>}
       </div>
 
-      {/* Tab switcher */}
-      <div
-        style={{
-          display: "flex",
-          gap: 0,
-          marginBottom: 20,
-          borderBottom: "1px solid #e2e8f0",
-        }}
-      >
+      <div className="tabs" role="tablist" aria-label="Spec views" style={{ borderBottom: "1px solid var(--border)", marginBottom: "var(--space-5)", padding: 0 }}>
         {(["overview", "yaml"] as const).map((t) => (
           <button
             key={t}
+            className="tab"
+            role="tab"
+            aria-selected={tab === t}
+            tabIndex={tab === t ? 0 : -1}
             onClick={() => setTab(t)}
-            style={{
-              padding: "8px 18px",
-              background: "none",
-              border: "none",
-              borderBottom: tab === t ? "2px solid #2563eb" : "2px solid transparent",
-              color: tab === t ? "#1d4ed8" : "#64748b",
-              fontWeight: tab === t ? 600 : 500,
-              fontSize: 13,
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-            }}
+            style={{ minHeight: 38, textTransform: "none" }}
           >
             {t === "overview" ? "Overview" : "YAML Source"}
           </button>
         ))}
       </div>
 
-      {/* Overview tab */}
       {tab === "overview" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {/* Stats row */}
-          <div style={{ display: "flex", gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+          <div className="stat-grid">
             <StatCard label="Components" value={spec.components.length} />
             <StatCard label="Connections" value={spec.connections.length} />
-            <StatCard
-              label="Services"
-              value={services.length}
-              sub={providers.join(", ")}
-            />
+            <StatCard label="Distinct services" value={services.length} sub={providers.join(", ")} />
             {spec.cost_estimate && (
               <StatCard
-                label="Monthly Cost"
+                label="Monthly cost"
                 value={`$${spec.cost_estimate.monthly_total.toLocaleString()}`}
                 sub={spec.cost_estimate.currency}
               />
             )}
           </div>
 
-          {/* Component table by tier */}
-          <div
-            style={{
-              border: "1px solid #e2e8f0",
-              borderRadius: 10,
-              overflow: "hidden",
-            }}
-          >
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <div className="table-wrap">
+            <table className="data">
               <thead>
-                <tr style={{ background: "#f8fafc" }}>
-                  <th style={thStyle}>Component</th>
-                  <th style={thStyle}>Service</th>
-                  <th style={thStyle}>Provider</th>
-                  <th style={thStyle}>Tier</th>
-                  <th style={thStyle}>Description</th>
+                <tr>
+                  <th scope="col">Component</th>
+                  <th scope="col">Service</th>
+                  <th scope="col">Provider</th>
+                  <th scope="col">Tier</th>
+                  <th scope="col">Description</th>
                 </tr>
               </thead>
               <tbody>
@@ -272,83 +249,32 @@ export default function SpecPanel({ spec, yaml }: SpecPanelProps) {
                   .sort()
                   .flatMap((tier) =>
                     tierGroups[tier].map((comp) => (
-                      <tr
-                        key={comp.id}
-                        style={{ borderBottom: "1px solid #f1f5f9" }}
-                      >
-                        <td style={tdStyle}>
-                          <span style={{ fontWeight: 600, color: "#0f172a" }}>{comp.label}</span>
-                          <div style={{ fontSize: 11, color: "#94a3b8" }}>{comp.id}</div>
+                      <tr key={comp.id}>
+                        <td>
+                          <span style={{ fontWeight: 600 }}>{comp.label}</span>
+                          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-subtle)" }}>{comp.id}</div>
                         </td>
-                        <td style={tdStyle}>
-                          <code
-                            style={{
-                              fontSize: 12,
-                              background: "#f1f5f9",
-                              padding: "1px 6px",
-                              borderRadius: 3,
-                              color: "#334155",
-                            }}
-                          >
-                            {comp.service}
-                          </code>
-                        </td>
-                        <td style={tdStyle}>
-                          <span style={{ fontSize: 12, color: "#475569" }}>{comp.provider}</span>
-                        </td>
-                        <td style={tdStyle}>
-                          <span
-                            style={{
-                              fontSize: 11,
-                              fontWeight: 600,
-                              color: "#64748b",
-                              background: "#f1f5f9",
-                              padding: "2px 8px",
-                              borderRadius: 4,
-                            }}
-                          >
-                            {TIER_LABELS[tier] || `Tier ${tier}`}
-                          </span>
-                        </td>
-                        <td style={{ ...tdStyle, color: "#64748b", maxWidth: 240 }}>
-                          {comp.description}
-                        </td>
+                        <td><code className="inline">{comp.service}</code></td>
+                        <td style={{ color: "var(--text-muted)" }}>{comp.provider}</td>
+                        <td><span className="badge badge--neutral">{TIER_LABELS[tier] || `Tier ${tier}`}</span></td>
+                        <td style={{ color: "var(--text-muted)", maxWidth: 280 }}>{comp.description}</td>
                       </tr>
-                    ))
+                    )),
                   )}
               </tbody>
             </table>
           </div>
 
-          {/* Connections table */}
           {spec.connections.length > 0 && (
-            <div
-              style={{
-                border: "1px solid #e2e8f0",
-                borderRadius: 10,
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  padding: "10px 16px",
-                  background: "#f8fafc",
-                  borderBottom: "1px solid #e2e8f0",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: "#0f172a",
-                }}
-              >
-                Connections ({spec.connections.length})
-              </div>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <div className="card">
+              <div className="card__header">Connections ({spec.connections.length})</div>
+              <table className="data">
                 <thead>
-                  <tr style={{ background: "#fafafa" }}>
-                    <th style={thStyle}>Source</th>
-                    <th style={thStyle}></th>
-                    <th style={thStyle}>Target</th>
-                    <th style={thStyle}>Protocol</th>
-                    <th style={thStyle}>Label</th>
+                  <tr>
+                    <th scope="col">Source</th>
+                    <th scope="col">Target</th>
+                    <th scope="col">Protocol</th>
+                    <th scope="col">Label</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -356,44 +282,18 @@ export default function SpecPanel({ spec, yaml }: SpecPanelProps) {
                     const srcComp = spec.components.find((c) => c.id === conn.source);
                     const tgtComp = spec.components.find((c) => c.id === conn.target);
                     return (
-                      <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                        <td style={tdStyle}>
-                          <span style={{ fontWeight: 500, color: "#0f172a" }}>
-                            {srcComp?.label || conn.source}
-                          </span>
-                        </td>
-                        <td
-                          style={{
-                            ...tdStyle,
-                            textAlign: "center",
-                            color: "#94a3b8",
-                            fontSize: 14,
-                          }}
-                        >
-                          &#8594;
-                        </td>
-                        <td style={tdStyle}>
-                          <span style={{ fontWeight: 500, color: "#0f172a" }}>
-                            {tgtComp?.label || conn.target}
-                          </span>
-                        </td>
-                        <td style={tdStyle}>
+                      <tr key={i}>
+                        <td style={{ fontWeight: 550 }}>{srcComp?.label || conn.source}</td>
+                        <td style={{ fontWeight: 550 }}>{tgtComp?.label || conn.target}</td>
+                        <td>
                           {conn.protocol && (
-                            <code
-                              style={{
-                                fontSize: 11,
-                                background: "#f1f5f9",
-                                padding: "1px 6px",
-                                borderRadius: 3,
-                                color: "#334155",
-                              }}
-                            >
+                            <code className="inline">
                               {conn.protocol}
                               {conn.port ? `:${conn.port}` : ""}
                             </code>
                           )}
                         </td>
-                        <td style={{ ...tdStyle, color: "#64748b" }}>{conn.label}</td>
+                        <td style={{ color: "var(--text-muted)" }}>{conn.label}</td>
                       </tr>
                     );
                   })}
@@ -402,44 +302,23 @@ export default function SpecPanel({ spec, yaml }: SpecPanelProps) {
             </div>
           )}
 
-          {/* Boundaries */}
           {spec.boundaries && spec.boundaries.length > 0 && (
-            <div
-              style={{
-                border: "1px solid #e2e8f0",
-                borderRadius: 10,
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  padding: "10px 16px",
-                  background: "#f8fafc",
-                  borderBottom: "1px solid #e2e8f0",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: "#0f172a",
-                }}
-              >
-                Boundaries ({spec.boundaries.length})
-              </div>
-              <div style={{ padding: 16, display: "flex", flexWrap: "wrap", gap: 10 }}>
+            <div className="card">
+              <div className="card__header">Boundaries ({spec.boundaries.length})</div>
+              <div className="card__body" style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
                 {spec.boundaries.map((b) => (
                   <div
                     key={b.id}
                     style={{
                       padding: "8px 14px",
-                      border: "1px dashed #cbd5e1",
-                      borderRadius: 8,
-                      background: "#fafafa",
-                      fontSize: 13,
+                      border: "1px dashed var(--border-strong)",
+                      borderRadius: "var(--radius)",
+                      background: "var(--bg-subtle)",
                     }}
                   >
-                    <div style={{ fontWeight: 600, color: "#0f172a" }}>
-                      {b.label || b.id}
-                    </div>
-                    <div style={{ fontSize: 11, color: "#94a3b8" }}>
-                      {b.kind} &middot; {b.component_ids.length} components
+                    <div style={{ fontWeight: 600, fontSize: "var(--text-base)" }}>{b.label || b.id}</div>
+                    <div style={{ fontSize: "var(--text-xs)", color: "var(--text-subtle)" }}>
+                      {b.kind}, {b.component_ids.length} components
                     </div>
                   </div>
                 ))}
@@ -449,97 +328,31 @@ export default function SpecPanel({ spec, yaml }: SpecPanelProps) {
         </div>
       )}
 
-      {/* YAML tab */}
       {tab === "yaml" && (
-        <div
-          style={{
-            border: "1px solid #e2e8f0",
-            borderRadius: 10,
-            overflow: "hidden",
-          }}
-        >
-          {/* Toolbar */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "8px 14px",
-              background: "#f8fafc",
-              borderBottom: "1px solid #e2e8f0",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: "#7c3aed",
-                  background: "#7c3aed14",
-                  padding: "2px 8px",
-                  borderRadius: 4,
-                }}
-              >
-                YAML
-              </span>
-              <span style={{ fontSize: 12, color: "#64748b" }}>
+        <div className="card">
+          <div className="card__header">
+            <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", minWidth: 0 }}>
+              <code className="inline">
                 {spec.name?.replace(/\s+/g, "-").toLowerCase() || "architecture"}.yaml
-              </span>
-              <span style={{ fontSize: 11, color: "#cbd5e1" }}>
+              </code>
+              <span style={{ fontSize: "var(--text-xs)", color: "var(--text-subtle)" }}>
                 {source.split("\n").length} lines
+                {yamlLoading ? ", refreshing" : serverYaml ? ", from the server" : ""}
               </span>
-            </div>
-            <div style={{ display: "flex", gap: 6 }}>
-              <button
-                onClick={handleCopy}
-                style={{
-                  padding: "4px 12px",
-                  borderRadius: 4,
-                  border: "1px solid #e2e8f0",
-                  background: copied ? "#dcfce7" : "#ffffff",
-                  color: copied ? "#166534" : "#475569",
-                  cursor: "pointer",
-                  fontSize: 12,
-                  fontWeight: 500,
-                  transition: "all 0.15s ease",
-                }}
-              >
+            </span>
+            <span style={{ display: "flex", gap: "var(--space-2)" }}>
+              <button className="btn btn--sm" onClick={handleCopy}>
+                <Icon name={copied ? "check" : "copy"} size={13} />
                 {copied ? "Copied" : "Copy"}
               </button>
-              <button
-                onClick={handleDownload}
-                style={{
-                  padding: "4px 12px",
-                  borderRadius: 4,
-                  border: "1px solid #e2e8f0",
-                  background: "#ffffff",
-                  color: "#475569",
-                  cursor: "pointer",
-                  fontSize: 12,
-                  fontWeight: 500,
-                }}
-              >
+              <button className="btn btn--sm" onClick={handleDownload}>
+                <Icon name="download" size={13} />
                 Download
               </button>
-            </div>
+            </span>
           </div>
-
-          {/* Code */}
-          <div style={{ maxHeight: 600, overflow: "auto" }}>
-            <pre
-              ref={preRef}
-              style={{
-                margin: 0,
-                padding: 16,
-                fontSize: 13,
-                lineHeight: 1.7,
-                color: "#334155",
-                background: "#ffffff",
-                fontFamily: "'SF Mono', 'Cascadia Code', 'Fira Code', Menlo, monospace",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-              }}
-            >
+          <div style={{ maxHeight: "62vh", overflow: "auto" }}>
+            <pre ref={preRef} className="code-block">
               {source || "No YAML available"}
             </pre>
           </div>
@@ -548,18 +361,3 @@ export default function SpecPanel({ spec, yaml }: SpecPanelProps) {
     </div>
   );
 }
-
-const thStyle: React.CSSProperties = {
-  padding: "10px 14px",
-  textAlign: "left",
-  fontSize: 11,
-  fontWeight: 600,
-  color: "#64748b",
-  textTransform: "uppercase",
-  letterSpacing: "0.05em",
-};
-
-const tdStyle: React.CSSProperties = {
-  padding: "10px 14px",
-  color: "#0f172a",
-};

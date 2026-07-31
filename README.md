@@ -114,6 +114,25 @@ hcl = export_spec(spec, "terraform", output_dir="./infra")
 
 <a id="whats-new"></a>
 
+## What's new in v1.8.0
+
+The web canvas got a full interface rebuild. It has a dark theme, it works down to a phone, and it follows the WAI-ARIA tabs pattern. Twelve behaviour bugs went with it. One of them billed a second architecture generation after a mid-stream error.
+
+<p align="center">
+  <img src="docs/screenshots/cloudwright-light-1-diagram.png" alt="Cloudwright web canvas: chat panel on the left, tabbed workspace with the boundary-aware diagram on the right" width="900">
+</p>
+
+- **One stylesheet, one token set, and a dark theme.** Colour, spacing, radius and type come from CSS custom properties. The theme follows the operating system until you pick a side. Every text colour clears the 4.5:1 contrast floor. 29 sites did not.
+- **It works on a phone.** The layout was a hard 420px sidebar and no media query anywhere. Below 900px it is now a two-pane switch. The nine tabs scroll instead of clipping. `100dvh` keeps the composer above the iOS URL bar.
+- **Keyboard and screen reader.** The tab bar is a real `tablist` with arrow-key roving focus. Every control shows a focus ring. A live region announces design progress. `Cmd/Ctrl+K` focuses the composer and `Cmd/Ctrl+1..9` picks a tab.
+- **A mid-stream error no longer bills twice.** The stream could fail after the spec arrived. The fallback then ran a second generation, and that architecture replaced the first. The retry now runs only when the stream gives nothing.
+- **Panel results survive a tab switch.** Run a HIPAA scan, look at Cost, come back. The panel used to be empty.
+- **Three more export formats.** OpenTofu, Pulumi TypeScript and Pulumi Python shipped in the exporter with no button. The Export tab now offers all thirteen, in groups.
+- **Failures say so.** Diagram export, module insert, the standards check and the download failed silently. Each one now raises a toast with the server message.
+- **The YAML tab shows the server YAML.** A client-side serialiser quoted nothing, so `region: no` read back as the boolean false.
+- **The catalog drawer starts closed.** It opened over the diagram on every page load.
+- **The composer is a textarea.** Shift+Enter adds a line. An input-method candidate no longer submits mid-word. You can stop a running generation.
+
 ## What's new in v1.7.0
 
 Cloudwright's design-time checks now reach every coding agent, not just its own CLI. Almost every popular AI coding harness speaks MCP, so one server puts `review`, `compliance`, and `plan` inside their agent loops.

@@ -55,12 +55,12 @@ def linger(page: Page, ms: int) -> None:
 
 def drive_demo(page: Page) -> None:
     page.goto(DEFAULT_URL)
-    page.wait_for_selector('input[placeholder="Describe your architecture..."]', timeout=15_000)
+    page.wait_for_selector('[placeholder="Describe your architecture..."]', timeout=15_000)
     linger(page, 1000)
 
     # 1. Type and submit the prompt (deliberately phrased to match a high-confidence
     #    template so the recording does not require an LLM API key).
-    chat_input = page.locator('input[placeholder="Describe your architecture..."]')
+    chat_input = page.locator('[placeholder="Describe your architecture..."]')
     chat_input.fill("three-tier web app with rds and alb on aws")
     linger(page, 800)
     page.get_by_role("button", name="Send").click()
@@ -69,12 +69,15 @@ def drive_demo(page: Page) -> None:
     page.wait_for_selector('button:has-text("Download Terraform")', timeout=30_000)
     linger(page, 1500)
 
-    # 3. The catalog drawer opens by default. Make sure we're on the Resources tab.
+    # 3. Open the catalog drawer, then make sure we're on the Resources tab.
+    #    The drawer is closed on load, so it never covers the diagram.
+    page.get_by_role("button", name="Add Resource").click()
+    linger(page, 900)
     page.locator('button:has-text("resources")').first.click()
     linger(page, 800)
 
     # 4. Search for "cache" and click an ElastiCache card to add a resource.
-    search = page.locator('input[placeholder="Search"]')
+    search = page.locator('input[placeholder="Search the catalog"]')
     search.fill("cache")
     linger(page, 1000)
     elasticache_card = page.locator('button:has-text("Amazon ElastiCache")').first
@@ -82,7 +85,7 @@ def drive_demo(page: Page) -> None:
     linger(page, 2000)
 
     # 5. The side panel should auto-open for the freshly added node — edit the label.
-    label_input = page.locator('input[aria-label="Label"]').first
+    label_input = page.locator("#resource-label").first
     try:
         label_input.wait_for(timeout=4_000)
         label_input.click()
@@ -92,9 +95,7 @@ def drive_demo(page: Page) -> None:
     except PlaywrightTimeoutError:
         pass
 
-    description_input = page.locator(
-        'textarea[aria-label="Description"], input[aria-label="Description"]'
-    ).first
+    description_input = page.locator("#resource-description").first
     try:
         description_input.wait_for(timeout=2_000)
         description_input.click()

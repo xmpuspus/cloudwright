@@ -38,6 +38,6 @@ export function formatApiError(
   fallback = "Request failed",
 ): string {
   const message: string = body.message || body.detail || fallback;
-  if (body.suggestion) return `${message} — ${body.suggestion}`;
+  if (body.suggestion) return `${message} ${body.suggestion}`;
   return message;
 }

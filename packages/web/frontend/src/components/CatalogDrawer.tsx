@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import Icon from "./Icon";
 
 interface ServiceSummary {
   service_key: string;
@@ -40,17 +41,8 @@ interface CatalogDrawerProps {
 }
 
 const API_BASE = "/api";
-
-const buttonStyle: React.CSSProperties = {
-  border: "1px solid #cbd5e1",
-  background: "#ffffff",
-  color: "#0f172a",
-  borderRadius: 6,
-  padding: "7px 10px",
-  cursor: "pointer",
-  fontSize: 12,
-  fontWeight: 600,
-};
+const MODES = ["resources", "modules", "standards"] as const;
+type Mode = (typeof MODES)[number];
 
 export default function CatalogDrawer({
   provider,
@@ -60,31 +52,45 @@ export default function CatalogDrawer({
   onCheckStandards,
 }: CatalogDrawerProps) {
   const providerKey = (provider || "aws").toLowerCase();
-  const [open, setOpen] = useState(true);
-  const [mode, setMode] = useState<"resources" | "modules" | "standards">("resources");
+  // Closed by default. The old default covered the diagram on every page load.
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<Mode>("resources");
   const [query, setQuery] = useState("");
   const [services, setServices] = useState<ServiceSummary[]>([]);
   const [modules, setModules] = useState<ModuleSummary[]>([]);
 
   useEffect(() => {
+    if (!open) return;
     fetch(`${API_BASE}/catalog/services?provider=${encodeURIComponent(providerKey)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => setServices(data?.services ?? []))
       .catch(() => setServices([]));
-  }, [providerKey]);
+  }, [providerKey, open]);
 
   useEffect(() => {
+    if (!open) return;
     fetch(`${API_BASE}/modules`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => setModules(data?.modules ?? []))
       .catch(() => setModules([]));
-  }, []);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
 
   const filteredServices = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return services;
     return services.filter((s) =>
-      [s.name, s.service_key, s.category, s.description ?? ""].some((value) => value.toLowerCase().includes(q))
+      [s.name, s.service_key, s.category, s.description ?? ""].some((value) =>
+        value.toLowerCase().includes(q),
+      ),
     );
   }, [services, query]);
 
@@ -94,69 +100,62 @@ export default function CatalogDrawer({
     if (!q) return providerModules;
     return providerModules.filter((m) =>
       [m.name, m.id, m.category, m.description ?? "", ...(m.tags ?? [])].some((value) =>
-        value.toLowerCase().includes(q)
-      )
+        value.toLowerCase().includes(q),
+      ),
     );
   }, [modules, providerKey, query]);
 
   if (!open) {
     return (
       <button
+        className="btn"
         onClick={() => setOpen(true)}
+        aria-expanded={false}
         style={{
-          ...buttonStyle,
           position: "absolute",
-          left: 16,
-          top: 16,
+          left: "var(--space-4)",
+          top: "var(--space-4)",
           zIndex: 15,
-          boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+          boxShadow: "var(--shadow)",
         }}
       >
+        <Icon name="plus" size={14} />
         Add Resource
       </button>
     );
   }
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: 320,
-        height: "100%",
-        zIndex: 14,
-        background: "#ffffff",
-        borderRight: "1px solid #e2e8f0",
-        boxShadow: "2px 0 8px rgba(0,0,0,0.06)",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <div style={{ padding: 14, borderBottom: "1px solid #e2e8f0" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>Catalog</div>
+    <aside className="drawer drawer--left" aria-label="Service catalog">
+      <div className="drawer__header">
+        <div className="drawer__title">
+          Catalog
           <button
+            className="btn btn--ghost btn--icon"
             onClick={() => setOpen(false)}
-            style={{ border: "none", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: 18 }}
             aria-label="Close catalog"
           >
-            x
+            <Icon name="close" size={15} />
           </button>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, marginBottom: 10 }}>
-          {(["resources", "modules", "standards"] as const).map((tab) => (
+        <div
+          role="tablist"
+          aria-label="Catalog sections"
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, margin: "var(--space-3) 0 var(--space-2)" }}
+        >
+          {MODES.map((tab) => (
             <button
               key={tab}
+              role="tab"
+              aria-selected={mode === tab}
+              tabIndex={mode === tab ? 0 : -1}
+              className="btn btn--sm"
               onClick={() => setMode(tab)}
-              style={{
-                ...buttonStyle,
-                padding: "6px 4px",
-                borderColor: mode === tab ? "#2563eb" : "#cbd5e1",
-                color: mode === tab ? "#2563eb" : "#475569",
-                background: mode === tab ? "#eff6ff" : "#ffffff",
-                textTransform: "capitalize",
-              }}
+              style={
+                mode === tab
+                  ? { background: "var(--accent-soft)", borderColor: "var(--accent)", color: "var(--accent-text)", textTransform: "capitalize" }
+                  : { textTransform: "capitalize" }
+              }
             >
               {tab}
             </button>
@@ -164,119 +163,93 @@ export default function CatalogDrawer({
         </div>
         {mode !== "standards" && (
           <input
+            className="field"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search"
-            style={{
-              width: "100%",
-              boxSizing: "border-box",
-              border: "1px solid #cbd5e1",
-              borderRadius: 6,
-              padding: "8px 10px",
-              color: "#0f172a",
-              fontSize: 13,
-              outline: "none",
-            }}
+            placeholder="Search the catalog"
+            aria-label="Search the catalog"
+            type="search"
           />
         )}
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: 12 }}>
+      <div className="drawer__body">
         {mode === "resources" &&
           filteredServices.map((service) => (
             <button
               key={`${service.provider}:${service.service_key}`}
+              className="list-btn"
               onClick={() => onAddResource(service)}
-              style={{
-                width: "100%",
-                textAlign: "left",
-                border: "1px solid #e2e8f0",
-                background: "#ffffff",
-                borderRadius: 8,
-                padding: 10,
-                marginBottom: 8,
-                cursor: "pointer",
-              }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                <span style={{ color: "#0f172a", fontSize: 13, fontWeight: 700 }}>{service.name}</span>
-                <span style={{ color: "#64748b", fontSize: 10, textTransform: "uppercase" }}>
+              <span style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-2)" }}>
+                <span style={{ fontSize: "var(--text-base)", fontWeight: 650 }}>{service.name}</span>
+                <span className="section-label" style={{ fontSize: "var(--text-2xs)" }}>
                   {service.category.replace(/_/g, " ")}
                 </span>
-              </div>
-              <div style={{ color: "#64748b", fontSize: 11, marginTop: 4 }}>{service.service_key}</div>
+              </span>
+              <span style={{ display: "block", color: "var(--text-subtle)", fontSize: "var(--text-xs)", marginTop: 3 }}>
+                {service.service_key}
+              </span>
             </button>
           ))}
         {mode === "resources" && filteredServices.length === 0 && (
-          <p style={{ color: "#64748b", fontSize: 13 }}>No resources found for {providerKey.toUpperCase()}.</p>
+          <p style={{ color: "var(--text-subtle)", fontSize: "var(--text-base)" }}>
+            No resources match that search for {providerKey.toUpperCase()}.
+          </p>
         )}
 
         {mode === "modules" &&
           filteredModules.map((module) => (
             <button
               key={module.id}
+              className="list-btn"
               onClick={() => onAddModule(module.id)}
-              style={{
-                width: "100%",
-                textAlign: "left",
-                border: "1px solid #bfdbfe",
-                background: "#eff6ff",
-                borderRadius: 8,
-                padding: 10,
-                marginBottom: 8,
-                cursor: "pointer",
-              }}
+              style={{ borderColor: "var(--accent)", background: "var(--accent-soft)" }}
             >
-              <div style={{ color: "#0f172a", fontSize: 13, fontWeight: 700 }}>{module.name}</div>
-              <div style={{ color: "#475569", fontSize: 12, marginTop: 4, lineHeight: 1.35 }}>
+              <span style={{ display: "block", fontSize: "var(--text-base)", fontWeight: 650 }}>{module.name}</span>
+              <span style={{ display: "block", color: "var(--text-muted)", fontSize: "var(--text-sm)", marginTop: 3, lineHeight: 1.4 }}>
                 {module.description}
-              </div>
-              <div style={{ color: "#2563eb", fontSize: 11, marginTop: 6, textTransform: "uppercase" }}>
+              </span>
+              <span className="section-label" style={{ display: "block", marginTop: 6, color: "var(--accent-text)" }}>
                 {module.category}
-              </div>
+              </span>
             </button>
           ))}
         {mode === "modules" && filteredModules.length === 0 && (
-          <p style={{ color: "#64748b", fontSize: 13 }}>No approved modules found for {providerKey.toUpperCase()}.</p>
+          <p style={{ color: "var(--text-subtle)", fontSize: "var(--text-base)" }}>
+            No approved modules match that search for {providerKey.toUpperCase()}.
+          </p>
         )}
 
         {mode === "standards" && (
           <>
-            <button onClick={onCheckStandards} style={{ ...buttonStyle, width: "100%", marginBottom: 12 }}>
+            <button className="btn btn--block" onClick={onCheckStandards} style={{ marginBottom: "var(--space-3)" }}>
               Check Standards
             </button>
-            {!standardsResult && <p style={{ color: "#64748b", fontSize: 13 }}>No standards check has run.</p>}
+            {!standardsResult && (
+              <p style={{ color: "var(--text-subtle)", fontSize: "var(--text-base)" }}>
+                No standards check has run.
+              </p>
+            )}
             {standardsResult?.passed && (
-              <div style={{ color: "#166534", background: "#dcfce7", borderRadius: 8, padding: 10, fontSize: 13 }}>
-                Standards passed.
-              </div>
+              <div className="callout callout--success">Standards passed.</div>
             )}
-            {standardsResult && !standardsResult.passed && (
-              <div>
-                {standardsResult.violations.map((violation, index) => (
-                  <div
-                    key={`${violation.code}:${index}`}
-                    style={{
-                      border: "1px solid #fecaca",
-                      background: "#fef2f2",
-                      borderRadius: 8,
-                      padding: 10,
-                      marginBottom: 8,
-                    }}
-                  >
-                    <div style={{ color: "#991b1b", fontSize: 12, fontWeight: 700 }}>
-                      {violation.code.replace(/_/g, " ")}
-                    </div>
-                    <div style={{ color: "#7f1d1d", fontSize: 12, marginTop: 4, lineHeight: 1.4 }}>
-                      {violation.message}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            {standardsResult && !standardsResult.passed &&
+              standardsResult.violations.map((violation, index) => (
+                <div
+                  key={`${violation.code}:${index}`}
+                  className="callout callout--danger"
+                  style={{ marginBottom: "var(--space-2)" }}
+                >
+                  <strong style={{ display: "block", fontSize: "var(--text-sm)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                    {violation.code.replace(/_/g, " ")}
+                  </strong>
+                  <span style={{ display: "block", marginTop: 4, lineHeight: 1.45 }}>{violation.message}</span>
+                </div>
+              ))}
           </>
         )}
       </div>
-    </div>
+    </aside>
   );
 }

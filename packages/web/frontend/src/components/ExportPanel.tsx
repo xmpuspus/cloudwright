@@ -1,56 +1,80 @@
 import React, { useState, useCallback, useRef } from "react";
 import { parseApiError } from "../lib/apiError";
+import EmptyState from "./EmptyState";
+import Icon from "./Icon";
 
 interface ExportPanelProps {
   spec: Record<string, unknown>;
   apiBase: string;
 }
 
-const FORMATS = [
-  { key: "terraform", label: "Terraform", ext: "tf", lang: "hcl", desc: "HashiCorp Configuration Language" },
-  { key: "cloudformation", label: "CloudFormation", ext: "yaml", lang: "yaml", desc: "AWS CloudFormation template" },
-  { key: "mermaid", label: "Mermaid", ext: "mmd", lang: "mermaid", desc: "Mermaid diagram markup" },
-  { key: "d2", label: "D2", ext: "d2", lang: "d2", desc: "D2 diagram language" },
-  { key: "sbom", label: "SBOM", ext: "json", lang: "json", desc: "CycloneDX Software BOM" },
-  { key: "aibom", label: "AIBOM", ext: "json", lang: "json", desc: "OWASP AI Bill of Materials" },
-  { key: "html", label: "HTML Report", ext: "html", lang: "html", desc: "Self-contained shareable report" },
+interface Format {
+  key: string;
+  label: string;
+  ext: string;
+  tag: string;
+  desc: string;
+  group: string;
+}
+
+/** Mirrors cloudwright.exporter.FORMATS. svg and png are binary, so the diagram
+ *  toolbar downloads those instead of showing them as text here. */
+const FORMATS: Format[] = [
+  { key: "terraform", label: "Terraform", ext: "tf", tag: "HCL", desc: "HashiCorp Configuration Language", group: "Infrastructure as code" },
+  { key: "opentofu", label: "OpenTofu", ext: "tf", tag: "TOFU", desc: "Fork-safe Terraform dialect", group: "Infrastructure as code" },
+  { key: "pulumi-ts", label: "Pulumi TypeScript", ext: "ts", tag: "TS", desc: "Pulumi program in TypeScript", group: "Infrastructure as code" },
+  { key: "pulumi-python", label: "Pulumi Python", ext: "py", tag: "PY", desc: "Pulumi program in Python", group: "Infrastructure as code" },
+  { key: "cloudformation", label: "CloudFormation", ext: "yaml", tag: "CFN", desc: "AWS CloudFormation template", group: "Infrastructure as code" },
+  { key: "mermaid", label: "Mermaid", ext: "mmd", tag: "MMD", desc: "Renders in GitHub and Notion", group: "Diagram source" },
+  { key: "d2", label: "D2", ext: "d2", tag: "D2", desc: "D2 diagram language", group: "Diagram source" },
+  { key: "c4", label: "C4", ext: "dsl", tag: "C4", desc: "Structurizr C4 model", group: "Diagram source" },
+  { key: "ascii", label: "ASCII", ext: "txt", tag: "TXT", desc: "Plain text for a terminal or a commit message", group: "Diagram source" },
+  { key: "sbom", label: "SBOM", ext: "json", tag: "BOM", desc: "CycloneDX software bill of materials", group: "Inventory and report" },
+  { key: "aibom", label: "AIBOM", ext: "json", tag: "AI", desc: "OWASP AI bill of materials", group: "Inventory and report" },
+  { key: "compliance", label: "Compliance report", ext: "md", tag: "MD", desc: "Findings and controls in Markdown", group: "Inventory and report" },
+  { key: "html", label: "HTML report", ext: "html", tag: "WEB", desc: "Self-contained shareable page", group: "Inventory and report" },
 ];
 
-function FormatIcon({ format }: { format: string }) {
-  const icons: Record<string, string> = {
-    terraform: "HCL",
-    cloudformation: "CFN",
-    mermaid: "MMD",
-    d2: "D2",
-    sbom: "BOM",
-    aibom: "AI",
-  };
-  const colors: Record<string, string> = {
-    terraform: "#7c3aed",
-    cloudformation: "#ea580c",
-    mermaid: "#0891b2",
-    d2: "#4f46e5",
-    sbom: "#059669",
-    aibom: "#2563eb",
-  };
+const GROUPS = ["Infrastructure as code", "Diagram source", "Inventory and report"];
+
+const TAG_COLORS: Record<string, string> = {
+  terraform: "#7c3aed",
+  opentofu: "#facc15",
+  "pulumi-ts": "#4f46e5",
+  "pulumi-python": "#4f46e5",
+  cloudformation: "#ea580c",
+  mermaid: "#0891b2",
+  d2: "#4f46e5",
+  c4: "#0f766e",
+  ascii: "#64748b",
+  sbom: "#059669",
+  aibom: "#2563eb",
+  compliance: "#be123c",
+  html: "#0284c7",
+};
+
+function FormatTag({ format }: { format: Format | undefined }) {
+  if (!format) return null;
+  const color = TAG_COLORS[format.key] || "var(--text-subtle)";
   return (
     <span
       style={{
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        width: 32,
+        minWidth: 36,
         height: 20,
-        borderRadius: 4,
-        fontSize: 10,
+        padding: "0 5px",
+        borderRadius: "var(--radius-sm)",
+        fontSize: "var(--text-2xs)",
         fontWeight: 700,
-        background: `${colors[format] || "#64748b"}14`,
-        color: colors[format] || "#64748b",
-        letterSpacing: "0.02em",
+        letterSpacing: "0.04em",
+        background: `${color}1f`,
+        color,
         flexShrink: 0,
       }}
     >
-      {icons[format] || format.slice(0, 3).toUpperCase()}
+      {format.tag}
     </span>
   );
 }
@@ -85,7 +109,7 @@ export default function ExportPanel({ spec, apiBase }: ExportPanelProps) {
         setLoading(false);
       }
     },
-    [spec, apiBase]
+    [spec, apiBase],
   );
 
   const handleCopy = useCallback(async () => {
@@ -94,7 +118,7 @@ export default function ExportPanel({ spec, apiBase }: ExportPanelProps) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback
+      // Clipboard is blocked outside a secure context. Select the text instead.
       const el = preRef.current;
       if (el) {
         const range = document.createRange();
@@ -105,221 +129,114 @@ export default function ExportPanel({ spec, apiBase }: ExportPanelProps) {
     }
   }, [content]);
 
+  const activeFmt = FORMATS.find((f) => f.key === activeFormat);
+
   const handleDownload = useCallback(() => {
     if (!content || !activeFormat) return;
-    const fmt = FORMATS.find((f) => f.key === activeFormat);
     const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `architecture.${fmt?.ext || "txt"}`;
+    a.download = `architecture.${activeFmt?.ext || "txt"}`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [content, activeFormat]);
+  }, [content, activeFormat, activeFmt]);
 
   const lineCount = content ? content.split("\n").length : 0;
-  const activeFmt = FORMATS.find((f) => f.key === activeFormat);
 
   return (
-    <div style={{ padding: 32, maxWidth: 960 }}>
-      <h2 style={{ fontSize: 18, marginBottom: 16, color: "#0f172a", fontWeight: 700 }}>
-        Export Architecture
-      </h2>
+    <div className="panel__body panel__body--wide">
+      <h2 className="panel__title">Export Architecture</h2>
+      <p className="panel__lede">
+        Thirteen formats off one spec. The infrastructure formats carry the safe defaults, so
+        encryption, versioning and public-access blocks are already in the generated code.
+      </p>
 
-      {/* Format grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 10,
-          marginBottom: 24,
-        }}
-      >
-        {FORMATS.map((fmt) => {
-          const isActive = activeFormat === fmt.key;
-          return (
-            <button
-              key={fmt.key}
-              onClick={() => runExport(fmt.key)}
-              disabled={loading}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "10px 14px",
-                borderRadius: 8,
-                border: isActive ? "1.5px solid #2563eb" : "1px solid #e2e8f0",
-                background: isActive ? "#eff6ff" : "#ffffff",
-                cursor: loading ? "wait" : "pointer",
-                textAlign: "left",
-                transition: "all 0.15s ease",
-                opacity: loading && !isActive ? 0.6 : 1,
-              }}
-            >
-              <FormatIcon format={fmt.key} />
-              <div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    fontWeight: isActive ? 600 : 500,
-                    color: isActive ? "#1d4ed8" : "#0f172a",
-                  }}
-                >
-                  {fmt.label}
-                </div>
-                <div style={{ fontSize: 11, color: "#94a3b8" }}>{fmt.desc}</div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Loading */}
-      {loading && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: 24,
-            color: "#64748b",
-            fontSize: 14,
-          }}
-        >
-          <span
-            style={{
-              display: "inline-block",
-              width: 16,
-              height: 16,
-              border: "2px solid #e2e8f0",
-              borderTopColor: "#2563eb",
-              borderRadius: "50%",
-              animation: "spin 0.6s linear infinite",
-            }}
-          />
-          Generating {activeFmt?.label || activeFormat}...
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        </div>
-      )}
-
-      {/* Error */}
-      {error && (
-        <div
-          style={{
-            padding: "12px 16px",
-            background: "#fef2f2",
-            border: "1px solid #fca5a5",
-            borderRadius: 8,
-            color: "#991b1b",
-            fontSize: 13,
-          }}
-        >
-          {error}
-        </div>
-      )}
-
-      {/* Code output */}
-      {content && !loading && (
-        <div
-          style={{
-            border: "1px solid #e2e8f0",
-            borderRadius: 10,
-            overflow: "hidden",
-          }}
-        >
-          {/* Toolbar */}
+      {GROUPS.map((group) => (
+        <div key={group} style={{ marginBottom: "var(--space-5)" }}>
+          <p className="section-label" style={{ marginBottom: "var(--space-2)" }}>{group}</p>
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "8px 14px",
-              background: "#f8fafc",
-              borderBottom: "1px solid #e2e8f0",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))",
+              gap: "var(--space-2)",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <FormatIcon format={activeFormat || ""} />
-              <span style={{ fontSize: 12, color: "#64748b" }}>
-                architecture.{activeFmt?.ext || "txt"}
-              </span>
-              <span style={{ fontSize: 11, color: "#cbd5e1" }}>
+            {FORMATS.filter((f) => f.group === group).map((fmt) => (
+              <button
+                key={fmt.key}
+                className="list-btn"
+                onClick={() => runExport(fmt.key)}
+                disabled={loading}
+                aria-pressed={activeFormat === fmt.key}
+                style={{
+                  marginBottom: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "var(--space-2)",
+                  borderColor: activeFormat === fmt.key ? "var(--accent)" : undefined,
+                  background: activeFormat === fmt.key ? "var(--accent-soft)" : undefined,
+                }}
+              >
+                <FormatTag format={fmt} />
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: "block", fontSize: "var(--text-base)", fontWeight: 600 }}>
+                    {fmt.label}
+                  </span>
+                  <span style={{ display: "block", fontSize: "var(--text-xs)", color: "var(--text-subtle)" }}>
+                    {fmt.desc}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {loading && (
+        <div className="status-row">
+          <span className="spinner" />
+          Generating {activeFmt?.label || activeFormat}...
+        </div>
+      )}
+
+      {error && <div className="callout callout--danger">{error}</div>}
+
+      {content && !loading && (
+        <div className="card">
+          <div className="card__header">
+            <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", minWidth: 0 }}>
+              <FormatTag format={activeFmt} />
+              <code className="inline">architecture.{activeFmt?.ext || "txt"}</code>
+              <span style={{ fontSize: "var(--text-xs)", color: "var(--text-subtle)" }}>
                 {lineCount} lines
               </span>
-            </div>
-            <div style={{ display: "flex", gap: 6 }}>
-              <button
-                onClick={handleCopy}
-                style={{
-                  padding: "4px 12px",
-                  borderRadius: 4,
-                  border: "1px solid #e2e8f0",
-                  background: copied ? "#dcfce7" : "#ffffff",
-                  color: copied ? "#166534" : "#475569",
-                  cursor: "pointer",
-                  fontSize: 12,
-                  fontWeight: 500,
-                  transition: "all 0.15s ease",
-                }}
-              >
+            </span>
+            <span style={{ display: "flex", gap: "var(--space-2)" }}>
+              <button className="btn btn--sm" onClick={handleCopy}>
+                <Icon name={copied ? "check" : "copy"} size={13} />
                 {copied ? "Copied" : "Copy"}
               </button>
-              <button
-                onClick={handleDownload}
-                style={{
-                  padding: "4px 12px",
-                  borderRadius: 4,
-                  border: "1px solid #e2e8f0",
-                  background: "#ffffff",
-                  color: "#475569",
-                  cursor: "pointer",
-                  fontSize: 12,
-                  fontWeight: 500,
-                }}
-              >
+              <button className="btn btn--sm" onClick={handleDownload}>
+                <Icon name="download" size={13} />
                 Download
               </button>
-            </div>
+            </span>
           </div>
-
-          {/* Code block with line numbers */}
-          <div style={{ maxHeight: 560, overflow: "auto" }}>
-            <pre
-              ref={preRef}
-              style={{
-                margin: 0,
-                padding: 16,
-                fontSize: 12,
-                lineHeight: 1.7,
-                color: "#334155",
-                background: "#ffffff",
-                fontFamily: "'SF Mono', 'Cascadia Code', 'Fira Code', Menlo, monospace",
-                counterReset: "line",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-              }}
-            >
+          <div style={{ maxHeight: "60vh", overflow: "auto" }}>
+            <pre ref={preRef} className="code-block">
               {content}
             </pre>
           </div>
         </div>
       )}
 
-      {/* Empty state */}
       {!content && !loading && !error && (
-        <div
-          style={{
-            padding: 40,
-            textAlign: "center",
-            color: "#94a3b8",
-            fontSize: 14,
-            background: "#f8fafc",
-            borderRadius: 8,
-            border: "1px dashed #e2e8f0",
-          }}
-        >
-          Select an export format above to generate infrastructure code.
-        </div>
+        <EmptyState
+          icon="download"
+          title="No format generated yet."
+          hint="Pick a format above. The output appears here, ready to copy or download."
+        />
       )}
     </div>
   );

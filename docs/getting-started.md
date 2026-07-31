@@ -200,13 +200,41 @@ pip install 'cloudwright-ai[web]'
 cloudwright chat --web
 ```
 
-Opens `http://localhost:8765`. The canvas lets you chat to design, drag and drop components, edit fields, add resources from the catalog drawer, and run Compliance and Plan checks in the UI.
+Opens `http://localhost:8765`. Chat to design, then drag components, edit fields, and add
+resources from the catalog drawer. Compliance, Plan, Review and Export all run in the UI.
 
 Use a different port:
 
 ```bash
 cloudwright chat --web --port 9000
 ```
+
+### Nine workspace tabs
+
+`diagram`, `cost`, `validate`, `compliance`, `plan`, `review`, `export`, `spec`, `modify`.
+Each tab keeps its own results. A tab switch never throws away a finished scan.
+
+### Keyboard
+
+| Keys | Action |
+|---|---|
+| `Cmd/Ctrl` + `K` | Focus the chat composer |
+| `Cmd/Ctrl` + `1` to `9` | Open the tab at that position |
+| `Enter` | Send the message |
+| `Shift` + `Enter` | Add a line to the message |
+| `Left` / `Right` / `Home` / `End` | Move across the tab bar, once a tab has focus |
+| `Escape` | Close the catalog drawer, the node panel, or a dialog |
+
+### Theme
+
+The canvas follows your operating system light or dark setting. The moon or sun button in the
+top left pins it, and the choice survives a reload. Every colour clears the WCAG AA 4.5:1
+contrast floor in both themes.
+
+### Small screens
+
+Below 900px wide the canvas splits into two panes, Chat and Workspace. A switch sits at the
+bottom of each pane. The tab bar scrolls sideways.
 
 ---
 

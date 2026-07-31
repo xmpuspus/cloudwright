@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from "react";
 import { CATEGORY_COLORS, getCategoryIconPath, getServiceCategory } from "../lib/icons";
+import Icon from "./Icon";
 
 interface LegendProps {
   components?: { service: string }[];
 }
 
 export default function DiagramLegend({ components }: LegendProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [open, setOpen] = useState(true);
 
   const categoryCounts = useMemo(() => {
     if (!components || components.length === 0) {
@@ -24,47 +25,53 @@ export default function DiagramLegend({ components }: LegendProps) {
 
   return (
     <div
+      className="float-panel"
       style={{
-        position: "absolute",
-        bottom: 16,
-        left: 16,
-        zIndex: 10,
-        background: "#ffffff",
-        border: "1px solid #e2e8f0",
-        borderRadius: 8,
-        padding: "8px 12px",
-        fontSize: 11,
-        color: "#64748b",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
-        maxHeight: collapsed ? "auto" : 260,
-        overflowY: collapsed ? "visible" : "auto",
+        bottom: "var(--space-4)",
+        right: "var(--space-4)",
+        padding: "var(--space-2) var(--space-3)",
+        maxHeight: 280,
+        overflowY: "auto",
+        fontSize: "var(--text-xs)",
       }}
     >
-      <div
-        onClick={() => setCollapsed((v) => !v)}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
         style={{
-          fontWeight: 600,
-          marginBottom: collapsed ? 0 : 4,
-          color: "#0f172a",
-          cursor: "pointer",
-          userSelect: "none",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: 8,
+          gap: "var(--space-3)",
+          width: "100%",
+          border: "none",
+          background: "transparent",
+          cursor: "pointer",
+          padding: 0,
+          marginBottom: open ? 6 : 0,
+          fontSize: "var(--text-sm)",
+          fontWeight: 650,
+          color: "var(--text)",
         }}
       >
         Legend
-        <span style={{ fontSize: 10, color: "#94a3b8" }}>{collapsed ? "+" : "-"}</span>
-      </div>
-      {!collapsed &&
+        <span style={{ transform: open ? "none" : "rotate(-90deg)", transition: "transform 160ms" }}>
+          <Icon name="chevron" size={13} strokeWidth={2} />
+        </span>
+      </button>
+      {open &&
         categoryCounts.map(({ category, count }) => {
-          const color = CATEGORY_COLORS[category] || "#94a3b8";
-          const iconPath = getCategoryIconPath(category);
+          const color = CATEGORY_COLORS[category] || "currentColor";
           return (
             <div
               key={category}
-              style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                marginBottom: 3,
+                color: "var(--text-muted)",
+              }}
             >
               <svg
                 width={12}
@@ -75,14 +82,13 @@ export default function DiagramLegend({ components }: LegendProps) {
                 strokeWidth={2.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                aria-hidden="true"
                 style={{ flexShrink: 0 }}
               >
-                <path d={iconPath} />
+                <path d={getCategoryIconPath(category)} />
               </svg>
               <span style={{ textTransform: "capitalize" }}>{category}</span>
-              {count > 0 && (
-                <span style={{ color: "#94a3b8", fontSize: 10 }}>({count})</span>
-              )}
+              {count > 0 && <span style={{ color: "var(--text-subtle)" }}>({count})</span>}
             </div>
           );
         })}

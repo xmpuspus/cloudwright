@@ -86,7 +86,7 @@ def page(browser_ctx):
 
 
 def _chat_input(page):
-    return page.locator('input[placeholder*="Describe"]')
+    return page.locator('[placeholder*="Describe"]')
 
 
 def _send_btn(page):
@@ -104,6 +104,7 @@ def _wait_for_idle(page, timeout_ms: int = 90_000):
         "() => !document.body.innerText.includes('Generating') "
         "&& !document.body.innerText.includes('Modifying') "
         "&& !document.body.innerText.includes('Costing') "
+        "&& !document.body.innerText.includes('Estimating') "
         "&& !document.body.innerText.includes('Finalizing')",
         timeout=timeout_ms,
     )
@@ -189,24 +190,24 @@ class TestArchitectureDesign:
     def test_design_produces_assistant_response(self, page, web_server):
         """README: 'Describe a system in natural language → structured architecture spec'."""
         _design_and_wait(page, web_server, "3-tier web app on AWS with EC2 and RDS")
-        bubbles = page.locator('[style*="background: rgb(241, 245, 249)"]')
+        bubbles = page.locator('[data-testid="msg-assistant"]')
         assert bubbles.count() >= 1
         assert bubbles.first.inner_text().strip() != ""
 
     def test_response_mentions_designed(self, page, web_server):
         _design_and_wait(page, web_server, "Simple web app on AWS with EC2 and S3")
-        content = page.locator('[style*="background: rgb(241, 245, 249)"]').first.inner_text()
+        content = page.locator('[data-testid="msg-assistant"]').first.inner_text()
         assert any(kw in content for kw in ["Designed", "Modified", "Error", "components"])
 
     def test_response_includes_cost_estimate(self, page, web_server):
         """README: cost estimates are part of the design response."""
         _design_and_wait(page, web_server, "Web app on AWS with ALB, EC2, and RDS PostgreSQL")
-        content = page.locator('[style*="background: rgb(241, 245, 249)"]').first.inner_text()
+        content = page.locator('[data-testid="msg-assistant"]').first.inner_text()
         assert "$" in content or "cost" in content.lower()
 
     def test_response_includes_component_count(self, page, web_server):
         _design_and_wait(page, web_server, "Serverless API on AWS with Lambda and DynamoDB")
-        content = page.locator('[style*="background: rgb(241, 245, 249)"]').first.inner_text()
+        content = page.locator('[data-testid="msg-assistant"]').first.inner_text()
         assert "component" in content.lower()
 
     def test_new_button_appears_after_design(self, page, web_server):
@@ -258,7 +259,7 @@ class TestCostTab:
         """README: 'Per-component monthly pricing from a built-in SQLite catalog'."""
         _design_and_wait(page, web_server, "Web app on AWS with ALB, EC2, and RDS")
         # Use get_by_role with exact match to avoid hitting "Reduce cost" suggestion
-        page.get_by_role("button", name="cost", exact=True).click()
+        page.get_by_role("tab", name="cost", exact=True).click()
         page.wait_for_function(
             "() => document.body.innerText.includes('Cost Breakdown')",
             timeout=15_000,
@@ -268,7 +269,7 @@ class TestCostTab:
 
     def test_cost_table_has_columns(self, page, web_server):
         _design_and_wait(page, web_server, "Web app on AWS with EC2 and RDS")
-        page.get_by_role("button", name="cost", exact=True).click()
+        page.get_by_role("tab", name="cost", exact=True).click()
         page.wait_for_function(
             "() => document.body.innerText.includes('Cost Breakdown')",
             timeout=15_000,
@@ -278,7 +279,7 @@ class TestCostTab:
 
     def test_cost_table_has_total_row(self, page, web_server):
         _design_and_wait(page, web_server, "AWS app with EC2 and RDS")
-        page.get_by_role("button", name="cost", exact=True).click()
+        page.get_by_role("tab", name="cost", exact=True).click()
         page.wait_for_function(
             "() => document.body.innerText.includes('Cost Breakdown')",
             timeout=15_000,
@@ -325,7 +326,7 @@ class TestValidateTab:
 class TestExportTab:
     def test_export_panel_visible(self, page, web_server):
         _design_and_wait(page, web_server, "Simple AWS app with EC2")
-        page.get_by_role("button", name="export", exact=True).click()
+        page.get_by_role("tab", name="export", exact=True).click()
         heading = page.locator("h2", has_text="Export")
         heading.wait_for(state="visible", timeout=5_000)
         assert heading.is_visible()
@@ -434,7 +435,7 @@ class TestMultiTurnChat:
         _wait_for_idle(page, timeout_ms=90_000)
 
         # Should now have 2 assistant bubbles
-        bubbles = page.locator('[style*="background: rgb(241, 245, 249)"]')
+        bubbles = page.locator('[data-testid="msg-assistant"]')
         assert bubbles.count() >= 2
 
         # Second response should mention "Modified"
@@ -460,7 +461,7 @@ class TestStreamingDisplay:
             pass  # May complete too fast
 
         _wait_for_idle(page, timeout_ms=90_000)
-        bubbles = page.locator('[style*="background: rgb(241, 245, 249)"]')
+        bubbles = page.locator('[data-testid="msg-assistant"]')
         assert bubbles.count() >= 1
 
     def test_response_non_empty_before_done_event(self, page, web_server):
@@ -474,7 +475,7 @@ class TestStreamingDisplay:
             pass
 
         _wait_for_idle(page, timeout_ms=90_000)
-        bubbles = page.locator('[style*="background: rgb(241, 245, 249)"]')
+        bubbles = page.locator('[data-testid="msg-assistant"]')
         assert bubbles.count() >= 1
 
 
@@ -485,27 +486,95 @@ class TestStreamingDisplay:
 
 @skip_no_browser
 class TestNewButtonConfirmation:
-    def test_dismiss_confirm_preserves_chat(self, page, web_server):
+    """The reset confirmation is an in-page <dialog>, not window.confirm.
+
+    window.confirm cannot be styled and drops focus out of the page, so v1.8.0
+    replaced it with a native modal dialog that keeps focus trapped and honours
+    Escape.
+    """
+
+    def test_cancel_preserves_chat(self, page, web_server):
         _design_and_wait(page, web_server, "Simple web app on AWS with EC2 and RDS")
-        new_btn = page.locator("button", has_text="New")
-        new_btn.wait_for(state="visible", timeout=5_000)
+        page.locator("button", has_text="New").click()
+        page.locator("dialog[open]").wait_for(state="visible", timeout=5_000)
 
-        page.once("dialog", lambda d: d.dismiss())
-        new_btn.click()
+        page.locator("dialog[open] button", has_text="Cancel").click()
 
-        assert page.locator('[style*="background: rgb(37, 99, 235)"]').count() > 0
+        assert page.locator('[data-testid="msg-user"]').count() > 0
 
-    def test_accept_confirm_clears_chat(self, page, web_server):
+    def test_confirm_clears_chat(self, page, web_server):
         _design_and_wait(page, web_server, "Simple web app on AWS with EC2 and RDS")
-        new_btn = page.locator("button", has_text="New")
-        new_btn.wait_for(state="visible", timeout=5_000)
+        page.locator("button", has_text="New").click()
+        page.locator("dialog[open]").wait_for(state="visible", timeout=5_000)
 
-        page.once("dialog", lambda d: d.accept())
-        new_btn.click()
+        page.locator("dialog[open] button", has_text="Discard").click()
 
         page.wait_for_selector('text="Describe your cloud architecture"', timeout=5_000)
         page.wait_for_timeout(500)
         assert _chat_input(page).is_visible()
+        assert page.locator('[data-testid="msg-user"]').count() == 0
+
+    def test_escape_closes_the_dialog(self, page, web_server):
+        _design_and_wait(page, web_server, "Simple web app on AWS with EC2 and RDS")
+        page.locator("button", has_text="New").click()
+        page.locator("dialog[open]").wait_for(state="visible", timeout=5_000)
+
+        page.keyboard.press("Escape")
+
+        page.locator("dialog[open]").wait_for(state="hidden", timeout=5_000)
+        assert page.locator('[data-testid="msg-user"]').count() > 0
+
+
+# ---------------------------------------------------------------------------
+# 12b. Design system: tabs, theme, panel state (v1.8.0)
+# ---------------------------------------------------------------------------
+
+
+@skip_no_browser
+class TestWorkspaceTabs:
+    def test_tabs_expose_the_aria_tab_pattern(self, page, web_server):
+        page.goto(web_server)
+        tablist = page.locator('[role="tablist"]').first
+        assert tablist.is_visible()
+        assert page.get_by_role("tab", name="diagram", exact=True).get_attribute("aria-selected") == "true"
+
+    def test_arrow_key_moves_between_tabs(self, page, web_server):
+        page.goto(web_server)
+        page.get_by_role("tab", name="diagram", exact=True).focus()
+        page.keyboard.press("ArrowRight")
+        assert page.get_by_role("tab", name="cost", exact=True).get_attribute("aria-selected") == "true"
+
+    def test_panel_result_survives_a_tab_switch(self, page, web_server):
+        """Panels used to unmount on tab change, throwing away a finished scan."""
+        _design_and_wait(page, web_server, "Web app on AWS with ALB, EC2, and RDS")
+        page.get_by_role("tab", name="validate", exact=True).click()
+        page.locator("button", has_text="Well-Architected").click()
+        page.wait_for_function(
+            "() => document.body.innerText.includes('Failed Checks')"
+            " || document.body.innerText.includes('Passed Checks')",
+            timeout=15_000,
+        )
+        page.get_by_role("tab", name="cost", exact=True).click()
+        page.get_by_role("tab", name="validate", exact=True).click()
+        assert "Checks" in page.locator("#panel-validate").inner_text()
+
+
+@skip_no_browser
+class TestTheme:
+    def test_theme_toggle_flips_the_document_attribute(self, page, web_server):
+        page.goto(web_server)
+        before = page.evaluate("() => document.documentElement.getAttribute('data-theme')")
+        page.locator("button[aria-label*='Switch to']").click()
+        after = page.evaluate("() => document.documentElement.getAttribute('data-theme')")
+        assert before != after
+        assert after in ("light", "dark")
+
+    def test_theme_choice_survives_a_reload(self, page, web_server):
+        page.goto(web_server)
+        page.locator("button[aria-label*='Switch to']").click()
+        chosen = page.evaluate("() => document.documentElement.getAttribute('data-theme')")
+        page.reload()
+        assert page.evaluate("() => document.documentElement.getAttribute('data-theme')") == chosen
 
 
 # ---------------------------------------------------------------------------

@@ -1,4 +1,5 @@
 import React from "react";
+import Icon from "./Icon";
 
 interface DiagramControlsProps {
   onExportSvg?: () => void;
@@ -13,46 +14,39 @@ export default function DiagramControls({
   showBoundaries,
   onToggleBoundaries,
 }: DiagramControlsProps) {
-  const btnStyle: React.CSSProperties = {
-    padding: "4px 10px",
-    borderRadius: 4,
-    border: "1px solid #e2e8f0",
-    background: "#ffffff",
-    color: "#475569",
-    cursor: "pointer",
-    fontSize: 11,
-  };
   return (
     <div
+      className="float-panel"
       style={{
-        position: "absolute",
-        top: 16,
-        right: 16,
-        zIndex: 10,
+        top: "var(--space-4)",
+        right: "var(--space-4)",
         display: "flex",
         gap: 4,
-        background: "#ffffff",
         padding: 4,
-        border: "1px solid #e2e8f0",
-        borderRadius: 8,
-        boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
       }}
+      role="group"
+      aria-label="Diagram controls"
     >
       {onExportSvg && (
-        <button style={btnStyle} onClick={onExportSvg}>
-          Export SVG
+        <button className="btn btn--ghost btn--sm" onClick={onExportSvg} title="Download the diagram as SVG">
+          <Icon name="download" size={13} />
+          SVG
         </button>
       )}
       {onExportPng && (
-        <button style={btnStyle} onClick={onExportPng}>
-          Export PNG
+        <button className="btn btn--ghost btn--sm" onClick={onExportPng} title="Download the diagram as PNG">
+          <Icon name="download" size={13} />
+          PNG
         </button>
       )}
       <button
-        style={{ ...btnStyle, background: showBoundaries ? "#f1f5f9" : "#ffffff" }}
+        className="btn btn--ghost btn--sm"
         onClick={onToggleBoundaries}
+        aria-pressed={showBoundaries}
+        title="Show or hide the trust boundaries"
       >
-        {showBoundaries ? "Hide" : "Show"} Boundaries
+        <Icon name="panel" size={13} />
+        <span className="hide-narrow">Boundaries</span>
       </button>
     </div>
   );

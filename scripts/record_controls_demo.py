@@ -53,10 +53,10 @@ def linger(page: Page, ms: int) -> None:
 
 def drive_demo(page: Page) -> None:
     page.goto(DEFAULT_URL)
-    page.wait_for_selector('input[placeholder="Describe your architecture..."]', timeout=15_000)
+    page.wait_for_selector('[placeholder="Describe your architecture..."]', timeout=15_000)
     linger(page, 1000)
 
-    chat_input = page.locator('input[placeholder="Describe your architecture..."]')
+    chat_input = page.locator('[placeholder="Describe your architecture..."]')
     chat_input.fill("three-tier web app with rds and alb on aws")
     linger(page, 700)
     page.get_by_role("button", name="Send").click()
@@ -64,7 +64,7 @@ def drive_demo(page: Page) -> None:
     linger(page, 1500)
 
     # --- Compliance tab ---
-    page.get_by_role("button", name="compliance", exact=True).click()
+    page.get_by_role("tab", name="compliance", exact=True).click()
     linger(page, 1200)
     try:
         page.get_by_role("button", name="Run compliance scan").click(timeout=5_000)
@@ -80,7 +80,7 @@ def drive_demo(page: Page) -> None:
     linger(page, 2500)
 
     # --- Plan tab ---
-    page.get_by_role("button", name="plan", exact=True).click()
+    page.get_by_role("tab", name="plan", exact=True).click()
     linger(page, 1200)
     try:
         page.get_by_role("button", name="Run plan").click(timeout=5_000)

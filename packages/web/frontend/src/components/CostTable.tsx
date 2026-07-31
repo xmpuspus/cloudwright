@@ -7,60 +7,64 @@ interface CostEstimate {
 }
 
 function CostTable({ estimate }: { estimate: CostEstimate }) {
+  const largest = estimate.breakdown.reduce((max, item) => Math.max(max, item.monthly), 0);
+
   return (
-    <div style={{ padding: 32 }}>
-      <h2 style={{ fontSize: 18, marginBottom: 16, color: "#0f172a" }}>Cost Breakdown</h2>
-      <table
-        style={{
-          width: "100%",
-          maxWidth: 700,
-          borderCollapse: "collapse",
-          fontSize: 14,
-        }}
-      >
-        <thead>
-          <tr style={{ borderBottom: "2px solid #e2e8f0", background: "#f8fafc" }}>
-            <th style={{ textAlign: "left", padding: "10px 12px", color: "#475569" }}>Component</th>
-            <th style={{ textAlign: "left", padding: "10px 12px", color: "#475569" }}>Service</th>
-            <th style={{ textAlign: "right", padding: "10px 12px", color: "#475569" }}>Monthly</th>
-            <th style={{ textAlign: "left", padding: "10px 12px", color: "#475569" }}>Notes</th>
-          </tr>
-        </thead>
-        <tbody>
-          {estimate.breakdown.map((item) => (
-            <tr key={item.component_id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-              <td style={{ padding: "10px 12px", color: "#0f172a" }}>{item.component_id}</td>
-              <td style={{ padding: "10px 12px", color: "#475569" }}>{item.service}</td>
-              <td style={{ padding: "10px 12px", textAlign: "right", fontFamily: "monospace", color: "#0f172a" }}>
-                ${item.monthly.toFixed(2)}
-              </td>
-              <td style={{ padding: "10px 12px", color: "#64748b", fontSize: 12 }}>{item.notes}</td>
+    <div className="panel__body">
+      <h2 className="panel__title">Cost Breakdown</h2>
+      <p className="panel__lede">
+        Per-component monthly price from the built-in catalog, at the region on the spec. The bar
+        shows each line item against the largest one.
+      </p>
+      <div className="table-wrap">
+        <table className="data">
+          <thead>
+            <tr>
+              <th scope="col">Component</th>
+              <th scope="col">Service</th>
+              <th scope="col" style={{ textAlign: "right" }}>Monthly</th>
+              <th scope="col">Share</th>
+              <th scope="col">Notes</th>
             </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr style={{ borderTop: "2px solid #e2e8f0", background: "#f0f9ff" }}>
-            <td style={{ padding: "12px", fontWeight: 700, fontSize: 15, color: "#0f172a" }} colSpan={2}>
-              Total
-            </td>
-            <td
-              style={{
-                padding: "12px",
-                textAlign: "right",
-                fontWeight: 700,
-                fontSize: 15,
-                fontFamily: "monospace",
-                color: "#2563eb",
-              }}
-            >
-              ${estimate.monthly_total.toFixed(2)}
-            </td>
-            <td style={{ padding: "12px", color: "#64748b", fontSize: 12 }}>
-              {estimate.currency}/month
-            </td>
-          </tr>
-        </tfoot>
-      </table>
+          </thead>
+          <tbody>
+            {estimate.breakdown.map((item) => (
+              <tr key={item.component_id}>
+                <td>{item.component_id}</td>
+                <td>
+                  <code className="inline">{item.service}</code>
+                </td>
+                <td className="num">${item.monthly.toFixed(2)}</td>
+                <td style={{ minWidth: 110 }}>
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      display: "block",
+                      height: 6,
+                      borderRadius: 3,
+                      background: "var(--accent)",
+                      opacity: 0.85,
+                      width: `${largest > 0 ? Math.max(3, (item.monthly / largest) * 100) : 0}%`,
+                    }}
+                  />
+                </td>
+                <td style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>{item.notes}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colSpan={2}>Total</td>
+              <td className="num" style={{ color: "var(--accent-text)" }}>
+                ${estimate.monthly_total.toFixed(2)}
+              </td>
+              <td colSpan={2} style={{ color: "var(--text-muted)", fontWeight: 400, fontSize: "var(--text-sm)" }}>
+                {estimate.currency} per month
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </div>
   );
 }

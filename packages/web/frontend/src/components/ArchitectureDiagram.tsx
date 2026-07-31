@@ -5,6 +5,7 @@ import {
   Controls,
   useNodesState,
   useEdgesState,
+  useReactFlow,
   type Node,
   type Edge,
   type Connection as FlowConnection,
@@ -16,6 +17,9 @@ import DiagramLegend from "./DiagramLegend";
 import DiagramControls from "./DiagramControls";
 import NodeSidePanel from "./NodeSidePanel";
 import CatalogDrawer from "./CatalogDrawer";
+import ConfirmDialog from "./ConfirmDialog";
+import { parseApiError } from "../lib/apiError";
+import { useToast } from "../lib/toast";
 
 interface Component {
   id: string;
@@ -167,11 +171,11 @@ const TIER_COLORS: Record<number, BoundaryStyle> = {
 };
 
 const VPC_COLORS: BoundaryStyle = {
-  border: "#94a3b8",
+  border: "#64748b",
   bg: "rgba(241, 245, 249, 0.35)",
   labelColor: "#475569",
   labelBg: "rgba(241, 245, 249, 0.92)",
-  dot: "#94a3b8",
+  dot: "#64748b",
 };
 
 const nodeTypes = { cloudService: CloudServiceNode, boundaryGroup: BoundaryNode };
@@ -250,7 +254,7 @@ function inferBoundaries(components: Component[]): Boundary[] {
     boundaries.unshift({
       id: "vpc",
       kind: "vpc",
-      label: "VPC / Virtual Network",
+      label: "VPC",
       component_ids: innerIds,
     });
   }
@@ -441,8 +445,13 @@ function buildEdges(spec: ArchSpec): Edge[] {
       source: conn.source,
       target: conn.target,
       label: edgeLabel,
-      style: { stroke: "#94a3b8" },
-      labelStyle: { fill: "#64748b", fontSize: 11 },
+      style: { stroke: "var(--border-strong)" },
+      labelStyle: { fill: "var(--text-muted)", fontSize: 11, fontWeight: 600 },
+      // Opaque chip, so a label crossing a boundary border still reads.
+      labelShowBg: true,
+      labelBgStyle: { fill: "var(--surface)", stroke: "var(--border)" },
+      labelBgPadding: [6, 3] as [number, number],
+      labelBgBorderRadius: 4,
       animated: true,
     };
   });
@@ -456,6 +465,20 @@ function updateBoundariesAfterDelete(boundaries: Boundary[] | undefined, compone
   }));
 }
 
+/** ReactFlow's `fitView` prop only fires when nodes exist at mount, and this
+ *  diagram builds its nodes in an effect. Refit whenever the node set changes,
+ *  but not when a drag only moves one, so a hand-placed layout survives. */
+function FitOnChange({ signature }: { signature: string }) {
+  const { fitView } = useReactFlow();
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      void fitView({ padding: 0.16, duration: 250 });
+    }, 60);
+    return () => window.clearTimeout(id);
+  }, [signature, fitView]);
+  return null;
+}
+
 function ArchitectureDiagram({
   spec,
   onSpecChange,
@@ -466,6 +489,10 @@ function ArchitectureDiagram({
   const [showBoundaries, setShowBoundaries] = useState(true);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [standardsResult, setStandardsResult] = useState<StandardsResult | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<
+    { kind: "component"; id: string; label: string } | { kind: "edges"; ids: string[] } | null
+  >(null);
+  const { notify } = useToast();
 
   const applySpec = useCallback((nextSpec: ArchSpec) => {
     setStandardsResult(null);
@@ -479,7 +506,10 @@ function ArchitectureDiagram({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ spec, format }),
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        notify(await parseApiError(res));
+        return;
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -488,9 +518,9 @@ function ArchitectureDiagram({
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      // export is best-effort
+      notify(`The ${format.toUpperCase()} export failed. Check that the server is still running.`);
     }
-  }, [spec]);
+  }, [notify, spec]);
 
   const costMap = useMemo<Record<string, number>>(() => {
     const m: Record<string, number> = {};
@@ -515,6 +545,12 @@ function ArchitectureDiagram({
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+
+  // Changes only when the graph gains or loses a node, never on a drag.
+  const layoutSignature = useMemo(
+    () => `${showBoundaries}:${spec.components.map((c) => c.id).sort().join(",")}`,
+    [showBoundaries, spec.components],
+  );
 
   useEffect(() => {
     setNodes(buildNodes(spec, showBoundaries, costMap));
@@ -568,29 +604,27 @@ function ArchitectureDiagram({
 
   const handleEdgesDelete = useCallback((deleted: Edge[]) => {
     if (deleted.length === 0) return;
-    if (!window.confirm(`Delete ${deleted.length === 1 ? "this connection" : "these connections"}?`)) {
-      setEdges(buildEdges(spec));
+    // React Flow already removed them from its own state. Put them back until the
+    // user confirms, so a stray Delete key press cannot silently drop a connection.
+    setEdges(buildEdges(spec));
+    setPendingDelete({ kind: "edges", ids: deleted.map((edge) => edge.id) });
+  }, [setEdges, spec]);
+
+  const confirmDelete = useCallback(() => {
+    if (!pendingDelete) return;
+    if (pendingDelete.kind === "edges") {
+      const deletedIds = new Set(pendingDelete.ids);
+      applySpec({
+        ...spec,
+        connections: spec.connections.filter(
+          (conn, index) => !deletedIds.has(connectionEdgeId(conn, index)),
+        ),
+      });
+      setPendingDelete(null);
       return;
     }
-    const deletedIds = new Set(deleted.map((edge) => edge.id));
-    applySpec({
-      ...spec,
-      connections: spec.connections.filter((conn, index) => !deletedIds.has(connectionEdgeId(conn, index))),
-    });
-  }, [applySpec, setEdges, spec]);
 
-  const handleApplyComponent = useCallback((updated: Component) => {
-    applySpec({
-      ...spec,
-      components: spec.components.map((component) => (component.id === updated.id ? updated : component)),
-    });
-  }, [applySpec, spec]);
-
-  const handleDeleteComponent = useCallback((componentId: string) => {
-    const component = spec.components.find((candidate) => candidate.id === componentId);
-    if (!component) return;
-    if (!window.confirm(`Delete ${component.label || component.id} and its connections?`)) return;
-
+    const componentId = pendingDelete.id;
     const metadata = cloneMetadata(spec.metadata);
     if (metadata.canvas?.nodes) {
       delete metadata.canvas.nodes[componentId];
@@ -616,7 +650,25 @@ function ArchitectureDiagram({
       metadata,
     });
     setSelectedNode(null);
+    setPendingDelete(null);
+  }, [applySpec, pendingDelete, spec]);
+
+  const handleApplyComponent = useCallback((updated: Component) => {
+    applySpec({
+      ...spec,
+      components: spec.components.map((component) => (component.id === updated.id ? updated : component)),
+    });
   }, [applySpec, spec]);
+
+  const handleDeleteComponent = useCallback((componentId: string) => {
+    const component = spec.components.find((candidate) => candidate.id === componentId);
+    if (!component) return;
+    setPendingDelete({
+      kind: "component",
+      id: componentId,
+      label: component.label || component.id,
+    });
+  }, [spec.components]);
 
   const handleAddResource = useCallback((service: ServiceSummary) => {
     const used = new Set(spec.components.map((component) => component.id));
@@ -648,7 +700,10 @@ function ArchitectureDiagram({
   const handleAddModule = useCallback(async (moduleId: string) => {
     try {
       const response = await fetch(`${API_BASE}/modules/${encodeURIComponent(moduleId)}`);
-      if (!response.ok) return;
+      if (!response.ok) {
+        notify(await parseApiError(response));
+        return;
+      }
       const data = (await response.json()) as { module: ModuleDetail };
       const module = data.module;
       const usedComponents = new Set(spec.components.map((component) => component.id));
@@ -711,9 +766,9 @@ function ArchitectureDiagram({
       });
       setSelectedNode(addedComponents[0]?.id ?? null);
     } catch {
-      // module insertion is best-effort
+      notify("That module could not be added. Check that the server is still running.");
     }
-  }, [applySpec, spec]);
+  }, [applySpec, notify, spec]);
 
   const handleCheckStandards = useCallback(async () => {
     try {
@@ -722,7 +777,10 @@ function ArchitectureDiagram({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ spec }),
       });
-      if (!response.ok) return;
+      if (!response.ok) {
+        notify(await parseApiError(response));
+        return;
+      }
       setStandardsResult((await response.json()) as StandardsResult);
     } catch {
       setStandardsResult({
@@ -730,7 +788,7 @@ function ArchitectureDiagram({
         violations: [{ code: "request_failed", severity: "error", message: "Standards check failed." }],
       });
     }
-  }, [spec]);
+  }, [notify, spec]);
 
   return (
     <div style={{ width: "100%", height: "100%", position: "relative" }}>
@@ -752,14 +810,13 @@ function ArchitectureDiagram({
         onNodeDragStop={handleNodeDragStop}
         fitView
         proOptions={{ hideAttribution: true }}
-        style={{ background: "#f8fafc" }}
+        style={{ background: "var(--canvas)" }}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
       >
-        <Background color="#e2e8f0" gap={20} />
-        <Controls
-          style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 8 }}
-        />
+        <Background color="var(--canvas-dot)" gap={20} />
+        <Controls />
+        <FitOnChange signature={layoutSignature} />
       </ReactFlow>
       <DiagramLegend components={spec.components} />
       <DiagramControls
@@ -778,6 +835,21 @@ function ArchitectureDiagram({
           config: component.config ?? {},
         })}
         onDelete={handleDeleteComponent}
+      />
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={pendingDelete?.kind === "component" ? "Delete this component?" : "Delete this connection?"}
+        body={
+          pendingDelete?.kind === "component"
+            ? `${pendingDelete.label} and every connection into or out of it are removed from the spec.`
+            : pendingDelete?.kind === "edges"
+              ? `${pendingDelete.ids.length} connection${pendingDelete.ids.length === 1 ? "" : "s"} removed from the spec.`
+              : ""
+        }
+        confirmLabel="Delete"
+        destructive
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
       />
     </div>
   );

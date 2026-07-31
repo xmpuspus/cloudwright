@@ -113,7 +113,7 @@ export function getServiceCategory(service: string): string {
 }
 
 export function getCategoryColor(category: string): string {
-  return CATEGORY_COLORS[category] || "#94a3b8";
+  return CATEGORY_COLORS[category] || "#64748b";
 }
 
 export function getCategoryIconPath(category: string): string {

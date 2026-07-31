@@ -5,6 +5,90 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-07-31
+
+A full rebuild of the web canvas interface. A UI audit of all 15 frontend components found 45
+defects: 12 correctness, 11 accessibility, 6 responsive, 7 design-system, 9 content. This
+release closes every one of them. No backend contract changes, so the CLI, the MCP server and
+every API route behave exactly as in 1.7.0.
+
+### Added
+
+- **A design-token stylesheet and a dark theme.** `packages/web/frontend/src/styles.css` holds
+  every colour, space, radius, shadow and type step as a CSS custom property. `[data-theme="dark"]`
+  re-points the same tokens. The theme follows `prefers-color-scheme` until the user picks a side,
+  then keeps that choice in `localStorage`. Nothing downloads a web font, so the strict
+  Content-Security-Policy the server sends stays intact.
+- **A responsive layout.** The frontend had zero media queries. It now has breakpoints at 1180px,
+  900px and 620px. Below 900px the fixed 420px sidebar becomes a two-pane switch between Chat and
+  Workspace. The nine workspace tabs scroll sideways instead of clipping. The shell uses
+  `100dvh`, so the composer stays above the iOS URL bar.
+- **The WAI-ARIA tabs pattern.** `role="tablist"`, `role="tab"`, `aria-selected`, `aria-controls`,
+  roving `tabindex`, and Arrow/Home/End keys. Each panel is a `role="tabpanel"` section.
+- **Keyboard shortcuts and a skip link.** `Cmd/Ctrl+K` focuses the composer, `Cmd/Ctrl+1..9` picks
+  a tab, `Escape` closes the catalog drawer and the node panel.
+- **A stop button.** An `AbortController` now cancels a running design or change.
+- **Error toasts.** A polite live region surfaces the failures the old code swallowed.
+- **OpenTofu, Pulumi TypeScript and Pulumi Python in the Export tab.** All three shipped in
+  `cloudwright.exporter.FORMATS` but had no button in the web UI. The tab now offers 13 formats in
+  three groups.
+- **`scripts/ui_screenshots.py`.** It screenshots every tab at three widths in both themes against
+  the mock-LLM server, and `--readme` regenerates the exact `docs/screenshots/` filenames.
+- **`packages/web/tests/test_static_bundle.py`.** Eight checks read the bundle in
+  `cloudwright_web/static/`. They confirm that the hashed assets match `index.html`, that the tokens
+  and the dark theme survive minification, that breakpoints exist, that the focus ring holds, and
+  that no em-dash reaches user copy. A frontend change that never reaches the wheel now fails CI.
+
+### Fixed
+
+- **A mid-stream error billed a second generation.** `streamSucceeded` only became true after the
+  stream loop returned, so an `error` event after the spec arrived left it false. The non-streaming
+  fallback then ran a second design call and its result replaced the first. The fallback now runs
+  only when the stream produced no spec.
+- **Panel results no longer die on a tab switch.** Validation, compliance, plan and review results
+  lived in component state that unmounted whenever the user changed tab. Panels now mount on first
+  use and stay mounted.
+- **The catalog drawer no longer covers the diagram on load.** It defaulted to open.
+- **Silent failures now speak.** Diagram SVG/PNG export, module insertion, the standards check and
+  the spec download all returned on `!res.ok` with no message.
+- **The YAML tab shows the server's YAML.** It rendered a hand-written client-side serialiser that
+  quoted nothing, so a value such as `no` or `2.0` read back as a boolean or a number. The panel now
+  asks the server for the authoritative YAML, and the local serialiser (still the offline fallback)
+  quotes anything that would change type.
+- **Contrast.** 27 uses of `#94a3b8` (2.84:1 on white) and 2 of `#cbd5e1` (1.61:1) fell below the
+  WCAG 1.4.3 AA floor. Every token now clears 4.5:1 in both themes.
+- **Focus visibility.** Four `outline: none` rules removed the focus ring with no replacement, which
+  fails WCAG 2.4.7. There is now one `:focus-visible` ring for the whole application.
+- **The closed node panel left the tab order.** It stayed in the DOM at `translateX(100%)`, so
+  keyboard focus walked into inputs parked off-screen. It unmounts when closed.
+- **The streaming indicator animates.** It referenced a `pulse` keyframe that no file defined.
+- **An input method no longer submits mid-word.** Enter now checks `isComposing`, so confirming a
+  Japanese, Chinese or Korean candidate does not send the message.
+- **A native `<dialog>` replaces `window.confirm`.** Three destructive actions used the browser
+  dialog, which takes no styling and drops focus out of the page.
+- **Error copy carries no em-dash.** `formatApiError` joined the message and the suggestion with
+  one.
+- **The dead session write is gone.** The reset button wrote `cloudwright_last_session` to
+  `localStorage` and nothing ever read it.
+- **The diagram fits its viewport.** `fitView` ran before the effect built any nodes, so the graph
+  rendered at default zoom in a corner. It now refits when the node set changes, and leaves a
+  hand-placed layout alone during a drag.
+- **Diagram chrome stops overlapping.** The legend covered the React Flow zoom controls, and on a
+  phone the Add Resource button sat on top of the export toolbar.
+
+### Changed
+
+- **The 90-line duplicate of the send path is gone.** The `Modify` tab re-implemented streaming,
+  fallback, costing and error handling inline in a JSX prop. Both entry points now call one
+  `runTurn`.
+- **Empty states name the next action.** Six panels said "Design an architecture first." and stopped.
+- **The composer is a textarea.** It grows with its content, Enter sends, Shift+Enter adds a line.
+- **Browser tests use stable selectors.** Two assertions matched on inline style strings
+  (`[style*="background: rgb(241, 245, 249)"]`), which a stylesheet removes. They now use
+  `data-testid`. Nine new browser tests cover the tab pattern, the theme, panel persistence and the
+  dialog.
+- **Fresh screenshots and both web demo GIFs**, recorded against the new interface.
+
 ## [1.7.0] - 2026-07-08
 
 Closes the July 2026 product audit findings. The differentiating features (offline review,

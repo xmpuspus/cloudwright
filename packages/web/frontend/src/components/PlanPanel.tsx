@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { parseApiError } from "../lib/apiError";
+import EmptyState from "./EmptyState";
 
 interface PlanResult {
   tool: string;
@@ -49,120 +50,99 @@ export default function PlanPanel({ spec, apiBase }: PlanPanelProps) {
   }, [spec, apiBase, target]);
 
   return (
-    <div style={{ padding: 24, maxWidth: 920 }}>
-      <h2 style={{ fontSize: 18, marginBottom: 6, color: "#0f172a" }}>
-        Plan / Preview — prove it deploys
-      </h2>
-      <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>
-        Runs <code>terraform validate/plan</code> or <code>pulumi preview</code> against the
-        exported artifact. Read-only — nothing is applied. Validation needs no credentials and is
-        the offline proof of deployability.
+    <div className="panel__body">
+      <h2 className="panel__title">Deployability Check</h2>
+      <p className="panel__lede">
+        Runs <code className="inline">terraform validate</code> and{" "}
+        <code className="inline">plan</code>, or <code className="inline">pulumi preview</code>,
+        against the exported artifact. Nothing is ever applied. Validation needs no credentials,
+        so it works offline.
       </p>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", marginBottom: "var(--space-4)" }}>
         {TARGETS.map((t) => (
           <button
             key={t.key}
+            className="chip"
+            aria-pressed={target === t.key}
             onClick={() => setTarget(t.key)}
-            style={{
-              padding: "6px 14px",
-              borderRadius: 8,
-              border: `1px solid ${target === t.key ? "#2563eb" : "#cbd5e1"}`,
-              background: target === t.key ? "#2563eb" : "#ffffff",
-              color: target === t.key ? "#ffffff" : "#475569",
-              fontSize: 13,
-              cursor: "pointer",
-            }}
           >
             {t.label}
           </button>
         ))}
       </div>
 
-      <button
-        onClick={run}
-        disabled={loading}
-        style={{
-          padding: "10px 22px",
-          borderRadius: 8,
-          border: "none",
-          background: loading ? "#94a3b8" : "#0f172a",
-          color: "#ffffff",
-          fontSize: 14,
-          fontWeight: 600,
-          cursor: loading ? "default" : "pointer",
-        }}
-      >
-        {loading ? "Running plan…" : "Run plan"}
+      <button className="btn btn--primary" onClick={run} disabled={loading}>
+        {loading && <span className="spinner" />}
+        {loading ? "Running plan..." : "Run plan"}
       </button>
 
       {error && (
-        <div
-          style={{
-            marginTop: 16,
-            padding: 12,
-            background: "#fef2f2",
-            border: "1px solid #fca5a5",
-            borderRadius: 8,
-            color: "#991b1b",
-            fontSize: 13,
-          }}
-        >
+        <div className="callout callout--danger" style={{ marginTop: "var(--space-4)" }}>
           {error}
         </div>
       )}
 
       {result && (
-        <div style={{ marginTop: 24 }}>
-          <div
-            style={{
-              display: "inline-block",
-              padding: "8px 18px",
-              borderRadius: 8,
-              fontSize: 15,
-              fontWeight: 700,
-              background: result.ok ? "#dcfce7" : "#fee2e2",
-              color: result.ok ? "#166534" : "#991b1b",
-              marginBottom: 16,
-            }}
-          >
-            {result.ok ? "DEPLOYABLE" : "NOT DEPLOYABLE"}
-            {result.ok && !result.plan_ran ? "  (validate only — no credentials)" : ""}
+        <div style={{ marginTop: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div>
+            <span
+              className={`badge ${result.ok ? "badge--success" : "badge--danger"}`}
+              style={{ fontSize: "var(--text-base)", padding: "6px 14px" }}
+            >
+              {result.ok ? "Deployable" : "Not deployable"}
+            </span>
+            {result.ok && !result.plan_ran && (
+              <span style={{ marginLeft: "var(--space-2)", fontSize: "var(--text-sm)", color: "var(--text-subtle)" }}>
+                validate only, no credentials found
+              </span>
+            )}
           </div>
 
           {result.summary && (
-            <div style={{ fontSize: 14, marginBottom: 16 }}>
-              Resource diff:{" "}
-              <span style={{ color: "#166534" }}>+{result.summary.add}</span>{" "}
-              <span style={{ color: "#92400e" }}>~{result.summary.change}</span>{" "}
-              <span style={{ color: "#991b1b" }}>-{result.summary.destroy}</span>
+            <div className="stat-grid">
+              <div className="stat">
+                <div className="stat__value" style={{ color: "var(--success)" }}>+{result.summary.add}</div>
+                <div className="stat__label">Resources to add</div>
+              </div>
+              <div className="stat">
+                <div className="stat__value" style={{ color: "var(--warn)" }}>~{result.summary.change}</div>
+                <div className="stat__label">Resources to change</div>
+              </div>
+              <div className="stat">
+                <div className="stat__value" style={{ color: "var(--danger)" }}>-{result.summary.destroy}</div>
+                <div className="stat__label">Resources to destroy</div>
+              </div>
             </div>
           )}
 
-          <ul style={{ fontSize: 13, color: "#334155", marginBottom: 16, paddingLeft: 18 }}>
-            {result.messages.map((m, i) => (
-              <li key={i} style={{ marginBottom: 4 }}>
-                {m}
-              </li>
-            ))}
-          </ul>
+          {result.messages.length > 0 && (
+            <ul style={{ paddingLeft: "var(--space-5)", fontSize: "var(--text-base)", color: "var(--text-muted)" }}>
+              {result.messages.map((m, i) => (
+                <li key={i} style={{ marginBottom: 4 }}>{m}</li>
+              ))}
+            </ul>
+          )}
 
           {result.output_tail && (
-            <pre
-              style={{
-                background: "#0f172a",
-                color: "#e2e8f0",
-                padding: 14,
-                borderRadius: 8,
-                fontSize: 12,
-                overflowX: "auto",
-                maxHeight: 280,
-              }}
-            >
-              {result.output_tail}
-            </pre>
+            <div className="card">
+              <div className="card__header">
+                <span>{result.tool} output</span>
+              </div>
+              <pre className="code-block code-block--inverted" style={{ borderRadius: 0 }}>
+                {result.output_tail}
+              </pre>
+            </div>
           )}
         </div>
+      )}
+
+      {!result && !loading && !error && (
+        <EmptyState
+          icon="refresh"
+          title="No plan has run yet."
+          hint="Pick a target above and run the plan. The check is read-only, so it never touches a live account."
+        />
       )}
     </div>
   );

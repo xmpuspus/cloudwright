@@ -17,7 +17,7 @@ cloudwright [--json] [--stream] [--verbose] [--dry-run] <subcommand> ...
 | Flag | Description |
 |---|---|
 | `--json` | Output as JSON instead of rich terminal output |
-| `--stream` | NDJSON streaming — one JSON object per line (combine with `--json`) |
+| `--stream` | NDJSON streaming, one JSON object per line (combine with `--json`) |
 | `--dry-run` | Preview LLM calls without making them (shows model, tokens, prompt preview) |
 | `--verbose` / `-v` | Verbose logging |
 | `--version` / `-V` | Print version and exit |
@@ -139,7 +139,7 @@ cloudwright cost <spec.yaml> [options]
 |---|---|---|
 | `--compare` | none | Comma-separated providers for multi-cloud cost comparison |
 | `--pricing-tier` | `on_demand` | `on_demand`, `reserved_1yr`, `reserved_3yr`, `spot` |
-| `--workload-profile` / `-w` | none | `small`, `medium`, `large`, `enterprise` — sets realistic traffic/storage defaults |
+| `--workload-profile` / `-w` | none | `small`, `medium`, `large`, `enterprise`. Sets realistic traffic and storage defaults |
 
 Examples:
 
@@ -645,10 +645,41 @@ cloudwright mcp [options]
 
 | Option | Default | Description |
 |---|---|---|
-| `--tools` / `-t` | all | Comma-separated tool groups: `design`, `cost`, `validate`, `analyze`, `export`, `session` |
+| `--tools` / `-t` | all | Comma-separated tool groups: `design`, `cost`, `validate`, `analyze`, `export`, `session`, `review`, `compliance`, `plan` |
 | `--transport` | `stdio` | `stdio` or `sse` |
 
 See [MCP Reference](mcp-reference.md) for setup instructions.
+
+---
+
+### `integrate`
+
+Print, and optionally write, the wiring that connects an AI coding harness to cloudwright. Each client stores its MCP config in a different file, under a different key. This command emits the right shape for the one you name. Do not hand-write the config.
+
+```bash
+cloudwright integrate --list                            # every supported harness
+cloudwright integrate --harness claude-code             # print the exact wiring
+cloudwright integrate --harness cursor --write          # merge it into .cursor/mcp.json
+cloudwright integrate --rules --agent-file claude       # gate block for CLAUDE.md
+```
+
+Pick exactly one of the three modes: `--list`, `--harness <name>`, or `--rules`.
+
+| Option | Default | Description |
+|---|---|---|
+| `--list` / `-l` | off | List supported harnesses, their config file, key, and rules file |
+| `--harness` / `-H` | none | Print the MCP wiring for one harness, in that client's own format |
+| `--rules` | off | Emit a harness-agnostic block that gates infra changes through cloudwright |
+| `--agent-file` | `agents` | Rules target for `--rules`: `agents`, `claude`, or `gemini` |
+| `--write` | off | Write to the file instead of only printing. Creates parent directories |
+| `--output` / `-o` | per harness | Override the default write path |
+| `--force` | off | Overwrite an existing cloudwright entry without confirmation |
+
+This command supports eleven harnesses. Ten speak MCP: Claude Code, Cursor, Cline, Windsurf, GitHub Copilot, Zed, OpenAI Codex CLI, JetBrains Junie, Kiro, and Antigravity. Aider speaks no MCP, so it gets a CLI-pipe recipe built on `cloudwright <cmd> --json`.
+
+`--write` leaves an existing conflicting entry untouched unless you pass `--force`. Roo Code, Continue.dev, Amazon Q Developer, and Google Gemini CLI are discontinued or superseded, so this command skips them.
+
+Full per-harness matrix in [integrations.md](integrations.md).
 
 ## New flags in v1.6.0
 

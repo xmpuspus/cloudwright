@@ -29,10 +29,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-cli = ["cloudwright-ai-cli==1.8.0"]
-web = ["cloudwright-ai-cli==1.8.0", "cloudwright-ai-web==1.8.0"]
-mcp = ["cloudwright-ai-mcp==1.8.0"]
-all = ["cloudwright-ai-cli==1.8.0", "cloudwright-ai-web==1.8.0", "cloudwright-ai-mcp==1.8.0", "databricks-sdk>=0.38.0"]
+cli = ["cloudwright-ai-cli==1.9.0"]
+web = ["cloudwright-ai-cli==1.9.0", "cloudwright-ai-web==1.9.0"]
+mcp = ["cloudwright-ai-mcp==1.9.0"]
+all = ["cloudwright-ai-cli==1.9.0", "cloudwright-ai-web==1.9.0", "cloudwright-ai-mcp==1.9.0", "databricks-sdk>=0.38.0"]
 pdf = ["weasyprint", "markdown2"]
 databricks = ["databricks-sdk>=0.38.0"]
 live-import = [

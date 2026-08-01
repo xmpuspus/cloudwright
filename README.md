@@ -114,16 +114,18 @@ findings = Validator().validate(spec, compliance=["hipaa", "pci-dss"])
 hcl = export_spec(spec, "terraform", output_dir="./infra")
 ```
 
-## v1.8.0 rebuilt the canvas and stopped a mid-stream double bill
+## v1.9.0 gave the diagram arrowheads and got the canvas off React Flow's defaults
 
-- **One token set and a dark theme.** The theme follows your operating system until you pick a side.
-- **Every text colour clears the 4.5:1 contrast floor.** 29 sites did not.
-- **It works on a phone.** Below 900px the layout becomes a two-pane switch, and the nine tabs scroll.
-- **A mid-stream error no longer bills twice.** The old fallback ran a second generation over the first.
-- **A real `tablist` with arrow-key roving focus**, a live region for progress, `Cmd/Ctrl+K` for the composer.
-- **Panel results survive a tab switch.** The Export tab now offers all thirteen formats.
+Measured by driving all 16 `init` templates through the running app, and 8 interactions at 1920, 1440 and 390px.
 
-Earlier releases added control-ID mapping and `plan` (v1.5.0), the self-correcting architect and OSCAL (v1.6.0), and `cloudwright integrate` (v1.7.0). Full history in [CHANGELOG.md](CHANGELOG.md).
+- **Every connection draws an arrowhead.** The computed `markerEnd` was `none` on every edge.
+- **Connection lines clear 3:1 contrast.** They ran at 1.42:1 in light and 1.81:1 in dark.
+- **The canvas fits a phone.** The 0.5 zoom floor left 2 of 8 nodes off the pane at 390px; the floor is 0.12.
+- **A drag inside a VPC pans the canvas.** It used to drag the box out of shape and save nothing.
+- **A node moves the distance you drag it.** A tight boundary plus `extent: "parent"` allowed 5 to 10px.
+- **Connections stop hiding behind cards.** 17 of them did across the 16 templates; 5 still do.
+
+Earlier releases added control-ID mapping and `plan` (v1.5.0), the self-correcting architect and OSCAL (v1.6.0), `cloudwright integrate` (v1.7.0), and the dark theme and responsive layout (v1.8.0). Full history in [CHANGELOG.md](CHANGELOG.md).
 
 ## Compatibility
 

@@ -18,9 +18,34 @@ function CloudServiceNode({ data }: NodeProps) {
   const color = getCategoryColor(category);
   const iconPath = getCategoryIconPath(category);
 
+  // A source and a target handle on all four sides. buildEdges picks the pair
+  // from the tier gap, so a same-tier connection goes across instead of looping
+  // out of the bottom and back into the top.
+  const sides = [
+    { pos: Position.Top, key: "top" },
+    { pos: Position.Bottom, key: "bottom" },
+    { pos: Position.Left, key: "left" },
+    { pos: Position.Right, key: "right" },
+  ] as const;
+
   return (
     <div className="node" style={{ ["--node-accent" as string]: color }}>
-      <Handle type="target" position={Position.Top} style={{ background: color }} />
+      {sides.map(({ pos, key }) => (
+        <React.Fragment key={key}>
+          <Handle
+            type="target"
+            id={`t-${key}`}
+            position={pos}
+            style={{ background: color }}
+          />
+          <Handle
+            type="source"
+            id={`s-${key}`}
+            position={pos}
+            style={{ background: color }}
+          />
+        </React.Fragment>
+      ))}
 
       <div className="node__head">
         <svg
@@ -56,8 +81,6 @@ function CloudServiceNode({ data }: NodeProps) {
       {d.monthlyCost != null && d.monthlyCost > 0 && (
         <div className="node__cost">${d.monthlyCost.toFixed(0)}/mo</div>
       )}
-
-      <Handle type="source" position={Position.Bottom} style={{ background: color }} />
     </div>
   );
 }

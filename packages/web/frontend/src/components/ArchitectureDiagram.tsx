@@ -3,6 +3,7 @@ import {
   ReactFlow,
   Background,
   Controls,
+  MarkerType,
   useNodesState,
   useEdgesState,
   useReactFlow,
@@ -128,13 +129,21 @@ interface StandardsResult {
   violations: StandardViolation[];
 }
 
-const NODE_WIDTH = 200;
-const NODE_HEIGHT = 90;
-const H_GAP = 300;
-const V_GAP = 240;
+/** Must match the fixed `.node` width in styles.css. */
+const NODE_WIDTH = 260;
+const NODE_HEIGHT = 104;
+/** Leaves 120px of clear canvas between two cards, which is where a connection
+ *  between neighbours in a row puts its label. */
+const H_GAP = 380;
+const V_GAP = 260;
 const BOUNDARY_PADDING = 32;
-const VPC_LABEL_EXTRA = 36;
+const BOUNDARY_LABEL_SPACE = 24;
+/** Clearance between a tier box and the VPC box that wraps it. Without it both
+ *  rectangles come out of the same component positions and share a border. */
+const VPC_GAP = 26;
+const VPC_LABEL_EXTRA = 30;
 const MAX_PER_ROW = 4;
+const LAYOUT_WIDTH = 1400;
 const API_BASE = "/api";
 
 const TIER_LABELS: Record<number, string> = {
@@ -161,22 +170,23 @@ interface BoundaryStyle {
   dot: string;
 }
 
-const TIER_COLORS: Record<number, BoundaryStyle> = {
-  0: { border: "#60a5fa", bg: "rgba(219, 234, 254, 0.18)", labelColor: "#1d4ed8", labelBg: "rgba(219, 234, 254, 0.92)", dot: "#3b82f6" },
-  1: { border: "#34d399", bg: "rgba(209, 250, 229, 0.18)", labelColor: "#047857", labelBg: "rgba(209, 250, 229, 0.92)", dot: "#10b981" },
-  2: { border: "#fb923c", bg: "rgba(255, 237, 213, 0.18)", labelColor: "#9a3412", labelBg: "rgba(255, 237, 213, 0.92)", dot: "#f97316" },
-  3: { border: "#a78bfa", bg: "rgba(237, 233, 254, 0.18)", labelColor: "#5b21b6", labelBg: "rgba(237, 233, 254, 0.92)", dot: "#8b5cf6" },
-  4: { border: "#2dd4bf", bg: "rgba(204, 251, 241, 0.18)", labelColor: "#0f766e", labelBg: "rgba(204, 251, 241, 0.92)", dot: "#14b8a6" },
-  5: { border: "#2dd4bf", bg: "rgba(204, 251, 241, 0.18)", labelColor: "#0f766e", labelBg: "rgba(204, 251, 241, 0.92)", dot: "#14b8a6" },
-};
+/** Every colour comes from a theme token, so the dark canvas gets a dark tint
+ *  instead of the pale slab a hardcoded light rgba used to paint. */
+function boundaryStyle(token: string): BoundaryStyle {
+  return {
+    border: `var(--${token})`,
+    bg: `color-mix(in srgb, var(--${token}) var(--boundary-fill), transparent)`,
+    labelColor: `var(--${token}-text)`,
+    labelBg: `color-mix(in srgb, var(--${token}) var(--boundary-label-fill), var(--canvas))`,
+    dot: `var(--${token})`,
+  };
+}
 
-const VPC_COLORS: BoundaryStyle = {
-  border: "#64748b",
-  bg: "rgba(241, 245, 249, 0.35)",
-  labelColor: "#475569",
-  labelBg: "rgba(241, 245, 249, 0.92)",
-  dot: "#64748b",
-};
+function tierStyle(tier: number): BoundaryStyle {
+  return boundaryStyle(`tier-${Math.min(Math.max(tier, 0), 4)}`);
+}
+
+const VPC_COLORS: BoundaryStyle = boundaryStyle("tier-vpc");
 
 const nodeTypes = { cloudService: CloudServiceNode, boundaryGroup: BoundaryNode };
 
@@ -215,18 +225,11 @@ function tierForCategory(category: string): number {
   return 2;
 }
 
-function newNodePosition(index: number): { x: number; y: number } {
-  return {
-    x: 360 + (index % 3) * 260,
-    y: 80 + Math.floor(index / 3) * 150,
-  };
-}
-
 function getBoundaryColors(boundaryId: string, kind: string): BoundaryStyle {
   if (kind === "vpc") return VPC_COLORS;
   const tierMatch = boundaryId.match(/^tier-(\d+)$/);
-  if (tierMatch) return TIER_COLORS[parseInt(tierMatch[1])] || TIER_COLORS[2];
-  return TIER_COLORS[2];
+  if (tierMatch) return tierStyle(parseInt(tierMatch[1]));
+  return tierStyle(2);
 }
 
 function inferBoundaries(components: Component[]): Boundary[] {
@@ -262,6 +265,91 @@ function inferBoundaries(components: Component[]): Boundary[] {
   return boundaries;
 }
 
+interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** Order the components inside each tier so connected ones sit near each other.
+ *  A barycentre sweep: every node moves to the average slot of its neighbours in
+ *  the tier above, then below, then above again. Ties keep the spec's own order,
+ *  so the same spec always draws the same picture. */
+function orderTiers(
+  tierGroups: Record<number, Component[]>,
+  sortedTiers: number[],
+  connections: Connection[],
+): Record<number, Component[]> {
+  const neighbours = new Map<string, string[]>();
+  const link = (from: string, to: string) => {
+    const list = neighbours.get(from);
+    if (list) list.push(to);
+    else neighbours.set(from, [to]);
+  };
+  for (const conn of connections) {
+    link(conn.source, conn.target);
+    link(conn.target, conn.source);
+  }
+
+  const ordered: Record<number, Component[]> = {};
+  for (const tier of sortedTiers) ordered[tier] = [...tierGroups[tier]];
+
+  const sweep = (tiers: number[]) => {
+    for (let i = 1; i < tiers.length; i++) {
+      const anchor = new Map(ordered[tiers[i - 1]].map((comp, index) => [comp.id, index]));
+      const scored = ordered[tiers[i]].map((component, index) => {
+        const slots = (neighbours.get(component.id) ?? [])
+          .map((id) => anchor.get(id))
+          .filter((slot): slot is number => slot !== undefined);
+        const barycentre = slots.length
+          ? slots.reduce((sum, slot) => sum + slot, 0) / slots.length
+          : index;
+        return { component, barycentre, index };
+      });
+      scored.sort((a, b) => a.barycentre - b.barycentre || a.index - b.index);
+      ordered[tiers[i]] = scored.map((entry) => entry.component);
+    }
+  };
+
+  sweep(sortedTiers);
+  sweep([...sortedTiers].reverse());
+  sweep(sortedTiers);
+  return ordered;
+}
+
+interface Slot {
+  tier: number;
+  index: number;
+  size: number;
+}
+
+interface LayoutOrder {
+  sortedTiers: number[];
+  ordered: Record<number, Component[]>;
+  slots: Map<string, Slot>;
+}
+
+/** Group the components by tier, order each tier, and record where every
+ *  component landed. `buildNodes` reads it for positions and `buildEdges` reads
+ *  it to choose which side of a node a connection leaves from. */
+function layoutOrder(spec: ArchSpec): LayoutOrder {
+  const tierGroups: Record<number, Component[]> = {};
+  for (const comp of spec.components) {
+    const tier = comp.tier ?? 2;
+    if (!tierGroups[tier]) tierGroups[tier] = [];
+    tierGroups[tier].push(comp);
+  }
+  const sortedTiers = Object.keys(tierGroups).map(Number).sort((a, b) => a - b);
+  const ordered = orderTiers(tierGroups, sortedTiers, spec.connections);
+  const slots = new Map<string, Slot>();
+  for (const tier of sortedTiers) {
+    const size = ordered[tier].length;
+    ordered[tier].forEach((comp, index) => slots.set(comp.id, { tier, index, size }));
+  }
+  return { sortedTiers, ordered, slots };
+}
+
 function buildNodes(
   spec: ArchSpec,
   showBoundaries: boolean,
@@ -272,110 +360,93 @@ function buildNodes(
   const boundaries = explicitBoundaries.length > 0 ? explicitBoundaries : inferBoundaries(spec.components);
   const savedPositions = spec.metadata?.canvas?.nodes ?? {};
 
-  const compBoundary: Record<string, string> = {};
-  if (showBoundaries) {
-    for (const b of boundaries) {
-      if (b.kind === "vpc") continue;
-      for (const cid of b.component_ids) {
-        if (!compBoundary[cid]) compBoundary[cid] = b.id;
-      }
-    }
-  }
+  const { sortedTiers, ordered } = layoutOrder(spec);
 
-  const tierGroups: Record<number, Component[]> = {};
-  for (const comp of spec.components) {
-    const tier = comp.tier ?? 2;
-    if (!tierGroups[tier]) tierGroups[tier] = [];
-    tierGroups[tier].push(comp);
-  }
-
-  const sortedTiers = Object.keys(tierGroups).map(Number).sort();
   const compPositions: Record<string, { x: number; y: number }> = {};
   let yOffset = 40;
-  const tierBaseY: Record<number, number> = {};
   for (const tier of sortedTiers) {
-    tierBaseY[tier] = yOffset;
-    const rows = Math.ceil(tierGroups[tier].length / MAX_PER_ROW);
-    yOffset += V_GAP + (rows - 1) * (NODE_HEIGHT + 60);
-  }
-
-  for (const tier of sortedTiers) {
-    const comps = tierGroups[tier];
-    const baseY = tierBaseY[tier];
+    const comps = ordered[tier];
+    const baseY = yOffset;
     for (let i = 0; i < comps.length; i++) {
       const row = Math.floor(i / MAX_PER_ROW);
       const col = i % MAX_PER_ROW;
       const rowCount = Math.min(MAX_PER_ROW, comps.length - row * MAX_PER_ROW);
-      const totalWidth = rowCount * H_GAP;
-      const startX = (1200 - totalWidth) / 2;
+      // Centre the nodes themselves, not the column slots they sit in. The old
+      // form used rowCount * H_GAP, which left every row 50px off centre.
+      const rowWidth = rowCount * NODE_WIDTH + (rowCount - 1) * (H_GAP - NODE_WIDTH);
+      const startX = (LAYOUT_WIDTH - rowWidth) / 2;
       const generated = { x: startX + col * H_GAP, y: baseY + row * (NODE_HEIGHT + 60) };
       const saved = savedPositions[comps[i].id];
       compPositions[comps[i].id] =
         saved && Number.isFinite(saved.x) && Number.isFinite(saved.y) ? saved : generated;
     }
+    const rows = Math.ceil(comps.length / MAX_PER_ROW);
+    yOffset += V_GAP + (rows - 1) * (NODE_HEIGHT + 60);
   }
 
-  const boundaryAbsPos: Record<string, { x: number; y: number }> = {};
-
   if (showBoundaries && boundaries.length > 0) {
+    const boundaryRects: Record<string, Rect> = {};
     const vpcBoundary = boundaries.find((b) => b.kind === "vpc");
-    let vpcNodeId: string | undefined;
-
-    if (vpcBoundary && vpcBoundary.component_ids.length > 0) {
-      const xs = vpcBoundary.component_ids.map((cid) => compPositions[cid]?.x ?? 0);
-      const ys = vpcBoundary.component_ids.map((cid) => compPositions[cid]?.y ?? 0);
-      const minX = Math.min(...xs) - BOUNDARY_PADDING;
-      const minY = Math.min(...ys) - BOUNDARY_PADDING - 24 - VPC_LABEL_EXTRA;
-      const maxX = Math.max(...xs) + NODE_WIDTH + BOUNDARY_PADDING;
-      const maxY = Math.max(...ys) + NODE_HEIGHT + BOUNDARY_PADDING;
-
-      vpcNodeId = `boundary-${vpcBoundary.id}`;
-      boundaryAbsPos[vpcBoundary.id] = { x: minX, y: minY };
-
-      nodes.push({
-        id: vpcNodeId,
-        type: "boundaryGroup",
-        position: { x: minX, y: minY },
-        data: {
-          label: vpcBoundary.label || vpcBoundary.id,
-          labelColor: VPC_COLORS.labelColor,
-          labelBg: VPC_COLORS.labelBg,
-          dotColor: VPC_COLORS.dot,
-        },
-        style: {
-          background: VPC_COLORS.bg,
-          border: `2px dashed ${VPC_COLORS.border}`,
-          borderRadius: 16,
-          padding: BOUNDARY_PADDING,
-          width: maxX - minX,
-          height: maxY - minY,
-        },
-        zIndex: -2,
-      });
-    }
 
     for (const b of boundaries) {
-      if (b.kind === "vpc" || b.component_ids.length === 0) continue;
+      if (b.kind === "vpc") continue;
+      const members = b.component_ids.filter((cid) => compPositions[cid]);
+      if (members.length === 0) continue;
+      const xs = members.map((cid) => compPositions[cid].x);
+      const ys = members.map((cid) => compPositions[cid].y);
+      const x = Math.min(...xs) - BOUNDARY_PADDING;
+      const y = Math.min(...ys) - BOUNDARY_PADDING - BOUNDARY_LABEL_SPACE;
+      boundaryRects[b.id] = {
+        x,
+        y,
+        w: Math.max(...xs) + NODE_WIDTH + BOUNDARY_PADDING - x,
+        h: Math.max(...ys) + NODE_HEIGHT + BOUNDARY_PADDING - y,
+      };
+    }
 
-      const xs = b.component_ids.map((cid) => compPositions[cid]?.x ?? 0);
-      const ys = b.component_ids.map((cid) => compPositions[cid]?.y ?? 0);
-      const minX = Math.min(...xs) - BOUNDARY_PADDING;
-      const minY = Math.min(...ys) - BOUNDARY_PADDING - 24;
-      const maxX = Math.max(...xs) + NODE_WIDTH + BOUNDARY_PADDING;
-      const maxY = Math.max(...ys) + NODE_HEIGHT + BOUNDARY_PADDING;
+    if (vpcBoundary && vpcBoundary.component_ids.length > 0) {
+      // Wrap the tier boxes, not the raw components. Measuring both from the
+      // same component rects gave the VPC and a tier the same border line.
+      const inner: Rect[] = [];
+      const covered = new Set<string>();
+      for (const b of boundaries) {
+        if (b.kind === "vpc" || !boundaryRects[b.id]) continue;
+        if (!b.component_ids.some((cid) => vpcBoundary.component_ids.includes(cid))) continue;
+        inner.push(boundaryRects[b.id]);
+        for (const cid of b.component_ids) covered.add(cid);
+      }
+      for (const cid of vpcBoundary.component_ids) {
+        if (covered.has(cid) || !compPositions[cid]) continue;
+        inner.push({
+          x: compPositions[cid].x - BOUNDARY_PADDING,
+          y: compPositions[cid].y - BOUNDARY_PADDING,
+          w: NODE_WIDTH + BOUNDARY_PADDING * 2,
+          h: NODE_HEIGHT + BOUNDARY_PADDING * 2,
+        });
+      }
+      if (inner.length > 0) {
+        const x = Math.min(...inner.map((r) => r.x)) - VPC_GAP;
+        const y = Math.min(...inner.map((r) => r.y)) - VPC_GAP - VPC_LABEL_EXTRA;
+        boundaryRects[vpcBoundary.id] = {
+          x,
+          y,
+          w: Math.max(...inner.map((r) => r.x + r.w)) + VPC_GAP - x,
+          h: Math.max(...inner.map((r) => r.y + r.h)) + VPC_GAP - y,
+        };
+      }
+    }
 
-      boundaryAbsPos[b.id] = { x: minX, y: minY };
+    // A boundary is decoration drawn behind the nodes. It takes no drag and no
+    // selection, so a drag inside a VPC pans the canvas.
+    const pushBoundary = (b: Boundary, zIndex: number) => {
+      const rect = boundaryRects[b.id];
+      if (!rect) return;
       const colors = getBoundaryColors(b.id, b.kind);
-      const isInsideVpc = Boolean(
-        vpcNodeId && vpcBoundary && b.component_ids.some((cid) => vpcBoundary.component_ids.includes(cid))
-      );
-
+      const isVpc = b.kind === "vpc";
       nodes.push({
         id: `boundary-${b.id}`,
         type: "boundaryGroup",
-        position: isInsideVpc
-          ? { x: minX - boundaryAbsPos[vpcBoundary!.id].x, y: minY - boundaryAbsPos[vpcBoundary!.id].y }
-          : { x: minX, y: minY },
+        position: { x: rect.x, y: rect.y },
         data: {
           label: b.label || b.id,
           labelColor: colors.labelColor,
@@ -384,34 +455,33 @@ function buildNodes(
         },
         style: {
           background: colors.bg,
-          border: `1.5px solid ${colors.border}`,
-          borderRadius: 10,
-          padding: BOUNDARY_PADDING,
-          width: maxX - minX,
-          height: maxY - minY,
+          border: isVpc ? `2px dashed ${colors.border}` : `1.5px solid ${colors.border}`,
+          borderRadius: isVpc ? 16 : 10,
+          width: rect.w,
+          height: rect.h,
         },
-        zIndex: -1,
-        parentId: isInsideVpc ? vpcNodeId : undefined,
+        zIndex,
+        draggable: false,
+        selectable: false,
       });
+    };
+
+    if (vpcBoundary) pushBoundary(vpcBoundary, -2);
+    for (const b of boundaries) {
+      if (b.kind === "vpc") continue;
+      pushBoundary(b, -1);
     }
   }
 
   for (const tier of sortedTiers) {
-    const comps = tierGroups[tier];
-    for (const comp of comps) {
-      const boundaryId = compBoundary[comp.id];
-      const hasBoundary = showBoundaries && boundaryId && boundaryAbsPos[boundaryId];
-      let posX = compPositions[comp.id]?.x ?? 0;
-      let posY = compPositions[comp.id]?.y ?? 0;
-      if (hasBoundary) {
-        posX -= boundaryAbsPos[boundaryId].x;
-        posY -= boundaryAbsPos[boundaryId].y;
-      }
-
+    for (const comp of ordered[tier]) {
       nodes.push({
         id: comp.id,
         type: "cloudService",
-        position: { x: posX, y: posY },
+        position: {
+          x: compPositions[comp.id]?.x ?? 0,
+          y: compPositions[comp.id]?.y ?? 0,
+        },
         data: {
           label: comp.label,
           service: comp.service,
@@ -421,8 +491,6 @@ function buildNodes(
           config: comp.config || {},
           monthlyCost: costMap[comp.id],
         },
-        parentId: hasBoundary ? `boundary-${boundaryId}` : undefined,
-        extent: hasBoundary ? "parent" : undefined,
       });
     }
   }
@@ -435,24 +503,69 @@ function connectionEdgeId(conn: Connection, index: number): string {
 }
 
 function buildEdges(spec: ArchSpec): Edge[] {
+  const { slots } = layoutOrder(spec);
   return spec.connections.map((conn, i) => {
     let edgeLabel = conn.label || "";
     if (conn.protocol && !edgeLabel.includes(conn.protocol)) {
       edgeLabel = conn.protocol + (conn.port ? `:${conn.port}` : "");
     }
+
+    // Down the stack leaves the bottom and up the stack leaves the top. The old
+    // single pair of handles sent a same-tier connection out of the bottom and
+    // back into the top of the node beside it, which is where most of the
+    // crossings came from.
+    //
+    // Inside one tier there are two cases. Neighbours in the row link straight
+    // across the gap between them. Anything further apart dips under the row,
+    // because a straight line would cross every card in between and drop its
+    // label on one of them.
+    const source = slots.get(conn.source);
+    const target = slots.get(conn.target);
+    const from = source?.tier ?? 2;
+    const to = target?.tier ?? 2;
+    let sourceHandle = "s-bottom";
+    let targetHandle = "t-top";
+    if (to === from) {
+      const gap = source && target ? target.index - source.index : 0;
+      if (gap === 1) {
+        sourceHandle = "s-right";
+        targetHandle = "t-left";
+      } else if (gap === -1) {
+        sourceHandle = "s-left";
+        targetHandle = "t-right";
+      } else {
+        sourceHandle = "s-bottom";
+        targetHandle = "t-bottom";
+      }
+    } else if (Math.abs(to - from) >= 2) {
+      // A connection that skips a tier runs down the outside. Straight down the
+      // middle would pass behind whichever card sits in the tier between, and
+      // drop its label on that card's name.
+      const side = source && source.index * 2 < source.size - 1 ? "left" : "right";
+      sourceHandle = `s-${side}`;
+      targetHandle = `t-${side}`;
+    } else if (to < from) {
+      sourceHandle = "s-top";
+      targetHandle = "t-bottom";
+    }
+
     return {
       id: connectionEdgeId(conn, i),
       source: conn.source,
       target: conn.target,
+      sourceHandle,
+      targetHandle,
+      type: "smoothstep",
       label: edgeLabel,
-      style: { stroke: "var(--border-strong)" },
-      labelStyle: { fill: "var(--text-muted)", fontSize: 11, fontWeight: 600 },
+      style: { stroke: "var(--edge)", strokeWidth: 1.6 },
+      // A directed diagram needs the direction drawn on it.
+      markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: "var(--edge)" },
+      labelStyle: { fill: "var(--edge-label)", fontSize: 11, fontWeight: 600 },
       // Opaque chip, so a label crossing a boundary border still reads.
       labelShowBg: true,
       labelBgStyle: { fill: "var(--surface)", stroke: "var(--border)" },
       labelBgPadding: [6, 3] as [number, number],
       labelBgBorderRadius: 4,
-      animated: true,
     };
   });
 }
@@ -465,6 +578,15 @@ function updateBoundariesAfterDelete(boundaries: Boundary[] | undefined, compone
   }));
 }
 
+/** A phone-width canvas needs to zoom well past ReactFlow's 0.5 floor. At 0.5 a
+ *  microservices architecture left 2 of its 8 nodes outside the pane. */
+const MIN_ZOOM = 0.12;
+const MAX_ZOOM = 2.5;
+const FIT_VIEW_OPTIONS = { padding: 0.16, minZoom: MIN_ZOOM };
+/** ReactFlow listens for Backspace alone by default, so the Delete key did
+ *  nothing to a selected connection. */
+const DELETE_KEYS = ["Backspace", "Delete"];
+
 /** ReactFlow's `fitView` prop only fires when nodes exist at mount, and this
  *  diagram builds its nodes in an effect. Refit whenever the node set changes,
  *  but not when a drag only moves one, so a hand-placed layout survives. */
@@ -472,7 +594,7 @@ function FitOnChange({ signature }: { signature: string }) {
   const { fitView } = useReactFlow();
   useEffect(() => {
     const id = window.setTimeout(() => {
-      void fitView({ padding: 0.16, duration: 250 });
+      void fitView({ ...FIT_VIEW_OPTIONS, duration: 250 });
     }, 60);
     return () => window.clearTimeout(id);
   }, [signature, fitView]);
@@ -567,19 +689,17 @@ function ArchitectureDiagram({
     setSelectedNode(null);
   }, []);
 
+  // Every node now carries an absolute position, so there is no parent origin to
+  // add back on. Boundaries are not draggable; the guard stays as a backstop.
   const handleNodeDragStop = useCallback((_event: React.MouseEvent, node: Node) => {
     if (node.id.startsWith("boundary-")) return;
     const metadata = cloneMetadata(spec.metadata);
     const canvas = metadata.canvas ?? {};
     const canvasNodes = { ...(canvas.nodes ?? {}) };
-    const parentNode = nodes.find((candidate) => candidate.id === node.parentId);
-    const absolutePosition = parentNode
-      ? { x: parentNode.position.x + node.position.x, y: parentNode.position.y + node.position.y }
-      : { x: node.position.x, y: node.position.y };
-    canvasNodes[node.id] = absolutePosition;
+    canvasNodes[node.id] = { x: node.position.x, y: node.position.y };
     metadata.canvas = { ...canvas, nodes: canvasNodes };
     applySpec({ ...spec, metadata });
-  }, [applySpec, nodes, spec]);
+  }, [applySpec, spec]);
 
   const handleConnect = useCallback((connection: FlowConnection) => {
     if (!connection.source || !connection.target || connection.source === connection.target) return;
@@ -670,14 +790,13 @@ function ArchitectureDiagram({
     });
   }, [spec.components]);
 
+  // A new resource gets no saved position, so the tier layout places it in the
+  // row its category belongs to. The old fixed grid dropped it at (360, 80),
+  // which landed on top of whatever the generated layout had put there.
   const handleAddResource = useCallback((service: ServiceSummary) => {
     const used = new Set(spec.components.map((component) => component.id));
     const id = uniqueId(safeId(service.service_key), used);
     const metadata = cloneMetadata(spec.metadata);
-    const canvas = metadata.canvas ?? {};
-    const canvasNodes = { ...(canvas.nodes ?? {}) };
-    canvasNodes[id] = newNodePosition(Object.keys(canvasNodes).length + spec.components.length);
-    metadata.canvas = { ...canvas, nodes: canvasNodes };
 
     const component: Component = {
       id,
@@ -719,21 +838,18 @@ function ArchitectureDiagram({
         remap[component.id] = uniqueId(safeId(`${prefix}_${component.id}`, prefix), usedComponents);
       }
 
-      const canvas = metadata.canvas ?? {};
-      const canvasNodes = { ...(canvas.nodes ?? {}) };
-      const baseIndex = Object.keys(canvasNodes).length + spec.components.length;
-      const addedComponents = module.fragment.components.map((component, index) => {
+      // No saved positions here either: the tier layout places every component
+      // the module brings with it.
+      const addedComponents = module.fragment.components.map((component) => {
         const nextConfig = cloneJson(component.config ?? {});
         const tags = {
           ...(module.default_tags ?? {}),
           ...((typeof nextConfig.tags === "object" && nextConfig.tags !== null ? nextConfig.tags : {}) as Record<string, string>),
         };
         nextConfig.tags = tags;
-        const id = remap[component.id];
-        canvasNodes[id] = newNodePosition(baseIndex + index);
         return {
           ...component,
-          id,
+          id: remap[component.id],
           provider: component.provider.toLowerCase(),
           config: nextConfig,
         };
@@ -755,7 +871,6 @@ function ArchitectureDiagram({
         approved: module.approved,
         terraform: { ...module.terraform },
       };
-      metadata.canvas = { ...canvas, nodes: canvasNodes };
       metadata.modules = { ...modules, instances };
 
       applySpec({
@@ -809,6 +924,12 @@ function ArchitectureDiagram({
         onConnect={handleConnect}
         onNodeDragStop={handleNodeDragStop}
         fitView
+        fitViewOptions={FIT_VIEW_OPTIONS}
+        minZoom={MIN_ZOOM}
+        maxZoom={MAX_ZOOM}
+        nodeDragThreshold={2}
+        connectionRadius={28}
+        deleteKeyCode={DELETE_KEYS}
         proOptions={{ hideAttribution: true }}
         style={{ background: "var(--canvas)" }}
         onNodeClick={onNodeClick}

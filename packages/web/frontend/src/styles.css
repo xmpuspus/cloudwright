@@ -58,6 +58,28 @@
   --border: #e2e8f0;
   --border-strong: #cbd5e1;
 
+  /* Canvas ink. --edge carries the meaning of the whole diagram, so it clears
+     3:1 on --canvas: 4.55:1 here, 7.3:1 in dark. */
+  --edge: #64748b;
+  --edge-label: #475569;
+
+  /* Boundary hues. One token per tier; the fills mix against the canvas, so a
+     dark canvas gets a dark tint instead of a pale slab. */
+  --tier-0: #2563eb;
+  --tier-0-text: #1d4ed8;
+  --tier-1: #059669;
+  --tier-1-text: #047857;
+  --tier-2: #ea580c;
+  --tier-2-text: #9a3412;
+  --tier-3: #7c3aed;
+  --tier-3-text: #5b21b6;
+  --tier-4: #0d9488;
+  --tier-4-text: #0f766e;
+  --tier-vpc: #64748b;
+  --tier-vpc-text: #475569;
+  --boundary-fill: 7%;
+  --boundary-label-fill: 16%;
+
   /* Text. Every value below clears 4.5:1 on --bg. */
   --text: #0f172a;
   --text-muted: #475569;
@@ -104,6 +126,24 @@
 
   --border: #1e293b;
   --border-strong: #334155;
+
+  --edge: #94a3b8;
+  --edge-label: #cbd5e1;
+
+  --tier-0: #60a5fa;
+  --tier-0-text: #93c5fd;
+  --tier-1: #34d399;
+  --tier-1-text: #6ee7b7;
+  --tier-2: #fb923c;
+  --tier-2-text: #fdba74;
+  --tier-3: #a78bfa;
+  --tier-3-text: #c4b5fd;
+  --tier-4: #2dd4bf;
+  --tier-4-text: #5eead4;
+  --tier-vpc: #94a3b8;
+  --tier-vpc-text: #cbd5e1;
+  --boundary-fill: 10%;
+  --boundary-label-fill: 22%;
 
   --text: #e8eefb;
   --text-muted: #b3c0d4;
@@ -1048,7 +1088,10 @@ code.inline {
   border-left-width: 4px;
   border-radius: var(--radius);
   padding: 9px 12px;
-  min-width: 170px;
+  /* Fixed, and equal to NODE_WIDTH in ArchitectureDiagram.tsx. A content-sized
+     card grew past the width the layout reserved for it, so a long service key
+     pushed the card out through the side of its own tier box. */
+  width: 260px;
   box-shadow: var(--shadow-sm);
   transition: box-shadow var(--duration) var(--ease), transform var(--duration) var(--ease);
 }
@@ -1078,8 +1121,11 @@ code.inline {
   color: var(--text-subtle);
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
   margin-top: 2px;
+  /* A long service key wraps to a second line instead of widening the card. */
+  overflow-wrap: anywhere;
 }
 .node__cost {
   font-size: var(--text-xs);
@@ -1252,16 +1298,44 @@ dialog.modal::backdrop {
   background: var(--bg-inset);
 }
 .react-flow__edge-text {
-  fill: var(--text-subtle);
+  fill: var(--edge-label);
 }
 .react-flow__edge-textbg {
-  fill: var(--bg);
+  fill: var(--surface);
 }
 .react-flow__attribution {
   display: none;
 }
+
+/* A boundary is decoration. It never takes a pointer event, so a drag inside a
+   VPC pans the canvas instead of dragging the container out of shape. */
+.react-flow__node-boundaryGroup {
+  pointer-events: none;
+}
+
+/* Connections and their labels paint above the boundary tints and below the
+   node cards, so a label crossing a boundary border still reads. */
+.react-flow__edges {
+  z-index: 1;
+}
+.react-flow__node-cloudService {
+  z-index: 2;
+}
+
+/* A 6px handle is a 3px target once the canvas zooms out. */
 .react-flow__handle {
+  width: 9px;
+  height: 9px;
   border-color: var(--surface);
+}
+.react-flow__handle-left,
+.react-flow__handle-right {
+  opacity: 0;
+  transition: opacity var(--duration) var(--ease);
+}
+.react-flow__node:hover .react-flow__handle-left,
+.react-flow__node:hover .react-flow__handle-right {
+  opacity: 1;
 }
 
 /* ------------------------------------------------------------- responsive */

@@ -1,5 +1,4 @@
 import React from "react";
-import { NodeResizer } from "@xyflow/react";
 
 interface BoundaryNodeData {
   label: string;
@@ -9,17 +8,12 @@ interface BoundaryNodeData {
   [key: string]: unknown;
 }
 
-function BoundaryNode({ data, selected }: { data: BoundaryNodeData; selected?: boolean }) {
+/** A boundary rectangle is derived geometry: it is the bounding box of the
+ *  components in a tier. There is no resize handle, because the only honest way
+ *  to change the box is to move the components inside it. */
+function BoundaryNode({ data }: { data: BoundaryNodeData }) {
   return (
     <>
-      <NodeResizer
-        color={data.dotColor}
-        isVisible={selected ?? false}
-        minWidth={200}
-        minHeight={100}
-        lineStyle={{ borderWidth: 1.5 }}
-        handleStyle={{ width: 8, height: 8, borderRadius: 2 }}
-      />
       <div
         style={{
           position: "absolute",

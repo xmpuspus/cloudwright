@@ -5,6 +5,62 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-08-01
+
+The canvas audit. v1.8.0 rebuilt the interface around the canvas and never measured the canvas
+itself, so every pan, zoom and drag setting was still a React Flow default. Driving all 16 `init`
+templates through the running app, and running 8 interactions at 1920, 1440 and 390px, found 14
+defects. This release closes them. No backend contract changes, so the CLI, the MCP server and
+every API route behave exactly as in 1.8.0.
+
+### Fixed
+
+- **Every connection now draws an arrowhead.** The computed `markerEnd` on every edge was `none`,
+  so a directed architecture diagram showed no direction at all.
+- **Connection lines clear the contrast floor.** They rendered at 1.42:1 in light and 1.81:1 in
+  dark, against the 3:1 WCAG floor for meaningful graphics. `--edge` is now `#64748b` on the light
+  canvas at 4.55:1 and `#94a3b8` on the dark canvas at 7.3:1, solid instead of dashed and 1.6px
+  instead of 1px.
+- **The canvas zooms out far enough to fit a phone.** React Flow's 0.5 floor left 2 of 8 nodes
+  outside the pane at 390px, with the Zoom Out button already disabled on arrival. The floor is
+  now 0.12 and Fit View honours the same value, so all 8 fit at 0.29.
+- **A boundary no longer eats the drag that should pan the canvas.** Dragging a VPC moved the box
+  and its children by 113px, the VPC itself did not follow, and nothing saved the move. Boundaries
+  are decoration now: they take no drag, no click and no pointer event.
+- **A node is no longer trapped in its tier.** `extent: "parent"` against a box that hugged its
+  contents left a node 5 to 10px of travel and no way out. Nodes carry absolute positions, the
+  boundary re-fits around wherever they land, and a drag moves the full distance asked for.
+- **The Delete key removes a selected connection.** React Flow listens for Backspace alone by
+  default, so Delete did nothing to a selected edge. Both keys work.
+- **Connect-by-drag works at 390px.** Handles went from 6px to 9px with a 28px connect radius.
+- **A connection leaves the side of the node that matches the tier gap.** One pair of handles sent
+  a same-tier connection out of the bottom and back into the top of the node beside it. Neighbours
+  in a row now link straight across, anything further apart dips under the row, and a connection
+  that skips a tier runs down the outside. Connections that disappear behind a card they do not
+  touch fall from 17 to 5 across the 16 templates, and labels sitting on a card fall from 18 to 13.
+- **A tier orders its components before it places them.** A barycentre sweep puts connected
+  components near each other. Ties keep the spec's own order, so one spec always draws one picture.
+- **The VPC border clears the tier borders inside it.** Both rectangles came from the same
+  component positions with the same padding, so they shared a line in 12 of the 16 templates.
+- **Boundary colours come from theme tokens.** Hardcoded light `rgba` painted the VPC as a pale
+  slab on the dark canvas. Each tier keeps its hue and mixes its fill against the canvas.
+- **A card holds a fixed 260px, the width the layout reserves for it.** The card grew with its
+  content while the layout assumed 200px.
+- **A row centres on its nodes, not on the column slots they sit in.** The old form sat 50px off.
+- **Add Resource puts the resource in its tier.** It used to land on a fixed grid position that
+  collided with whatever the generated layout had already put there.
+- **The dead resize handle is gone.** `NodeResizer` rendered on every boundary with no handler to
+  keep a resize, so any resize vanished on the next change.
+
+### Notes
+
+- Catalog drag and drop still does not exist, and no documentation claims it. README and
+  `getting-started.md` say "drag components", which means dragging a node on the canvas, and that
+  works. `docs/competitor-landscape.md` lists a drag-and-drop designer as a competitor's advantage.
+- Connection crossings rise from 8 to 13 across the 16 templates. That is the deliberate half of
+  the trade: a connection crossing another connection stays readable, while one that vanishes
+  behind an unrelated card does not.
+
 ## [1.8.0] - 2026-07-31
 
 A full rebuild of the web canvas interface. A UI audit of all 15 frontend components found 45

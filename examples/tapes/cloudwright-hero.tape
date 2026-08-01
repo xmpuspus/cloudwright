@@ -1,7 +1,11 @@
 # Cloudwright hero demo
 # Render from the repo root: vhs examples/tapes/cloudwright-hero.tape
-# It runs the main checkout's .venv and works in tmp/hero-demo, which is gitignored.
-# Do not point this at a git worktree: pruning one breaks the recording silently.
+# vhs resolves Output against your current directory, so the repo root is the only
+# cwd that lands the GIF in examples/. The shell inside the tape finds the checkout
+# with git, so it names no machine path and no worktree, and it works in any clone.
+# The earlier version hardcoded a path into .claude/worktrees/. Pruning that
+# worktree made vhs record a broken shell and still exit 0.
+# Scratch work goes in tmp/hero-demo, which is gitignored.
 #
 # The tape hides the ~15s terraform init+validate wait so the loop stays short.
 # The on-screen comment states that wait, so the GIF does not claim plan is instant.
@@ -18,7 +22,7 @@ Set PlaybackSpeed 1.0
 Set Padding 18
 
 Hide
-Type "cd /Users/xavier/Desktop/cloudwright && source .venv/bin/activate" Enter
+Type 'cd "$(git rev-parse --show-toplevel)" && source .venv/bin/activate' Enter
 Type "export TF_PLUGIN_CACHE_DIR=$PWD/tmp/tf-plugin-cache && mkdir -p $TF_PLUGIN_CACHE_DIR" Enter
 Type "rm -rf tmp/hero-demo && mkdir -p tmp/hero-demo && cd tmp/hero-demo" Enter
 Type "clear" Enter

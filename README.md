@@ -91,7 +91,7 @@ wants a TOML table.
 The server exposes 22 tools in 9 groups: design, cost, validate, analyze, export, session, review, compliance
 and plan. Full matrix in [docs/integrations.md](docs/integrations.md).
 
-## Nine offline commands grade, lint and diff a spec
+## Nine offline commands grade, scan and compare a spec
 
 `lint` runs 10 anti-pattern checks. `score` grades 5 dimensions. `analyze` reports blast radius and single
 points of failure. `policy` enforces policy-as-code with 9 built-in rules. `security` scans the spec and the

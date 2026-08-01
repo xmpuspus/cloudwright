@@ -1,6 +1,9 @@
 # Cloudwright offline-review demo: `cloudwright review` + control traceability
 # Render from the repo root: vhs examples/tapes/cloudwright-review.tape
-# It runs the main checkout's .venv against examples/patient-portal.yaml.
+# vhs resolves Output against your current directory, so the repo root is the only
+# cwd that lands the GIF in examples/. The shell inside the tape finds the checkout
+# with git, so it names no machine path and no worktree, and it works in any clone.
+# It runs the checkout's own .venv against examples/patient-portal.yaml.
 # Both commands unset the API keys first, because neither needs one.
 
 Output examples/cloudwright-review-demo.gif
@@ -14,7 +17,7 @@ Set Theme "Catppuccin Mocha"
 Set TypingSpeed 16ms
 
 Hide
-Type "cd /Users/xavier/Desktop/cloudwright && source .venv/bin/activate" Enter
+Type 'cd "$(git rev-parse --show-toplevel)" && source .venv/bin/activate' Enter
 Type "unset ANTHROPIC_API_KEY OPENAI_API_KEY" Enter
 Type "clear" Enter
 Show

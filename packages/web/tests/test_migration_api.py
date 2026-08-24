@@ -145,6 +145,25 @@ def test_migration_verify_rejects_more_than_200_observations(client: TestClient)
     assert response.json()["code"] == "migration_too_large"
 
 
+def test_migration_routes_reject_oversized_pack_name_without_reflecting_it(client: TestClient):
+    project, evidence = load_demo()
+    pack = "x" * 129
+
+    plan_response = client.post(
+        "/api/migration/plan",
+        json={"project": project.as_dict(), "pack": pack},
+    )
+    verify_response = client.post(
+        "/api/migration/verify",
+        json={"project": project.as_dict(), "evidence": evidence.as_dict(), "pack": pack},
+    )
+
+    for response in (plan_response, verify_response):
+        assert response.status_code == 422
+        assert response.json()["code"] == "migration_too_large"
+        assert pack not in response.text
+
+
 def test_migration_auth_runs_before_body_validation(client: TestClient, monkeypatch):
     import cloudwright_web.middleware as middleware
 

@@ -8,6 +8,7 @@ from typing import Any
 MAX_MIGRATION_ITEMS = 200
 MAX_MIGRATION_NESTED_ITEMS = 10_000
 MAX_MIGRATION_TEXT_CHARACTERS = 1_000_000
+MAX_MIGRATION_PACK_NAME_CHARACTERS = 128
 MAX_MIGRATION_FILE_BYTES = 2_000_000
 
 
@@ -43,11 +44,9 @@ def _validate_nested_item_budget(*values: Any) -> None:
                 )
             continue
         if isinstance(value, Mapping):
-            children = [*value.keys(), *value.values()]
             item_count = len(value)
         elif isinstance(value, (list, tuple, set, frozenset)):
-            children = list(value)
-            item_count = len(children)
+            item_count = len(value)
         else:
             continue
 
@@ -61,11 +60,17 @@ def _validate_nested_item_budget(*values: Any) -> None:
                 f"Migration has more than {MAX_MIGRATION_NESTED_ITEMS} nested items; "
                 "reduce nested metadata, tags, classifications, or evidence details"
             )
-        stack.extend(children)
+        if isinstance(value, Mapping):
+            stack.extend(value.keys())
+            stack.extend(value.values())
+        else:
+            stack.extend(value)
 
 
 def validate_migration_size(project: Any, evidence: Any = None, pack: Any = None) -> None:
     """Reject oversized project and evidence collections before deeper work."""
+    if isinstance(pack, str) and len(pack) > MAX_MIGRATION_PACK_NAME_CHARACTERS:
+        raise ValueError(f"Migration pack name has more than {MAX_MIGRATION_PACK_NAME_CHARACTERS} text characters")
     estate = _field(project, "estate", {})
     target = _field(project, "target", {})
     collections = (

@@ -45,7 +45,7 @@ def migration_packs():
 @router.post("/migration/plan")
 def migration_plan(req: MigrationPlanRequest):
     """Build dependency-ordered waves, economics, and acceptance gates."""
-    if error := check_migration_limit(req.project):
+    if error := check_migration_limit(req.project, pack=req.pack):
         return error
     try:
         assessment = MigrationPlanner().plan(req.project, pack_name=req.pack)
@@ -60,7 +60,7 @@ def migration_plan(req: MigrationPlanRequest):
 @router.post("/migration/verify")
 def migration_verify(req: MigrationVerifyRequest):
     """Evaluate evidence and return a visible closure decision."""
-    if error := check_migration_limit(req.project, req.evidence):
+    if error := check_migration_limit(req.project, req.evidence, req.pack):
         return error
     try:
         assessment = MigrationPlanner().plan(req.project, pack_name=req.pack)

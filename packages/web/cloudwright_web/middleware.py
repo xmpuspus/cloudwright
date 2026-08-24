@@ -303,10 +303,10 @@ def check_component_limit(spec) -> JSONResponse | None:
     return None
 
 
-def check_migration_limit(project, evidence=None) -> JSONResponse | None:
+def check_migration_limit(project, evidence=None, pack=None) -> JSONResponse | None:
     """Reject migration collections that exceed the request work limit."""
     try:
-        validate_migration_size(project, evidence)
+        validate_migration_size(project, evidence, pack)
     except ValueError as exc:
         return error_response(
             "migration_too_large",

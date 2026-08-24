@@ -40,7 +40,7 @@ def _write_yaml(ctx: typer.Context, model, output: Path | None) -> None:
 
 def _render_assessment(assessment: MigrationAssessment) -> None:
     transition = assessment.transition
-    state = "Complete" if transition.complete else "Needs mappings"
+    state = "Complete" if transition.complete else "Incomplete"
     console.print(
         Panel(
             f"{len(transition.waves)} waves | {len(assessment.assurance.criteria)} gates | {state}",

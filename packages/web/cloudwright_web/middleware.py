@@ -11,6 +11,7 @@ from collections import deque
 from urllib.parse import unquote
 
 import structlog
+from cloudwright.migration import validate_migration_size
 from fastapi import HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -258,7 +259,6 @@ def check_rate_limit(request: Request):
 # --- Request work caps ---
 
 MAX_SPEC_COMPONENTS = 200
-MAX_MIGRATION_ITEMS = 200
 
 
 def check_component_limit(spec) -> JSONResponse | None:
@@ -284,20 +284,13 @@ def check_component_limit(spec) -> JSONResponse | None:
 
 def check_migration_limit(project, evidence=None) -> JSONResponse | None:
     """Reject migration collections that exceed the request work limit."""
-    collections = (
-        ("source assets", project.estate.assets),
-        ("dependencies", project.estate.dependencies),
-        ("target assets", project.target.assets),
-        ("target mappings", project.target.mappings),
-        ("evidence observations", evidence.observations if evidence is not None else []),
-    )
-    for label, items in collections:
-        count = len(items)
-        if count > MAX_MIGRATION_ITEMS:
-            return error_response(
-                "migration_too_large",
-                f"Migration has {count} {label}; max allowed is {MAX_MIGRATION_ITEMS}",
-                "Split the migration into smaller projects",
-                422,
-            )
+    try:
+        validate_migration_size(project, evidence)
+    except ValueError as exc:
+        return error_response(
+            "migration_too_large",
+            str(exc),
+            "Split the migration into smaller projects",
+            422,
+        )
     return None

@@ -2,6 +2,7 @@
 
 from cloudwright.migration.demo import MigrationDemoResult, load_demo, run_demo
 from cloudwright.migration.evidence import EvidenceEvaluator
+from cloudwright.migration.limits import MAX_MIGRATION_ITEMS, validate_migration_size
 from cloudwright.migration.models import (
     AcceptanceCriterion,
     AssetDependency,
@@ -40,6 +41,7 @@ __all__ = [
     "MigrationAssessment",
     "MigrationDemoResult",
     "MigrationEconomics",
+    "MAX_MIGRATION_ITEMS",
     "MigrationProject",
     "MigrationPlanner",
     "MigrationWave",
@@ -48,4 +50,5 @@ __all__ = [
     "TransitionSpec",
     "load_demo",
     "run_demo",
+    "validate_migration_size",
 ]

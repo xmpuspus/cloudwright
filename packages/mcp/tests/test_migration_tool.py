@@ -56,6 +56,28 @@ class TestMigrationTools:
 
         assert "error" in result
 
+    def test_plan_migration_rejects_more_than_200_source_assets(self, register_tools):
+        import cloudwright_mcp.tools.migration as mod
+
+        project = {
+            "name": "Oversized move",
+            "estate": {
+                "name": "Current",
+                "assets": [
+                    {"id": f"asset-{index}", "name": f"Asset {index}", "kind": "application"} for index in range(201)
+                ],
+            },
+            "target": {
+                "name": "Target",
+                "mappings": [{"source_asset_id": f"asset-{index}", "disposition": "retain"} for index in range(201)],
+            },
+        }
+        tools = register_tools(mod)
+
+        result = tools["plan_migration"](project_json=project)
+
+        assert result["error"] == "Migration has 201 source assets; max allowed is 200"
+
 
 def test_migration_group_is_registered_by_the_server():
     from cloudwright_mcp.server import _GROUPS

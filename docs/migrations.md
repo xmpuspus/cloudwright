@@ -152,7 +152,8 @@ Each source asset may have one mapping. Supported dispositions are:
 
 Mappings hold the strategy, owner, downtime allowance, rollback procedure, target assets, and
 explicit cost inputs. Any source asset without a mapping appears as unresolved and keeps the plan
-incomplete.
+incomplete. A moving or retiring action without a rollback procedure also keeps the plan incomplete,
+even when submitted evidence marks its rollback gate ready.
 
 ## Planner output
 

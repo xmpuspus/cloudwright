@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dependencies, target mappings, migration dispositions, costs, waves, acceptance gates, observations,
   and closure results. The planner rejects cycles, orders dependencies first, honors safe wave hints,
   keeps retiring dependencies available until their consumers move, rejects a `retain` mapping when its
-  dependency changes, reports unresolved mappings, and calculates supplied one-time, dual-run, recurring,
-  and retirement costs.
+  dependency changes, blocks closure when a rollback procedure is absent, reports unresolved mappings,
+  and calculates supplied one-time, dual-run, recurring, and retirement costs.
 - **External migration domain packs.** Packaged YAML rules add gates by asset kind, data class, and tag
   without adding industry fields to the core. The first `ph_telco` pack adds 17 gates for subscriber,
   billing, usage-record, number-porting, privacy, access, recovery, failover, and source shutdown checks.
@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Four `/api/migration/*` routes return the same core results. The Migration tab accepts a protected
   server's API key and shows the closure decision, supplied economics, dependency route, and evidence groups.
 - **Migration MCP tools.** MCP clients get `plan_migration` and `verify_migration` from the optional
-  `migration` tool group. Both tools use the core planner and evidence evaluator.
+  `migration` tool group. Both tools use the core planner, evidence evaluator, and 200-item collection cap.
 - **Reproducible migration GIFs.** Browser and CLI recorders run local proof data with no model key or
   cloud account. A VHS tape supports systems with a working ffmpeg install.
 

@@ -28,8 +28,12 @@ def register(mcp: FastMCP) -> None:
         Returns a MigrationAssessment dictionary. The tool does not copy data,
         change infrastructure, switch traffic, or run a cutover.
         """
-        from cloudwright.migration import MigrationPlanner, MigrationProject
+        from cloudwright.migration import MigrationPlanner, MigrationProject, validate_migration_size
 
+        try:
+            validate_migration_size(project_json)
+        except ValueError as exc:
+            return {"error": str(exc)}
         try:
             project = MigrationProject.model_validate(project_json)
         except Exception as exc:
@@ -59,8 +63,18 @@ def register(mcp: FastMCP) -> None:
         Returns an EvidencePack dictionary. Missing or failed blocking evidence
         keeps `closed` false. The caller cannot replace the planner output.
         """
-        from cloudwright.migration import EvidenceEvaluator, EvidenceInput, MigrationPlanner, MigrationProject
+        from cloudwright.migration import (
+            EvidenceEvaluator,
+            EvidenceInput,
+            MigrationPlanner,
+            MigrationProject,
+            validate_migration_size,
+        )
 
+        try:
+            validate_migration_size(project_json, evidence_json)
+        except ValueError as exc:
+            return {"error": str(exc)}
         try:
             project = MigrationProject.model_validate(project_json)
             evidence = EvidenceInput.model_validate(evidence_json)

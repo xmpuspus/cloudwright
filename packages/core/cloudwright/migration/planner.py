@@ -43,6 +43,7 @@ class MigrationPlanner:
         waves = self._build_waves(assets, mappings, scheduling_dependencies, orders, warnings)
         assurance = self._build_assurance(waves, project, mappings, pack_name)
         economics = self._calculate_economics(assets, mappings)
+        rollbacks_ready = all(action.rollback for wave in waves for action in wave.actions)
 
         return MigrationAssessment(
             project_name=project.name,
@@ -50,7 +51,7 @@ class MigrationPlanner:
             domain_pack=pack_name or project.domain_pack,
             transition=TransitionSpec(
                 project_name=project.name,
-                complete=not unresolved,
+                complete=not unresolved and rollbacks_ready,
                 waves=waves,
                 warnings=warnings,
                 unresolved_assets=unresolved,

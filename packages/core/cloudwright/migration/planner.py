@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import defaultdict, deque
 
 from cloudwright.migration.models import (
     AcceptanceCriterion,
@@ -35,8 +35,9 @@ class MigrationPlanner:
             if dependency.source in mappings and dependency.target in mappings:
                 dependency_map[dependency.source].append(dependency.target)
 
-        self._check_cycles(mappings, dependency_map)
-        orders = self._schedule_orders(mappings, dependency_map)
+        dependency_order = self._dependency_order(mappings, dependency_map)
+        self._check_retained_dependencies(mappings, dependency_map, dependency_order)
+        orders = self._schedule_orders(mappings, dependency_map, dependency_order)
         waves = self._build_waves(assets, mappings, dependency_map, orders, warnings)
         assurance = self._build_assurance(waves, project, mappings, pack_name)
         economics = self._calculate_economics(assets, mappings)
@@ -57,40 +58,66 @@ class MigrationPlanner:
         )
 
     @staticmethod
-    def _check_cycles(mappings: dict[str, TargetMapping], dependencies: dict[str, list[str]]) -> None:
-        state: dict[str, int] = {}
-        stack: list[str] = []
+    def _dependency_order(mappings: dict[str, TargetMapping], dependencies: dict[str, list[str]]) -> list[str]:
+        """Return a dependency-first order without recursive graph traversal."""
+        dependency_counts = {
+            asset_id: sum(dependency_id in mappings for dependency_id in dependencies.get(asset_id, []))
+            for asset_id in mappings
+        }
+        dependents: dict[str, list[str]] = defaultdict(list)
+        for asset_id, dependency_ids in dependencies.items():
+            for dependency_id in dependency_ids:
+                if asset_id in mappings and dependency_id in mappings:
+                    dependents[dependency_id].append(asset_id)
 
-        def visit(asset_id: str) -> None:
-            if state.get(asset_id) == 2:
-                return
-            if state.get(asset_id) == 1:
-                start = stack.index(asset_id)
-                cycle = stack[start:] + [asset_id]
-                raise ValueError(f"dependency cycle detected: {' -> '.join(cycle)}")
-            state[asset_id] = 1
-            stack.append(asset_id)
-            for dependency_id in dependencies.get(asset_id, []):
-                if dependency_id in mappings:
-                    visit(dependency_id)
-            stack.pop()
-            state[asset_id] = 2
+        ready = deque(asset_id for asset_id in mappings if dependency_counts[asset_id] == 0)
+        ordered: list[str] = []
+        while ready:
+            asset_id = ready.popleft()
+            ordered.append(asset_id)
+            for dependent_id in dependents.get(asset_id, []):
+                dependency_counts[dependent_id] -= 1
+                if dependency_counts[dependent_id] == 0:
+                    ready.append(dependent_id)
 
-        for mapped_asset_id in mappings:
-            visit(mapped_asset_id)
+        if len(ordered) != len(mappings):
+            cycle = sorted(asset_id for asset_id, count in dependency_counts.items() if count > 0)
+            raise ValueError(f"dependency cycle detected involving: {' -> '.join(cycle)}")
+        return ordered
 
     @staticmethod
-    def _schedule_orders(mappings: dict[str, TargetMapping], dependencies: dict[str, list[str]]) -> dict[str, int]:
+    def _check_retained_dependencies(
+        mappings: dict[str, TargetMapping],
+        dependencies: dict[str, list[str]],
+        dependency_order: list[str],
+    ) -> None:
+        """Reject retained assets whose dependency chain contains a retirement."""
+        retired_dependency: dict[str, str] = {}
+        for asset_id in dependency_order:
+            for dependency_id in dependencies.get(asset_id, []):
+                if mappings[dependency_id].disposition == "retire":
+                    retired_dependency[asset_id] = dependency_id
+                    break
+                if dependency_id in retired_dependency:
+                    retired_dependency[asset_id] = retired_dependency[dependency_id]
+                    break
+            if mappings[asset_id].disposition == "retain" and asset_id in retired_dependency:
+                raise ValueError(f"retained asset {asset_id} depends on retired asset {retired_dependency[asset_id]}")
+
+    @staticmethod
+    def _schedule_orders(
+        mappings: dict[str, TargetMapping],
+        dependencies: dict[str, list[str]],
+        dependency_order: list[str],
+    ) -> dict[str, int]:
         orders: dict[str, int] = {}
 
-        def schedule(asset_id: str) -> int:
-            if asset_id in orders:
-                return orders[asset_id]
+        for asset_id in dependency_order:
             mapping = mappings[asset_id]
             if mapping.disposition == "retain":
                 orders[asset_id] = 0
-                return 0
-            dependency_orders = [schedule(item) for item in dependencies.get(asset_id, [])]
+                continue
+            dependency_orders = [orders[item] for item in dependencies.get(asset_id, [])]
             minimum = max(dependency_orders, default=0) + 1
             if mapping.wave_hint is not None and mapping.wave_hint < minimum:
                 blocker = max(
@@ -102,10 +129,6 @@ class MigrationPlanner:
                     f"wave hint for {asset_id} runs before dependency {blocker}; minimum wave is {minimum}"
                 )
             orders[asset_id] = max(minimum, mapping.wave_hint or 1)
-            return orders[asset_id]
-
-        for mapped_asset_id in mappings:
-            schedule(mapped_asset_id)
 
         movable_orders = [
             order for asset_id, order in orders.items() if mappings[asset_id].disposition not in {"retain", "retire"}
@@ -213,7 +236,7 @@ class MigrationPlanner:
     @staticmethod
     def _calculate_economics(assets: dict[str, EstateAsset], mappings: dict[str, TargetMapping]) -> MigrationEconomics:
         current = sum(asset.current_monthly_cost for asset in assets.values())
-        target = 0.0
+        target = sum(asset.current_monthly_cost for asset_id, asset in assets.items() if asset_id not in mappings)
         one_time = 0.0
         dual_run = 0.0
         credit = 0.0

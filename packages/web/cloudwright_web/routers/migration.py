@@ -7,7 +7,6 @@ import logging
 from cloudwright.migration import (
     EvidenceEvaluator,
     EvidenceInput,
-    MigrationAssessment,
     MigrationPlanner,
     MigrationProject,
 )
@@ -30,10 +29,11 @@ class MigrationPlanRequest(BaseModel):
 
 
 class MigrationVerifyRequest(BaseModel):
-    """Planner output and recorded acceptance evidence."""
+    """Portable project and evidence used to recompute the acceptance contract."""
 
-    assessment: MigrationAssessment
+    project: MigrationProject
     evidence: EvidenceInput
+    pack: str | None = None
 
 
 @router.get("/migration/packs")
@@ -68,7 +68,8 @@ def migration_verify(req: MigrationVerifyRequest, request: Request):
     if error := check_rate_limit(request):
         return error
     try:
-        evidence_pack = EvidenceEvaluator().evaluate(req.assessment, req.evidence)
+        assessment = MigrationPlanner().plan(req.project, pack_name=req.pack)
+        evidence_pack = EvidenceEvaluator().evaluate(assessment, req.evidence)
         return {"evidence_pack": evidence_pack.as_dict()}
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

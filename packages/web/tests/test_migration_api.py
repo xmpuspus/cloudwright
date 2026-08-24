@@ -36,11 +36,10 @@ def test_migration_plan_uses_portable_project_body(client: TestClient):
 
 def test_migration_verify_closes_with_complete_evidence(client: TestClient):
     project, evidence = load_demo()
-    assessment = client.post("/api/migration/plan", json={"project": project.as_dict()}).json()["assessment"]
 
     response = client.post(
         "/api/migration/verify",
-        json={"assessment": assessment, "evidence": evidence.as_dict()},
+        json={"project": project.as_dict(), "evidence": evidence.as_dict()},
     )
 
     assert response.status_code == 200
@@ -51,12 +50,11 @@ def test_migration_verify_closes_with_complete_evidence(client: TestClient):
 
 def test_migration_verify_returns_visible_blocked_result(client: TestClient):
     project, evidence = load_demo()
-    assessment = client.post("/api/migration/plan", json={"project": project.as_dict()}).json()["assessment"]
     evidence.observations = [item for item in evidence.observations if item.criterion_id != "subscriber-record-parity"]
 
     response = client.post(
         "/api/migration/verify",
-        json={"assessment": assessment, "evidence": evidence.as_dict()},
+        json={"project": project.as_dict(), "evidence": evidence.as_dict()},
     )
 
     assert response.status_code == 200
@@ -64,6 +62,21 @@ def test_migration_verify_returns_visible_blocked_result(client: TestClient):
     assert evidence_pack["closed"] is False
     assert evidence_pack["missing"] == 1
     assert evidence_pack["blocking_failures"] == 1
+
+
+def test_migration_verify_rejects_client_supplied_assessment(client: TestClient):
+    project, evidence = load_demo()
+    assessment = client.post("/api/migration/plan", json={"project": project.as_dict()}).json()["assessment"]
+    assessment["transition"]["complete"] = True
+    assessment["transition"]["waves"] = []
+    assessment["assurance"]["criteria"] = []
+
+    response = client.post(
+        "/api/migration/verify",
+        json={"assessment": assessment, "evidence": {"project_name": project.name, "observations": []}},
+    )
+
+    assert response.status_code == 422
 
 
 def test_migration_demo_returns_checked_core_outputs(client: TestClient):

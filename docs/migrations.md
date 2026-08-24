@@ -295,6 +295,10 @@ The FastAPI package exposes:
 - `POST /api/migration/verify`
 - `GET /api/migration/demo`
 
+This endpoint accepts the portable project, its recorded evidence, and an optional pack
+override. It rebuilds the assessment on the server before evaluating evidence, so edited planner
+output cannot remove acceptance gates from an HTTP closure decision.
+
 The Migration tab calls the packaged demo endpoint. It shows the closure result, counts, economics,
 ordered wave route, and evidence grouped by category. It works before an architecture is generated
 in chat.

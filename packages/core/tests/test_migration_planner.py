@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import sys
 
 import pytest
 from cloudwright.migration import AssetDependency, EstateAsset, MigrationProject, TargetMapping
@@ -115,6 +116,60 @@ def test_dependency_cycle_stops_planning_and_names_assets():
         MigrationPlanner().plan(project)
 
 
+def test_long_dependency_chain_plans_without_recursion_failure():
+    asset_count = 600
+    project = MigrationProject.model_validate(
+        {
+            "name": "Long move",
+            "estate": {
+                "name": "Current",
+                "assets": [
+                    {"id": f"asset-{index}", "name": f"Asset {index}", "kind": "application"}
+                    for index in range(asset_count)
+                ],
+                "dependencies": [
+                    {"source": f"asset-{index}", "target": f"asset-{index - 1}"} for index in range(1, asset_count)
+                ],
+            },
+            "target": {
+                "name": "Target",
+                "assets": [
+                    {"id": f"target-{index}", "name": f"Target {index}", "kind": "application"}
+                    for index in range(asset_count)
+                ],
+                "mappings": [
+                    {
+                        "source_asset_id": f"asset-{index}",
+                        "target_asset_ids": [f"target-{index}"],
+                        "disposition": "rehost",
+                        "rollback": "restore source route",
+                    }
+                    for index in range(asset_count)
+                ],
+            },
+        }
+    )
+
+    previous_limit = sys.getrecursionlimit()
+    try:
+        sys.setrecursionlimit(500)
+        assessment = MigrationPlanner().plan(project)
+    finally:
+        sys.setrecursionlimit(previous_limit)
+
+    assert assessment.transition.waves[-1].order == asset_count
+
+
+def test_retained_asset_cannot_depend_on_retired_asset():
+    project = _project()
+    project.target.mappings[0] = TargetMapping(source_asset_id="db", disposition="retire")
+    project.target.mappings[1] = TargetMapping(source_asset_id="app", disposition="retain")
+    project = MigrationProject.model_validate(project.model_dump())
+
+    with pytest.raises(ValueError, match="retained asset app depends on retired asset db"):
+        MigrationPlanner().plan(project)
+
+
 def test_unmapped_asset_blocks_complete_plan():
     project = _project()
     project.estate.assets.append(EstateAsset(id="files", name="File store", kind="data", current_monthly_cost=500))
@@ -124,6 +179,8 @@ def test_unmapped_asset_blocks_complete_plan():
     assert assessment.transition.complete is False
     assert assessment.transition.unresolved_assets == ["files"]
     assert any("files" in warning for warning in assessment.transition.warnings)
+    assert assessment.transition.economics.target_monthly_cost == 9500
+    assert assessment.transition.economics.monthly_delta == -3000
 
 
 def test_retirement_runs_after_moving_assets():

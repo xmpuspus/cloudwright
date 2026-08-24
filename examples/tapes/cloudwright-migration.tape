@@ -15,6 +15,7 @@ Set TypingSpeed 14ms
 Hide
 Type 'cd "$(git rev-parse --show-toplevel)"' Enter
 Type "unset ANTHROPIC_API_KEY OPENAI_API_KEY" Enter
+Type 'mkdir -p "$PWD/tmp"' Enter
 Type 'migration_demo_dir=$(mktemp -d "$PWD/tmp/migration-gif.XXXXXX")' Enter
 Type "clear" Enter
 Show

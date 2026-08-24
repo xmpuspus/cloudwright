@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
 from cloudwright.migration import (
     AcceptanceCriterion,
@@ -18,6 +20,7 @@ def _assessment(*criteria: AcceptanceCriterion, complete: bool = True) -> Migrat
     return MigrationAssessment(
         assessment_id="a" * 64,
         project_name="Test move",
+        evidence_not_before=datetime(2026, 8, 24, tzinfo=UTC),
         transition=TransitionSpec(
             project_name="Test move",
             complete=complete,
@@ -139,6 +142,20 @@ def test_assessment_id_must_match_exact_plan_revision():
 
     with pytest.raises(ValueError, match="assessment id"):
         EvidenceEvaluator().evaluate(_assessment(_criterion("true", True)), evidence)
+
+
+def test_observation_before_the_assessment_evidence_boundary_cannot_close():
+    assessment = _assessment(_criterion("true", True)).model_copy(
+        update={"evidence_not_before": datetime(2026, 8, 24, tzinfo=UTC)}
+    )
+    evidence = _evidence(True)
+    evidence.observations[0].observed_at = datetime(2000, 1, 1, tzinfo=UTC)
+
+    result = EvidenceEvaluator().evaluate(assessment, evidence)
+
+    assert result.closed is False
+    assert result.blocking_failures == 1
+    assert "before" in result.results[0].detail
 
 
 def test_incomplete_transition_cannot_close_even_when_gates_pass():

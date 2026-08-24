@@ -228,6 +228,7 @@ class MigrationProject(YamlModel):
 
     schema_version: str = "1.0"
     name: str
+    evidence_not_before: AwareDatetime
     industry: str = "general"
     domain_pack: str | None = None
     estate: EstateSpec
@@ -321,6 +322,7 @@ class MigrationAssessment(YamlModel):
     schema_version: str = "1.0"
     assessment_id: str = Field(pattern=r"^[0-9a-f]{64}$")
     project_name: str
+    evidence_not_before: AwareDatetime
     industry: str = "general"
     domain_pack: str | None = None
     transition: TransitionSpec

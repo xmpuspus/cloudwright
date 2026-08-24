@@ -56,10 +56,12 @@ still prints or writes the full evidence pack, including each missing or failed 
 
 A `MigrationProject` joins the current estate to a proposed target.
 The source estate must contain at least one asset.
+`evidence_not_before` sets the earliest accepted observation time for that migration.
 
 ```yaml
 schema_version: "1.0"
 name: ERP transition
+evidence_not_before: "2026-08-24T00:00:00Z"
 industry: manufacturing
 estate:
   name: Current estate
@@ -214,6 +216,7 @@ The evaluator checks that:
 - The evidence carries the exact `assessment_id` produced for that plan revision.
 - Each observation names a known gate once.
 - The observation source matches the gate's needed evidence source.
+- The observation time is on or after the assessment's `evidence_not_before` boundary.
 - The recorded value satisfies the comparator and target.
 - Every missing gate stays visible in the output.
 

@@ -18,6 +18,7 @@ def _project_data() -> dict:
     return {
         "schema_version": "1.0",
         "name": "Plant ERP move",
+        "evidence_not_before": "2026-08-24T00:00:00Z",
         "industry": "manufacturing",
         "estate": {
             "name": "Current estate",

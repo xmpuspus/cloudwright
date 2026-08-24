@@ -101,6 +101,7 @@ def test_migration_plan_rejects_invalid_project_shape(client: TestClient):
 def test_migration_plan_rejects_more_than_200_assets(client: TestClient):
     project = {
         "name": "Oversized move",
+        "evidence_not_before": "2026-08-24T00:00:00Z",
         "estate": {
             "name": "Current",
             "assets": [

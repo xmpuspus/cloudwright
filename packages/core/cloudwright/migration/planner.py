@@ -64,6 +64,7 @@ class MigrationPlanner:
         assessment = MigrationAssessment(
             assessment_id="0" * 64,
             project_name=project.name,
+            evidence_not_before=project.evidence_not_before,
             industry=project.industry,
             domain_pack=pack_name or project.domain_pack,
             transition=TransitionSpec(

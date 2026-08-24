@@ -14,6 +14,7 @@ def _project() -> MigrationProject:
     return MigrationProject.model_validate(
         {
             "name": "ERP move",
+            "evidence_not_before": "2026-08-24T00:00:00Z",
             "industry": "manufacturing",
             "estate": {
                 "name": "Current",
@@ -121,6 +122,7 @@ def test_long_dependency_chain_plans_without_recursion_failure():
     project = MigrationProject.model_validate(
         {
             "name": "Long move",
+            "evidence_not_before": "2026-08-24T00:00:00Z",
             "estate": {
                 "name": "Current",
                 "assets": [

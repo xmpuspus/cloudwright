@@ -1,5 +1,6 @@
 schema_version: "1.0"
 name: PH telco hybrid service migration
+evidence_not_before: "2026-08-24T00:00:00Z"
 industry: telecommunications
 domain_pack: ph_telco
 estate:

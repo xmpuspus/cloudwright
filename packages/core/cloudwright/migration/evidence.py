@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from cloudwright.migration.models import (
     AcceptanceCriterion,
     CriterionResult,
@@ -38,7 +40,11 @@ class EvidenceEvaluator:
 
         observations = {observation.criterion_id: observation for observation in evidence.observations}
         results = [
-            self._evaluate_criterion(criterion, observations.get(criterion.id))
+            self._evaluate_criterion(
+                criterion,
+                observations.get(criterion.id),
+                evidence_not_before=assessment.evidence_not_before,
+            )
             for criterion in assessment.assurance.criteria
         ]
         passed = sum(result.passed for result in results)
@@ -60,6 +66,8 @@ class EvidenceEvaluator:
         self,
         criterion: AcceptanceCriterion,
         observation: EvidenceObservation | None,
+        *,
+        evidence_not_before: datetime,
     ) -> CriterionResult:
         if observation is None:
             return CriterionResult(
@@ -70,6 +78,16 @@ class EvidenceEvaluator:
                 blocking=criterion.blocking,
                 expected=criterion.target_value,
                 detail=f"Missing evidence from {criterion.required_evidence}",
+            )
+        if observation.observed_at < evidence_not_before:
+            return self._result(
+                criterion,
+                observation,
+                passed=False,
+                detail=(
+                    f"Evidence timestamp {observation.observed_at.isoformat()} is before "
+                    f"the assessment boundary {evidence_not_before.isoformat()}"
+                ),
             )
         if observation.source != criterion.required_evidence:
             return self._result(

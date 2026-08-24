@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-08-24
+
+### Added
+
+- **Read-only migration planning and evidence checks.** New portable models describe estate assets,
+  dependencies, target mappings, migration dispositions, costs, waves, acceptance gates, observations,
+  and closure results. The planner rejects cycles, orders dependencies first, honors safe wave hints,
+  keeps retiring dependencies available until their consumers move, rejects a `retain` mapping when its
+  dependency changes, blocks closure when a rollback procedure is absent, reports unresolved mappings,
+  and calculates supplied one-time, dual-run, recurring, and retirement costs.
+- **External migration domain packs.** Packaged YAML rules add gates by asset kind, data class, and tag
+  without adding industry fields to the core. The first `ph_telco` pack adds 17 gates for subscriber,
+  billing, usage-record, number-porting, privacy, access, recovery, failover, and source shutdown checks.
+- **Two checked proof projects.** The PH telco hybrid project closes with 22 passing gates across five
+  waves. Removing one blocking observation changes closure to blocked. A manufacturing ERP project uses
+  the same planner and evaluator with no domain pack.
+- **Migration CLI, API, MCP, and web view.** `cloudwright migrate packs|plan|verify|demo` supports human and
+  JSON output, including compact NDJSON with `--stream`. CLI and HTTP evidence checks rebuild the assessment from the submitted project so edited
+  planner output cannot remove gates. CLI, HTTP, and MCP inputs share bounded collections and nested data. Numeric
+  contracts reject non-finite or excessive cost values. A deterministic assessment ID binds evidence to the exact plan revision,
+  and timestamp checks reject observations recorded before the migration or in the future.
+- **Protected migration HTTP routes.** Authentication and rate checks run before request-body validation.
+  Four `/api/migration/*` routes return the same core results. The Migration tab accepts a protected
+  server's API key and shows the closure decision, supplied economics, dependency route, and evidence groups.
+- **Migration MCP tools.** MCP clients get `plan_migration` and `verify_migration` from the optional
+  `migration` tool group. Both tools use the core planner, evidence evaluator, collection caps, nested-item
+  budget, and scalar-text limit. The standalone MCP package installs the CLI launcher used by its setup docs.
+- **Reproducible migration GIFs.** Browser and CLI recorders run local proof data with no model key or
+  cloud account. A VHS tape supports systems with a working ffmpeg install.
+
+### Documentation
+
+- Added `docs/migrations.md`, README examples, CLI reference entries, package notes, limitations, pack
+  extension steps, source references, and GIF reproduction commands.
+
+### Fixed
+
+- The per-IP rate limiter cleans expired buckets once per window instead of scanning every active IP on
+  every request. It caps active IP buckets at 10,000 and rejects new buckets when that bound is full.
+
 ## [1.9.0] - 2026-08-01
 
 The canvas audit. v1.8.0 rebuilt the interface around the canvas and never measured the canvas
@@ -147,29 +187,57 @@ every API route behave exactly as in 1.7.0.
 
 ## [1.7.0] - 2026-07-08
 
-Closes the July 2026 product audit findings. The differentiating features (offline review,
-compliance with OSCAL) now reach every MCP-capable coding agent, not just the CLI; the web tier
-is hardened against event-loop stalls and oversized payloads; cost output stops claiming
-freshness it does not have; and a new `integrate` command wires cloudwright into 11 coding
-harnesses.
+Closes the July 2026 product audit findings. Offline review and OSCAL compliance now reach every
+MCP-capable coding agent, not only the CLI. The web tier now handles event-loop stalls and large
+payloads. Cost output no longer claims false freshness. The new `integrate` command connects
+Cloudwright to 11 coding clients.
 
 ### Added
 
-- **`cloudwright integrate`.** Generates the exact MCP server config for each popular coding agent (Claude Code, Cursor, Cline, Windsurf, GitHub Copilot, Zed, OpenAI Codex CLI, JetBrains Junie, Kiro, Antigravity) in that client's own format (`mcpServers`, VS Code `servers`, Zed `context_servers`, or Codex TOML), plus a CLI-pipe path for Aider (not an MCP client). `--rules` emits a harness-agnostic gate block for AGENTS.md, CLAUDE.md, or GEMINI.md that tells any agent to run `cloudwright review`/`cost`/`compliance` before it writes infrastructure. `--write` merges into the right file without clobbering existing servers. See `docs/integrations.md`.
-- **Review, compliance, and plan as MCP tools.** The MCP server now exposes `review_architecture` (offline critique, no API key), `scan_compliance_controls` (control-mapped findings, with an `oscal` flag returning the OSCAL 1.1.2 component-definition), and `plan_infrastructure` (read-only, validate-only by default, never applies). Any MCP client gets cloudwright's design-time checks in its agent loop.
-- **Review and OSCAL on the web canvas.** New `POST /api/review` runs the offline critique; `POST /api/compliance` takes an `oscal` flag. The canvas gains a Review tab (score, grade, findings) and an OSCAL JSON download on the Compliance panel.
-- **Honest cost signals.** Cost estimates now report `prices_as_of` (the catalog vintage) and `estimated_on` (today) separately instead of stamping today's date on older price data, and expose a `pricing_confidence_detail` ratio ("17/20 line items catalog-backed"). Cross-provider `compare` carries a per-alternative confidence column. Region pricing uses a real regional catalog row when one exists (high confidence) and only falls back to the static multiplier (medium) when none does. New `docs/provider-coverage.md` states per-provider coverage plainly.
-- **MCP session TTL.** MCP sessions older than `CLOUDWRIGHT_MCP_SESSION_TTL_DAYS` (default 7) are swept on server start and session-list.
-- **Release and security docs.** `RELEASING.md` (the release runbook) and `SECURITY.md` (disclosure policy) are now committed, plus `schema_version` on the persisted spec for future migrations.
+- **`cloudwright integrate`.** Generates the exact MCP server config for each supported coding client.
+  It supports Claude Code, Cursor, Cline, Windsurf, GitHub Copilot, Zed, Codex, Junie, Kiro, and
+  Antigravity. Each client gets its needed `mcpServers`, VS Code `servers`, Zed `context_servers`, or
+  Codex TOML format. Aider gets a CLI pipe because it is not an MCP client. `--rules` writes a gate
+  block for AGENTS.md, CLAUDE.md, or GEMINI.md. The block tells the agent to run `review`, `cost`, and
+  `compliance` before it writes infrastructure.
+
+  `--write` keeps existing server entries. See
+  `docs/integrations.md`.
+- **Review, compliance, and plan as MCP tools.** The server adds `review_architecture`,
+  `scan_compliance_controls`, and `plan_infrastructure`. Review runs offline with no API key.
+  Compliance can return an OSCAL 1.1.2 component definition. Plan validates only by default and
+  never applies. Any MCP client can run these design checks in its agent loop.
+- **Review and OSCAL on the web canvas.** `POST /api/review` runs the offline critique.
+  `POST /api/compliance` accepts an `oscal` flag. The Review tab shows score, grade, and findings.
+  The Compliance panel can download OSCAL JSON.
+- **Honest cost signals.** Cost estimates report `prices_as_of` for the catalog date and `estimated_on`
+  for today. They also report a `pricing_confidence_detail` ratio, such as "17/20 line items
+  catalog-backed." Cross-provider `compare` adds a confidence column. Region pricing uses a regional
+  catalog row when one exists. Otherwise it uses the static multiplier. New
+  `docs/provider-coverage.md` states coverage by provider.
+- **MCP session TTL.** The server clears MCP sessions older than
+  `CLOUDWRIGHT_MCP_SESSION_TTL_DAYS`. The default is 7 days. Cleanup runs at server start and session-list.
+- **Release and security docs.** The repository adds `RELEASING.md` for release steps and
+  `SECURITY.md` for disclosure policy. Persisted specs also add `schema_version` for future migrations.
 
 ### Fixed
 
-- **Web tier no longer stalls the event loop.** Diagram rendering (a d2 subprocess up to 300s) now runs via `asyncio.to_thread`, so one PNG request no longer freezes every other request on the worker. `/api/diagram` gained a request model, so bad input returns 4xx instead of a raw 500.
-- **Request-size and component-count caps.** A 1 MB body-size limit and a component-count cap protect the spec-accepting endpoints from resource-exhaustion payloads. The per-IP rate-limiter buckets are now evicted instead of growing without bound.
-- **Container no longer serves unauthenticated by accident.** With `CLOUDWRIGHT_REQUIRE_AUTH=1` (set in the Dockerfile) and no `CLOUDWRIGHT_API_KEY`, the app refuses to start; docker-compose fails fast on an empty key. Local `uvicorn` stays open-by-default for development.
-- **Structured logging activates on real launch paths.** `configure_logging()` now runs in `create_app()`, so `cloudwright chat --web` and bare `uvicorn` get structured logs and request-id correlation, not just `serve()`.
-- **Clean CLI errors.** A malformed spec file now prints `Error: Invalid spec file: field 'name' is required` instead of a Pydantic traceback, and `--json` mode emits `{"error": {"code": ..., "message": ...}}` on failure. Full tracebacks remain available with `--verbose`.
-- **CI gains a dependency-CVE gate and a version-sync check.** A `pip-audit` job and a `check_version_sync.py` job (asserting all 13 version markers agree) now run in CI.
+- **Web tier no longer stalls the event loop.** Diagram rendering runs through
+  `asyncio.to_thread`. The d2 subprocess can run for up to 300 seconds. One PNG request no longer
+  freezes the worker. `/api/diagram` adds a request model, so bad input returns 4xx instead of 500.
+- **Request-size and component-count caps.** A 1 MB body limit and a component cap protect endpoints
+  that accept specs. The server now clears old per-IP rate-limit buckets.
+- **Container no longer serves unauthenticated by accident.** The Dockerfile sets
+  `CLOUDWRIGHT_REQUIRE_AUTH=1`. Without `CLOUDWRIGHT_API_KEY`, the app refuses to start. Docker Compose
+  also fails on an empty key. Local `uvicorn` stays open by default for development.
+- **Structured logging activates on real launch paths.** `create_app()` now calls
+  `configure_logging()`. Both `cloudwright chat --web` and bare `uvicorn` get request IDs and structured
+  logs. This no longer depends on `serve()`.
+- **Clean CLI errors.** A malformed spec now prints a short field error instead of a Pydantic
+  traceback. JSON mode emits an error object with a code and message. Full tracebacks stay available
+  with `--verbose`.
+- **CI gains a dependency-CVE gate and a version-sync check.** CI now runs `pip-audit` and
+  `check_version_sync.py`. The version check confirms that all 13 version markers agree.
 
 ## [1.6.1] - 2026-07-08
 
@@ -177,7 +245,12 @@ Hotfix for a crash in the flagship command, found by the July 2026 product audit
 
 ### Fixed
 
-- **`cloudwright design` no longer crashes on a live API key.** The per-call telemetry line passed structlog-style keyword arguments (`model=`, `tokens=`, ...) to a stdlib logger, so the CLI (which enables root INFO logging) raised `TypeError: Logger._log() got an unexpected keyword argument 'model'` right after the model responded and tokens were billed, producing no spec. The line now uses `%`-style stdlib formatting in both the Anthropic and OpenAI providers. Latent since v1.1.0: the test suite leaves the root logger at WARNING, so the line silently never emitted and never crashed under pytest. Regression test `test_llm_telemetry_logging.py` runs both providers under `configure_logging()`. As a side effect, per-call LLM telemetry (model, latency, tokens, cache hits) now actually emits.
+- **`cloudwright design` no longer crashes on a live API key.** The telemetry line sent structlog
+  keyword arguments to a standard library logger. The CLI then raised `TypeError` after the model
+  response and returned no spec. The Anthropic and OpenAI providers now use percent-style logging.
+  This bug existed since v1.1.0. Tests did not see it because the root logger stayed at WARNING.
+  `test_llm_telemetry_logging.py` now tests both providers with `configure_logging()`. Per-call model,
+  latency, token, and cache data now reaches the log.
 
 ## [1.6.0] - 2026-06-16
 
@@ -188,8 +261,8 @@ first are fixed.
 
 ### Added
 
-- **Generate -> critique -> repair loop + `cloudwright review`.** `Architect.design()` now runs the deterministic critics that already lived in the tree (scorer, linter, validator) against every generated spec and, when blocking (high/critical) findings remain, asks the model once to fix them — bounded, fails safe to the original spec, and records a `critique` block in `spec.metadata` (score, grade, findings/blocking before and after, repair iterations). The same engine is exposed standalone as `cloudwright review spec.yaml [--compliance hipaa,soc2] [--well-architected]` — a free, offline, severity-ranked architecture review with no API key. Disable repair with `Architect(repair=False)`.
-- **OSCAL 1.1.2 export.** `cloudwright compliance spec.yaml --frameworks fedramp --oscal [-o report.md]` also emits an OSCAL `component-definition` document (deterministic UUIDs, NIST-style lowercased control IDs, per-component `control-implementations` with satisfied / not-satisfied status). Targets the FedRAMP 20x / OSCAL direction — control mapping a CSPM or evidence tool cannot produce at design time.
+- **Generate -> critique -> repair loop + `cloudwright review`.** `Architect.design()` now runs the deterministic critics that already lived in the tree (scorer, linter, validator) against every generated spec and, when blocking (high/critical) findings remain, asks the model once to fix them. The loop is bounded, falls back to the original spec, and records a `critique` block in `spec.metadata` (score, grade, findings/blocking before and after, repair iterations). The same engine is exposed standalone as `cloudwright review spec.yaml [--compliance hipaa,soc2] [--well-architected]`, a free offline severity-ranked architecture review with no API key. Disable repair with `Architect(repair=False)`.
+- **OSCAL 1.1.2 export.** `cloudwright compliance spec.yaml --frameworks fedramp --oscal [-o report.md]` also emits an OSCAL `component-definition` document (deterministic UUIDs, NIST-style lowercased control IDs, per-component `control-implementations` with satisfied / not-satisfied status). This targets the FedRAMP 20x / OSCAL direction. It maps controls at design time, before a CSPM or evidence tool can.
 - **Control traceability.** `cloudwright compliance spec.yaml --traceability` shows the full chain design intent -> component -> Terraform resource type -> framework control ID -> status, as an audit artifact (`build_traceability()` in `compliance.py`).
 - **Compliance-gated component patterns.** New `cloudwright/patterns.py` tags the bundled templates and modules with the frameworks they satisfy; `suggest_compliant_patterns("hipaa")` returns pre-blessed architectures so the tool proposes compliant designs instead of only flagging violations after the fact.
 - **Agentic drift -> remediation.** New `cloudwright/remediation.py` `remediate(current, desired)` closes the loop read-only: drift diff -> monthly cost delta -> critique quality delta -> terraform/tofu plan preview, with an honest summary. Exposed via `cloudwright drift ... --remediate`. Never applies; `skip_plan=True` skips the IaC toolchain entirely.
@@ -200,29 +273,29 @@ first are fixed.
 
 ### Fixed
 
-- **Compliance now overrides the workload profile.** A `sandbox`/`dev` spec carrying a compliance framework (e.g. HIPAA) no longer skips forced encryption / HA — the framework check moved ahead of the non-production early-return in `parsing.py`, with a real regression test (the prior test passed only because it set `production`).
+- **Compliance now overrides the workload profile.** A `sandbox`/`dev` spec carrying a compliance framework (e.g. HIPAA) no longer skips forced encryption / HA. The framework check moved ahead of the non-production early-return in `parsing.py`, with a real regression test (the prior test passed only because it set `production`).
 - **WAF Terraform export is deployable.** `aws_wafv2_web_acl` now emits a multi-line `default_action { allow {} }`; the previous single-line nested block was rejected by `terraform validate`.
 - **Cost region + fabricated prices.** The `region` parameter is now applied to catalog, formula, and fallback prices; the silent `$10` fallback for unknown services is marked low-confidence/estimated and logged at WARNING.
-- **LLM parse failures keep the full response.** `_extract_json` logs the complete model output at debug before raising, instead of discarding everything past 300 characters — the one artifact needed to reproduce the most common LLM bug.
+- **LLM parse failures keep the full response.** `_extract_json` logs the complete model output at debug before raising, instead of discarding everything past 300 characters. This output reproduces the most common LLM bug.
 
 ### Security
 
-- **Terraform exporter injection hardening.** The 13 numeric resource fields (e.g. `allocated_storage`) are now coerced to real numbers via `_hcl_num`, and the export validator rejects newlines and braces in string values — closing a path where a string-typed numeric field could inject a `provisioner "local-exec"` into the generated HCL. Pulumi and CloudFormation paths were already safe. Regression test included.
+- **Terraform exporter injection hardening.** The 13 numeric resource fields (e.g. `allocated_storage`) are now coerced to real numbers via `_hcl_num`, and the export validator rejects newlines and braces in string values. This closes a path where a string-typed numeric field could inject a `provisioner "local-exec"` into the generated HCL. Pulumi and CloudFormation paths were already safe. Regression test included.
 - **`cloudwright plan` secret scoping.** The subprocess environment no longer carries the LLM/app API keys (terraform never needs them), only credential-shaped keys are merged from a project `.env`, and any secret-shaped value is redacted from returned `output_tail`.
 
 ## [1.5.0] - 2026-05-19
 
 ### Added
 
-- **Compliance scanner with framework control-ID mapping.** New `cloudwright compliance spec.yaml [--frameworks hipaa,soc2,fedramp] [--checkov/--no-checkov] [--fail-on high] [-o report.md]` maps every design-stage finding to the specific framework control it violates — HIPAA `164.312(a)(2)(iv)`, SOC 2 `CC6.1`, FedRAMP `SC-28`, PCI-DSS, GDPR, ISO 27001, NIST 800-53 — before any infrastructure exists. The mapping layer runs on the built-in `SecurityScanner` and the Terraform HCL scan with no external tooling; when the Checkov binary is on PATH it is run against the exported Terraform and its `CKV_*` findings are folded into the same control-mapped report (explicit ID map + keyword fallback so unknown checks still classify). Output includes a per-framework posture table (controls satisfied / violated, status) and an audit-ready markdown report. New control catalog at `cloudwright/data/compliance_controls.yaml`. Web: `POST /api/compliance` and a Compliance tab in the canvas. Optional dep: `pip install 'cloudwright-ai[compliance]'` (checkov 3.x). Graceful degrade when Checkov is absent — the control mapping still works.
-- **`cloudwright plan` — prove the exported infrastructure is deployable.** New `cloudwright plan spec.yaml [--target terraform|pulumi-python|pulumi-ts] [--no-plan] [--timeout N]` runs `terraform init -backend=false` + `terraform validate` (+ `terraform plan` when cloud credentials are present) or `pulumi preview` against the generated artifact. Read-only — nothing is applied. `validate` needs no credentials and is the offline proof of deployability; `plan` adds a real `+add ~change -destroy` resource diff when credentials resolve. Honest classification of why a full plan was skipped (missing credentials vs. required input variables vs. invalid generated config vs. provider download / network). Degrades gracefully when a binary is absent. Web: `POST /api/plan` and a Plan tab in the canvas with a DEPLOYABLE / NOT DEPLOYABLE verdict.
+- **Compliance scanner with framework control-ID mapping.** New `cloudwright compliance spec.yaml [--frameworks hipaa,soc2,fedramp] [--checkov/--no-checkov] [--fail-on high] [-o report.md]` maps every design-stage finding to the specific framework control it violates. This includes HIPAA `164.312(a)(2)(iv)`, SOC 2 `CC6.1`, FedRAMP `SC-28`, PCI-DSS, GDPR, ISO 27001, and NIST 800-53. The mapping runs before infrastructure exists. The built-in `SecurityScanner` and Terraform HCL scan need no external tool. When Checkov is on PATH, its `CKV_*` findings join the same report (explicit ID map plus keyword fallback). Output includes a per-framework posture table and an audit-ready markdown report. The control catalog is `cloudwright/data/compliance_controls.yaml`. Web: `POST /api/compliance` and a Compliance tab. Optional dependency: `pip install 'cloudwright-ai[compliance]'` (checkov 3.x). The control mapping still works without Checkov.
+- **`cloudwright plan`: prove the exported infrastructure is deployable.** New `cloudwright plan spec.yaml [--target terraform|pulumi-python|pulumi-ts] [--no-plan] [--timeout N]` runs `terraform init -backend=false` and `terraform validate`. It can also run `terraform plan` with cloud credentials or `pulumi preview`. It never applies. `validate` needs no credentials. `plan` adds a real `+add ~change -destroy` resource diff when credentials resolve. Output states why a full plan was skipped: missing credentials, needed input variables, invalid config, or provider network access. It works without the optional binary. Web: `POST /api/plan` and a Plan tab with a DEPLOYABLE or NOT DEPLOYABLE verdict.
 - **Live GCP and Azure import.** `cloudwright import-live --provider gcp --project PROJECT` walks Compute Engine, Cloud Storage, and Cloud SQL; `cloudwright import-live --provider azure --subscription SUB_ID` walks Virtual Machines, Storage Accounts, Azure SQL, and AKS. Both mirror the AWS importer: lazy SDK import, fast-fail on missing credentials, non-fatal per-service permission guards, canonical registry service keys, security posture capture (GCS public-access-prevention + versioning + CMEK, Storage Account HTTPS-only + public-blob + min-TLS, SQL public network access, AKS private cluster). GCP project falls back to `GOOGLE_CLOUD_PROJECT`; Azure subscription to `AZURE_SUBSCRIPTION_ID`. The CLI now routes `--provider gcp|azure` instead of returning "not yet implemented". Optional deps split into `live-import-gcp` / `live-import-azure` extras (also bundled in `live-import`).
 
 ## [1.4.0] - 2026-05-02
 
 ### Added
 
-- **Live AWS import.** New `cloudwright import-live --provider aws --region us-east-1 [--profile NAME] [--services ec2,rds,s3] [-o spec.yaml]` walks `boto3 describe-*` calls (EC2, VPC + subnets + security groups, RDS, S3, Lambda, ECS, EKS, DynamoDB, ALB/NLB, CloudFront, SQS, API Gateway, CloudTrail) and produces an ArchSpec from running infrastructure. Captures security posture (S3 encryption + versioning + public-access-block, RDS multi-AZ + storage_encrypted + backup_retention, EC2 IMDSv2 http_tokens, SG ingress 0.0.0.0/0). Best-effort connection inference: ALB → EC2 (via target groups) and CloudFront → S3 (via origin domains). Per-service permission denials are non-fatal — other services keep scanning. GCP and Azure surface a clear "not yet implemented" error. Optional dep: `pip install 'cloudwright-ai[live-import]'` (boto3 1.34+).
+- **Live AWS import.** New `cloudwright import-live --provider aws --region us-east-1 [--profile NAME] [--services ec2,rds,s3] [-o spec.yaml]` walks `boto3 describe-*` calls (EC2, VPC + subnets + security groups, RDS, S3, Lambda, ECS, EKS, DynamoDB, ALB/NLB, CloudFront, SQS, API Gateway, CloudTrail) and produces an ArchSpec from running infrastructure. Captures security posture (S3 encryption + versioning + public-access-block, RDS multi-AZ + storage_encrypted + backup_retention, EC2 IMDSv2 http_tokens, SG ingress 0.0.0.0/0). Best-effort connection inference: ALB to EC2 (via target groups) and CloudFront to S3 (via origin domains). Per-service permission denials are non-fatal. Other services keep scanning. GCP and Azure surface a clear "not yet implemented" error. Optional dep: `pip install 'cloudwright-ai[live-import]'` (boto3 1.34+).
 - **GitHub Action `cloudwright-pr-comment`** posts an idempotent PR comment with architecture diff (added/removed/changed components), monthly cost delta (head vs. base, with annual rollup), and per-framework compliance changes (e.g. SOC 2 score deltas, newly-failing or newly-resolved checks). Reusable composite action at `.github/actions/cloudwright-pr-comment/`. Drop-in workflow template at `.github/workflows/cloudwright-pr-preview.yml` triggers on PRs touching `*.tf`, `*.tfstate`, `cloudwright.yaml`, or `spec.yaml`. Setup guide at `docs/github-action.md`.
 - **Re-recorded Smart Canvas demo GIF** (`examples/cloudwright-smart-canvas-demo.gif`) reflecting the v1.3 UI: prompt → diagram → catalog drawer → add resource → side-panel edit → cost recompute. Reproducible via `python scripts/record_smart_canvas.py` against a local web server (mock LLM, template-matched prompt, no API key required for the recording).
 - **Pulumi exporter (TypeScript + Python).** New `--format pulumi-ts` and `--format pulumi-python` export targets. `cloudwright export spec.yaml --format pulumi-ts -o ./infra` writes a complete Pulumi TypeScript project (`index.ts`, `Pulumi.yaml`, `package.json`, `tsconfig.json`) using `@pulumi/aws`, `@pulumi/gcp`, and `@pulumi/azure-native`. `--format pulumi-python` writes a Python project (`__main__.py`, `Pulumi.yaml`, `requirements.txt`) using `pulumi_aws`, `pulumi_gcp`, and `pulumi_azure_native`. Aliases `pulumi-typescript` and `pulumi-py` also work.
@@ -235,14 +308,14 @@ first are fixed.
 
 ### Added
 
-- **Two-stage prompting for design and complex modify.** Per `ai-llm-eval.md` ("Two-Stage Prompting Recovers Reasoning Quality Lost to JSON Schema Constraints"), `Architect.design()` now runs Stage 1 (free-text architectural reasoning via Sonnet, `DESIGN_REASONING_SYSTEM`) followed by Stage 2 (strict JSON projection via Haiku, `DESIGN_PROJECTION_SYSTEM`). Stage 2 is told the canonical service keys, allowed connection kinds, and boundary kinds — so it projects faithfully without redesigning. Single-shot path retained as fallback (`Architect(two_stage=False)`). `IMPORT/MIGRATION/COMPARE` flows still use the legacy single-shot prompts since their contracts are tighter.
+- **Two-stage prompting for design and complex modify.** Per `ai-llm-eval.md` ("Two-Stage Prompting Recovers Reasoning Quality Lost to JSON Schema Constraints"), `Architect.design()` now runs Stage 1 (free-text architectural reasoning via Sonnet, `DESIGN_REASONING_SYSTEM`) followed by Stage 2 (strict JSON projection via Haiku, `DESIGN_PROJECTION_SYSTEM`). Stage 2 gets the canonical service keys, allowed connection kinds, and boundary kinds. It projects without redesigning. Single-shot path remains as fallback (`Architect(two_stage=False)`). `IMPORT/MIGRATION/COMPARE` flows still use the legacy single-shot prompts since their contracts are tighter.
 - **`Connection.kind` enum.** New optional field on `Connection`: `sync_request | async_event | stream | replication | batch`. Default `None` for back-compat. Stage 2 projector populates it based on the Stage 1 reasoning's verbs ("calls" → `sync_request`, "publishes to" → `async_event`, "streams" → `stream`, etc.). Parser accepts canonical and aliased values (`sync`, `async`, `http`, `Sync-Request`) and silently drops invalid values to `None`.
 - **First-class boundaries in the LLM contract.** `Boundary` (VPC / subnet / security_group / availability_zone / region / account) was previously in the schema but never asked of the LLM. The Stage 1 prompt now instructs the architect to reason about networking topology explicitly; Stage 2 projects named VPCs, subnets, and SGs into a `boundaries` array with parent linkage. Parser tolerates malformed boundary entries (missing `id`/`kind`, invalid IDs, ghost component refs) by dropping them with a warning.
 - **Per-stage usage in API responses.** When a request goes through two-stage prompting, the `usage` payload returned by `/api/design`, `/api/design/stream`, `/api/modify`, `/api/modify/stream` now includes `stage1` (`{model, input_tokens, output_tokens, cost_usd, latency_ms, reasoning_chars}`), `stage2` (same shape), `stage1_tokens`, `stage2_tokens`, `total_cost_usd`, and a `two_stage: true` flag. Aggregate `input_tokens`/`output_tokens`/`cost_usd` fields still present for back-compat.
 
 ### Changed
 
-- **Conditional safe-default injection in `_post_validate`.** The pre-v1.4 implementation forced `encryption=true`, `multi_az=true`, `backup=true`, `auto_scaling=true`, and `count=2` onto every spec — masking Stage 1 reasoning and producing the same monolithic shape for sandbox/dev workloads as for HIPAA-bound production. v1.4 makes these conditional on workload profile (`spec.metadata.workload_profile`) and declared compliance:
+- **Conditional safe-default injection in `_post_validate`.** The pre-v1.4 implementation forced `encryption=true`, `multi_az=true`, `backup=true`, `auto_scaling=true`, and `count=2` onto every spec. This masked Stage 1 reasoning and produced the same monolithic shape for sandbox/dev workloads as for HIPAA-bound production. v1.4 makes these conditional on workload profile (`spec.metadata.workload_profile`) and declared compliance:
   - `sandbox`, `dev`, `development`, `test`, `demo`, `poc` profiles get the LLM's chosen values without overrides.
   - `production`, `prod`, `medium`, `large`, `enterprise` profiles get the safe defaults forced.
   - Compliance frameworks (HIPAA, PCI-DSS, SOC 2, GDPR, FedRAMP, HITRUST, ISO 27001) always force encryption + HA regardless of profile.
@@ -253,9 +326,9 @@ first are fixed.
 
 - All 4 new test files added: `test_two_stage_prompting.py` (8 tests), `test_boundary_in_spec.py` (5 tests), `test_connection_kind.py` (8 tests), `test_post_validate_conditional.py` (8 tests). 29 new tests, all passing.
 - Existing `_post_validate` tests retain their behavior because `_profile_requires_encryption` / `_profile_requires_ha` default to `True` when no profile metadata and no overriding signal is present, preserving the previous defaults for callers that didn't tag specs.
-- **Cancel-safe LLM streaming via `AsyncAnthropic` + `AsyncOpenAI`.** `AnthropicLLM.generate_stream_async` and `OpenAILLM.generate_stream_async` use the providers' native async clients with `async with` cleanup, so consumer cancellation propagates into the SDK and closes the upstream httpx connection. Lazy-built `async_client` property on each provider — sync callers pay no async-import cost.
+- **Cancel-safe LLM streaming via `AsyncAnthropic` + `AsyncOpenAI`.** `AnthropicLLM.generate_stream_async` and `OpenAILLM.generate_stream_async` use the providers' native async clients with `async with` cleanup, so consumer cancellation propagates into the SDK and closes the upstream httpx connection. The lazy-built `async_client` property means sync callers pay no async-import cost.
 - **`ConversationSession.send_stream_async`.** Async generator mirror of `send_stream`. Pops the orphan user message on `BaseException` (covers `asyncio.CancelledError`) so a disconnected stream doesn't leave a user-without-assistant turn at the end of history.
-- **`BaseLLM.generate_stream_async` default.** Bridges the sync `generate_stream` through `asyncio.to_thread` for any third-party provider that hasn't implemented the native async path yet — not cancel-safe, but provides a working default.
+- **`BaseLLM.generate_stream_async` default.** Bridges the sync `generate_stream` through `asyncio.to_thread` for any third-party provider that has not implemented the native async path yet. It is not cancel-safe, but provides a working default.
 - **SSE proxy-buffering headers.** `/api/chat/stream`, `/api/design/stream`, `/api/modify/stream` now ship `X-Accel-Buffering: no` and `Cache-Control: no-cache` so nginx (and most reverse proxies) forward token chunks immediately instead of waiting on a 4-16 KB buffer fill.
 
 ### Changed
@@ -361,7 +434,7 @@ See `docs/audits/2026-05-01-product-audit.md` for the full audit + roadmap.
 
 ### Added
 
-- Smart Canvas: web diagram is now a fully editable architecture canvas (add/connect/drag nodes, edit label/description/tier/config/tags, delete resources/connections) with deterministic frontend state mutations — no LLM `modify` calls.
+- Smart Canvas: web diagram is now a fully editable architecture canvas (add/connect/drag nodes, edit label/description/tier/config/tags, delete resources/connections) with deterministic frontend state mutations and no LLM `modify` calls.
 - Catalog drawer with three tabs (Resources, Modules, Standards) on the diagram tab.
 - `GET /api/catalog/services?provider={provider}` endpoint backing the Resources tab. Provider casing is normalized (e.g., `?provider=GCP` and `?provider=gcp` return the same set).
 - Approved module catalog: `GET /api/modules` and `GET /api/modules/{id}` expose curated multi-resource patterns from `packages/core/cloudwright/data/modules/`.
@@ -460,7 +533,7 @@ See `docs/audits/2026-05-01-product-audit.md` for the full audit + roadmap.
 - Session persistence: `SessionStore` class with save/load/list/delete, CLI `/save-session`, `/load-session`, `/sessions` commands, `--resume SESSION_ID` flag
 - Per-turn and cumulative usage tracking (input/output tokens, estimated cost) across all interfaces
 - Context window management with automatic history trimming at 50 turns
-- Spec diff integration — modifications show added/removed/changed components via existing `Differ` class
+- Spec diff integration. Modifications show added/removed/changed components via existing `Differ` class
 - Clarification-first routing for ambiguous single-word inputs (skips LLM, asks for more detail)
 - Few-shot examples in design and modify system prompts to reduce JSON parsing failures
 - `--debug` flag for CLI chat (shows prompts, responses, timing, token counts)
@@ -499,7 +572,7 @@ See `docs/audits/2026-05-01-product-audit.md` for the full audit + roadmap.
 
 ### Added
 
-- Workload profiles for cost estimation (small, medium, large, enterprise) — injects production-realistic sizing defaults before pricing formulas run
+- Workload profiles for cost estimation (small, medium, large, enterprise). Injects production-realistic sizing defaults before pricing formulas run
 - `--workload-profile` / `-w` flag on `cost` command
 - Shell completion callbacks for workload profiles and pricing tiers
 - 20 new CloudFormation resource types (IAM, VPC, CloudWatch, Kinesis, StepFunctions, SecretsManager, KMS, ECR, MSK, EventBridge)
@@ -743,7 +816,7 @@ See `docs/audits/2026-05-01-product-audit.md` for the full audit + roadmap.
 - D2 diagram export formats: `d2`, `d2-svg`, `d2-png`
 - `mermaid-svg` and `mermaid-png` export format variants
 - `cloudwright policy` command for policy-as-code compliance engine
-- Global error handler in all commands — clean error messages with `--verbose` for stack traces
+- Global error handler in all commands. Clean error messages with `--verbose` for stack traces
 - JSON error responses when `--json` flag is active and a command fails
 
 ### Changed

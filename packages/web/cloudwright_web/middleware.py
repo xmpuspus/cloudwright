@@ -7,10 +7,11 @@ import os
 import threading
 import time
 import uuid
-from collections import deque
+from collections import OrderedDict, deque
 from urllib.parse import unquote
 
 import structlog
+from cloudwright.migration import validate_migration_size
 from fastapi import HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -85,6 +86,32 @@ class BodySizeLimitMiddleware:
 
 class _BodyTooLargeError(Exception):
     pass
+
+
+class MigrationRequestGuardMiddleware:
+    """Authenticate and rate-limit migration routes before body parsing."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        path = scope.get("path", "")
+        if scope["type"] == "http" and path.startswith("/api/migration/") and scope.get("method") != "OPTIONS":
+            request = Request(scope)
+            try:
+                check_api_key(request)
+            except HTTPException as exc:
+                response = JSONResponse(
+                    status_code=exc.status_code,
+                    content={"detail": exc.detail},
+                    headers=exc.headers,
+                )
+                await response(scope, receive, send)
+                return
+            if response := check_rate_limit(request):
+                await response(scope, receive, send)
+                return
+        await self.app(scope, receive, send)
 
 
 class PathTraversalMiddleware(BaseHTTPMiddleware):
@@ -162,35 +189,56 @@ def check_api_key(request: Request):
 class _RateLimiter:
     """Simple in-memory per-IP rate limiter."""
 
-    def __init__(self, max_requests: int = 30, window_seconds: int = 60):
+    def __init__(self, max_requests: int = 30, window_seconds: int = 60, max_buckets: int = 10_000):
         self._max = max_requests
         self._window = window_seconds
-        self._buckets: dict[str, deque] = {}
+        self._max_buckets = max_buckets
+        self._buckets: OrderedDict[str, deque] = OrderedDict()
         self._lock = threading.Lock()
+        self._next_sweep = 0.0
+
+    def _sweep_expired(self, cutoff: float) -> None:
+        """Remove buckets that have no request inside the active window."""
+        for other_ip, other_bucket in list(self._buckets.items()):
+            while other_bucket and other_bucket[0] < cutoff:
+                other_bucket.popleft()
+            if not other_bucket:
+                del self._buckets[other_ip]
+
+    def _evict_expired_buckets(self, cutoff: float) -> None:
+        """Evict expired least-recently-used buckets without a full scan."""
+        while self._buckets:
+            _, oldest_bucket = next(iter(self._buckets.items()))
+            if oldest_bucket and oldest_bucket[-1] >= cutoff:
+                break
+            self._buckets.popitem(last=False)
 
     def is_allowed(self, ip: str) -> tuple[bool, int]:
         """Returns (allowed, retry_after_seconds)."""
         now = time.time()
         cutoff = now - self._window
         with self._lock:
-            # Sweep every IP's bucket, not just the one making this request.
-            # Pruning only the current IP's bucket never actually shrinks the
-            # dict: a one-off caller (rotating IP, scanner, CDN churn) is
-            # never seen again to trigger its own prune, so its entry sits
-            # forever. Sweeping all buckets here bounds dict size by the
-            # number of distinct IPs active within the last window, not the
-            # number ever seen over the life of the process.
-            for other_ip, other_bucket in list(self._buckets.items()):
-                while other_bucket and other_bucket[0] < cutoff:
-                    other_bucket.popleft()
-                if not other_bucket:
-                    del self._buckets[other_ip]
+            if now >= self._next_sweep:
+                self._sweep_expired(cutoff)
+                self._next_sweep = now + self._window
+            if self._max <= 0:
+                return False, int(self._window) + 1
 
-            bucket = self._buckets.setdefault(ip, deque())
+            bucket = self._buckets.get(ip)
+            if bucket is None:
+                self._evict_expired_buckets(cutoff)
+                if len(self._buckets) >= self._max_buckets:
+                    retry_after = max(1, int(self._next_sweep - now) + 1)
+                    return False, retry_after
+                bucket = self._buckets.setdefault(ip, deque())
+            else:
+                while bucket and bucket[0] < cutoff:
+                    bucket.popleft()
             if len(bucket) >= self._max:
                 retry_after = int(self._window - (now - bucket[0])) + 1 if bucket else int(self._window) + 1
                 return False, retry_after
             bucket.append(now)
+            self._buckets.move_to_end(ip)
             return True, 0
 
 
@@ -229,7 +277,7 @@ def check_rate_limit(request: Request):
     return None
 
 
-# --- Spec size cap ---
+# --- Request work caps ---
 
 MAX_SPEC_COMPONENTS = 200
 
@@ -250,6 +298,20 @@ def check_component_limit(spec) -> JSONResponse | None:
             "spec_too_large",
             f"Spec has {count} components; max allowed is {MAX_SPEC_COMPONENTS}",
             "Split the architecture into smaller specs",
+            422,
+        )
+    return None
+
+
+def check_migration_limit(project, evidence=None, pack=None) -> JSONResponse | None:
+    """Reject migration collections that exceed the request work limit."""
+    try:
+        validate_migration_size(project, evidence, pack)
+    except ValueError as exc:
+        return error_response(
+            "migration_too_large",
+            str(exc),
+            "Split the migration into smaller projects",
             422,
         )
     return None

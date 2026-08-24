@@ -24,13 +24,13 @@ cloudwright [--json] [--stream] [--verbose] [--dry-run] <subcommand> ...
 
 ---
 
-## Design and modify
+## Design and change
 
 ### `design`
 
 Generate a cloud architecture from a natural-language description.
 
-**Requires:** `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
+**Needs:** `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
 
 ```bash
 cloudwright design <description> [options]
@@ -61,7 +61,7 @@ v1.6 note: `design` now runs a generate->critique->repair loop. Blocking finding
 
 Apply a natural-language modification to an existing spec. Shows a structured diff and cost delta before writing.
 
-**Requires:** `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
+**Needs:** `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
 
 ```bash
 cloudwright modify <spec.yaml> <instruction> [options]
@@ -86,7 +86,7 @@ cloudwright modify spec.yaml "upgrade the database to Aurora Serverless v2" --dr
 
 Translate a spec to one or more other cloud providers and show a side-by-side service and cost comparison.
 
-**Requires:** `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
+**Needs:** `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
 
 ```bash
 cloudwright compare <spec.yaml> --providers <provider1,provider2,...>
@@ -102,9 +102,11 @@ cloudwright compare spec.yaml --providers gcp,azure
 
 ### `chat`
 
-Multi-turn interactive architecture design. In terminal mode, type a description to get started; use `/help` to see in-session commands (`/yaml`, `/diagram`, `/cost`, `/validate`, `/terraform`, `/export <fmt>`, `/save`, `/new`).
+Multi-turn interactive architecture design. In terminal mode, type a description to get started.
+Use `/help` to see in-session commands (`/yaml`, `/diagram`, `/cost`, `/validate`, `/terraform`,
+`/export <fmt>`, `/save`, `/new`).
 
-**Requires:** `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
+**Needs:** `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
 
 ```bash
 cloudwright chat [options]
@@ -170,7 +172,7 @@ cloudwright validate <spec.yaml> --well-architected [options]
 | `--compliance` | none | Comma-separated frameworks: `hipaa`, `pci-dss`, `soc2`, `fedramp`, `gdpr` |
 | `--well-architected` | off | Run Well-Architected pillar checks |
 | `--report` | none | Write a markdown compliance report to this path |
-| `--pdf` | none | Write a PDF compliance report (requires `cloudwright-ai[pdf]`) |
+| `--pdf` | none | Write a PDF compliance report (needs `cloudwright-ai[pdf]`) |
 
 Examples:
 
@@ -186,7 +188,7 @@ cloudwright validate spec.yaml --compliance pci-dss --report report.md
 
 Deeper scan that maps every finding to its exact framework control ID. Optionally folds in a Checkov deep scan against the exported Terraform.
 
-Runs offline. Checkov integration requires `pip install 'cloudwright-ai[compliance]'` and `checkov` on PATH.
+Runs offline. Checkov integration needs `pip install 'cloudwright-ai[compliance]'` and `checkov` on PATH.
 
 ```bash
 cloudwright compliance <spec.yaml> [options]
@@ -234,7 +236,7 @@ cloudwright security spec.yaml --fail-on medium
 
 ### `review` (v1.6)
 
-Unified offline review: runs scorer, linter, and validator together and returns a single severity-ranked finding list. Free, no API key required.
+Unified offline review: runs scorer, linter, and validator together and returns a single severity-ranked finding list. Free, no API key needed.
 
 ```bash
 cloudwright review <spec.yaml> [options]
@@ -261,7 +263,7 @@ cloudwright --json review spec.yaml
 
 Export an ArchSpec to IaC, diagram, or audit formats.
 
-Runs offline (SVG/PNG require the D2 binary: `curl -fsSL https://d2lang.com/install.sh | sh`).
+Runs offline (SVG/PNG need the D2 binary: `curl -fsSL https://d2lang.com/install.sh | sh`).
 
 ```bash
 cloudwright export <spec.yaml> --format <fmt> [options]
@@ -288,7 +290,7 @@ cloudwright export spec.yaml --format sbom -o sbom.json
 
 Prove the exported infrastructure is deployable. Runs `terraform validate` and optionally `terraform plan` (or `pulumi preview`). Nothing is applied.
 
-Requires Terraform or Pulumi on PATH. `--no-plan` skips the credential-requiring plan step.
+Needs Terraform or Pulumi on PATH. `--no-plan` skips the plan step that needs credentials.
 
 ```bash
 cloudwright plan <spec.yaml> [options]
@@ -308,6 +310,54 @@ cloudwright plan spec.yaml --no-plan
 cloudwright plan spec.yaml --target pulumi-ts
 cloudwright --json plan spec.yaml
 ```
+
+---
+
+## Migration planning and evidence
+
+### `migrate`
+
+Plan a transition and check recorded cutover evidence. The commands run offline. They never copy
+data, apply infrastructure, switch traffic, or run a cutover.
+
+```bash
+cloudwright migrate <command> [options]
+```
+
+| Command | Description |
+|---|---|
+| `packs` | List installed migration domain packs. |
+| `plan PROJECT` | Build ordered waves, supplied-cost economics, and acceptance gates. |
+| `verify PROJECT EVIDENCE` | Rebuild the gates, then check observations. Exit 2 when blocking gates fail or are missing. |
+| `demo` | Run the packaged PH telco project and evidence from start to finish. |
+
+`plan` options:
+
+| Option | Default | Description |
+|---|---|---|
+| `--output` / `-o` | none | Write the migration assessment as YAML. |
+| `--pack` | project value | Replace the project's optional domain-pack selection. |
+
+`verify` options:
+
+| Option | Default | Description |
+|---|---|---|
+| `--output` / `-o` | none | Write the checked evidence pack as YAML. |
+| `--pack` | project value | Replace the project's optional domain-pack selection. |
+
+Examples:
+
+```bash
+cloudwright migrate packs
+cloudwright migrate plan examples/migrations/ph-telco-project.yaml -o assessment.yaml
+cloudwright migrate verify examples/migrations/ph-telco-project.yaml examples/migrations/ph-telco-evidence.yaml -o evidence-pack.yaml
+cloudwright migrate demo
+cloudwright --json migrate demo
+```
+
+The global `--json` flag wraps the result under `data.assessment`, `data.evidence_pack`, or
+`data.packs`. See [Migration planning and evidence](migrations.md) for the file schema, Python API,
+domain-pack format, and limits.
 
 ---
 
@@ -340,7 +390,7 @@ cloudwright import stack.yaml --format cloudformation -o spec.yaml
 
 ### `import-live`
 
-Walk live cloud APIs to produce an ArchSpec from running infrastructure. Requires `pip install 'cloudwright-ai[live-import]'` and cloud credentials.
+Walk live cloud APIs to produce an ArchSpec from running infrastructure. Needs `pip install 'cloudwright-ai[live-import]'` and cloud credentials.
 
 ```bash
 cloudwright import-live [options]
@@ -353,7 +403,7 @@ cloudwright import-live [options]
 | `--profile` | none | AWS named profile (`~/.aws/credentials`) |
 | `--project` | none | GCP project ID (or `GOOGLE_CLOUD_PROJECT` env) |
 | `--subscription` | none | Azure subscription ID (or `AZURE_SUBSCRIPTION_ID` env) |
-| `--services` | all | Comma-separated subset, e.g. `ec2,rds,s3` |
+| `--services` | all | Comma-separated subset, for example `ec2,rds,s3` |
 | `--output` / `-o` | stdout | Write ArchSpec YAML to this file |
 | `--name` | auto | Override the architecture name |
 
@@ -484,7 +534,7 @@ cloudwright analyze spec.yaml --component rds_primary
 
 ### `policy`
 
-Evaluate a spec against custom policy rules defined in a YAML file. Built-in checks cover budget limits, provider constraints, required components, and compliance flags.
+Evaluate a spec against custom policy rules defined in a YAML file. Built-in checks cover budget limits, provider constraints, needed components, and compliance flags.
 
 Runs offline.
 
@@ -500,7 +550,7 @@ Exit code 1 when any `deny` rule fires.
 
 Generate an Architecture Decision Record (MADR format) from a spec.
 
-**Requires:** `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` (falls back to a deterministic template if the LLM is unavailable).
+**Needs:** `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` (falls back to a deterministic template if the LLM is unavailable).
 
 ```bash
 cloudwright adr <spec.yaml> [options]
@@ -566,7 +616,7 @@ Runs offline.
 cloudwright schema <query>
 ```
 
-`query` is either a `provider.service` key (e.g. `aws.ec2`, `gcp.cloud_sql`) or a compliance framework name (`hipaa`, `soc2`).
+`query` is either a `provider.service` key (for example `aws.ec2`, `gcp.cloud_sql`) or a compliance framework name (`hipaa`, `soc2`).
 
 Examples:
 
@@ -610,7 +660,7 @@ cloudwright catalog compare m5.xlarge m6i.xlarge
 
 Fetch live pricing from cloud provider APIs and write into the local catalog database.
 
-Requires network access. Does not require an LLM key.
+Needs network access. Does not need an LLM key.
 
 ```bash
 cloudwright refresh [options]
@@ -627,7 +677,7 @@ cloudwright refresh [options]
 
 ### `databricks-validate`
 
-Validate Databricks components in a spec against a live workspace. Requires `pip install 'cloudwright-ai[databricks]'` and `DATABRICKS_HOST` / `DATABRICKS_TOKEN`.
+Validate Databricks components in a spec against a live workspace. Needs `pip install 'cloudwright-ai[databricks]'` and `DATABRICKS_HOST` / `DATABRICKS_TOKEN`.
 
 ```bash
 cloudwright databricks-validate <spec.yaml> [--host URL] [--token TOKEN]
@@ -645,7 +695,7 @@ cloudwright mcp [options]
 
 | Option | Default | Description |
 |---|---|---|
-| `--tools` / `-t` | all | Comma-separated tool groups: `design`, `cost`, `validate`, `analyze`, `export`, `session`, `review`, `compliance`, `plan` |
+| `--tools` / `-t` | all | Comma-separated tool groups: `design`, `cost`, `validate`, `analyze`, `export`, `session`, `review`, `compliance`, `plan`, `migration` |
 | `--transport` | `stdio` | `stdio` or `sse` |
 
 See [MCP Reference](mcp-reference.md) for setup instructions.

@@ -1,5 +1,6 @@
-"""Cloudwright — Architecture intelligence for cloud engineers."""
+"""Cloudwright: architecture intelligence for cloud engineers."""
 
+from cloudwright.migration.models import EvidenceInput, MigrationAssessment, MigrationProject
 from cloudwright.spec import (
     Alternative,
     ArchSpec,
@@ -17,7 +18,7 @@ from cloudwright.spec import (
     ValidationResult,
 )
 
-__version__ = "1.9.0"
+__version__ = "1.10.0"
 
 __all__ = [
     "Alternative",
@@ -40,9 +41,14 @@ __all__ = [
     "Differ",
     "DiffResult",
     "DriftReport",
+    "EvidenceEvaluator",
+    "EvidenceInput",
     "get_timeline",
     "import_spec",
     "LintWarning",
+    "MigrationAssessment",
+    "MigrationPlanner",
+    "MigrationProject",
     "lint",
     "SecurityFinding",
     "SecurityReport",
@@ -124,4 +130,12 @@ def __getattr__(name: str):
         from cloudwright.security import SecurityReport
 
         return SecurityReport
+    if name == "MigrationPlanner":
+        from cloudwright.migration.planner import MigrationPlanner
+
+        return MigrationPlanner
+    if name == "EvidenceEvaluator":
+        from cloudwright.migration.evidence import EvidenceEvaluator
+
+        return EvidenceEvaluator
     raise AttributeError(f"module 'cloudwright' has no attribute {name!r}")

@@ -15,6 +15,7 @@ from cloudwright_web import __version__
 from cloudwright_web.middleware import (  # noqa: F401
     MAX_BODY_BYTES,
     BodySizeLimitMiddleware,
+    MigrationRequestGuardMiddleware,
     PathTraversalMiddleware,
     RequestIdMiddleware,
     _rate_limiter,
@@ -30,6 +31,7 @@ from cloudwright_web.routers import (
     diagram_router,
     export_router,
     health_router,
+    migration_router,
     modules_router,
     plan_router,
     review_router,
@@ -109,6 +111,7 @@ def create_app() -> FastAPI:
     # (Starlette runs middleware in reverse-add order). This way every later
     # middleware's log lines carry the request_id.
     application.add_middleware(BodySizeLimitMiddleware, max_bytes=MAX_BODY_BYTES)
+    application.add_middleware(MigrationRequestGuardMiddleware)
     application.add_middleware(SecurityHeadersMiddleware)
     application.add_middleware(PathTraversalMiddleware)
     add_cors(application)
@@ -126,6 +129,7 @@ def create_app() -> FastAPI:
     application.include_router(modules_router, prefix="/api")
     application.include_router(diagram_router, prefix="/api")
     application.include_router(chat_router, prefix="/api")
+    application.include_router(migration_router, prefix="/api")
 
     from cloudwright_web.routers.diff import router as diff_router
 

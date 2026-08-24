@@ -10,7 +10,14 @@ import typer
 def mcp_serve(
     tools: Annotated[
         str | None,
-        typer.Option("--tools", "-t", help="Comma-separated tool groups: design,cost,validate,analyze,export,session"),
+        typer.Option(
+            "--tools",
+            "-t",
+            help=(
+                "Comma-separated tool groups: design,cost,validate,analyze,export,session,"
+                "review,compliance,plan,migration"
+            ),
+        ),
     ] = None,
     transport: Annotated[str, typer.Option("--transport", help="Transport: stdio or sse")] = "stdio",
 ) -> None:

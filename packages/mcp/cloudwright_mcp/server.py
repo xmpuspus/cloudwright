@@ -6,7 +6,7 @@ import logging
 
 from mcp.server.fastmcp import FastMCP
 
-from cloudwright_mcp.tools import analyze, compliance, cost, design, export, plan, review, session, validate
+from cloudwright_mcp.tools import analyze, compliance, cost, design, export, migration, plan, review, session, validate
 from cloudwright_mcp.ttl import sweep_expired_sessions
 
 log = logging.getLogger(__name__)
@@ -21,6 +21,7 @@ _GROUPS = {
     "review": review,
     "compliance": compliance,
     "plan": plan,
+    "migration": migration,
 }
 
 
@@ -30,9 +31,9 @@ def create_server(tools: set[str] | None = None) -> FastMCP:
     Args:
         tools: Set of group names to register. None = all groups.
                Valid groups: design, cost, validate, analyze, export, session,
-               review, compliance, plan.
+               review, compliance, plan, migration.
     """
-    mcp = FastMCP("cloudwright", instructions="Architecture intelligence for cloud engineers")
+    mcp = FastMCP("cloudwright", instructions="Architecture and migration intelligence for cloud engineers")
 
     try:
         sweep_expired_sessions()

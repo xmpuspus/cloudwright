@@ -6,6 +6,7 @@ import ValidationPanel from "./components/ValidationPanel";
 import CompliancePanel from "./components/CompliancePanel";
 import PlanPanel from "./components/PlanPanel";
 import ReviewPanel from "./components/ReviewPanel";
+import MigrationPanel from "./components/MigrationPanel";
 import ExportPanel from "./components/ExportPanel";
 import SpecPanel from "./components/SpecPanel";
 import ConfirmDialog from "./components/ConfirmDialog";
@@ -82,7 +83,7 @@ interface Message {
 type LoadingStage = "idle" | "generating" | "modifying" | "costing" | "done";
 type TabKey =
   | "diagram" | "cost" | "validate" | "compliance"
-  | "plan" | "review" | "export" | "spec" | "modify";
+  | "plan" | "migration" | "review" | "export" | "spec" | "modify";
 
 const API_BASE = "/api";
 
@@ -92,6 +93,7 @@ const TABS: { key: TabKey; icon: IconName }[] = [
   { key: "validate", icon: "check" },
   { key: "compliance", icon: "check" },
   { key: "plan", icon: "refresh" },
+  { key: "migration", icon: "route" },
   { key: "review", icon: "alert" },
   { key: "export", icon: "download" },
   { key: "spec", icon: "panel" },
@@ -771,6 +773,12 @@ function App() {
           {visited.has("plan") && (
             <section className="panel" id="panel-plan" role="tabpanel" aria-labelledby="tab-plan" hidden={activeTab !== "plan"}>
               {currentSpec ? <PlanPanel spec={specRecord} apiBase={API_BASE} /> : panelPlaceholder("the deploy check")}
+            </section>
+          )}
+
+          {visited.has("migration") && (
+            <section className="panel" id="panel-migration" role="tabpanel" aria-labelledby="tab-migration" hidden={activeTab !== "migration"}>
+              <MigrationPanel apiBase={API_BASE} />
             </section>
           )}
 

@@ -71,6 +71,18 @@ class TestCatalogDb:
         assert isinstance(results, list)
 
 
+class TestMigrationPacks:
+    def test_ph_telco_pack_is_packaged(self):
+        pack_path = Path(cloudwright.__file__).parent / "data" / "migration_packs" / "ph_telco.yaml"
+        assert pack_path.exists(), f"migration pack not found at {pack_path}"
+        assert pack_path.stat().st_size > 0
+
+    def test_ph_telco_demo_is_packaged(self):
+        demo_path = Path(cloudwright.__file__).parent / "data" / "migration_demos" / "ph_telco"
+        assert (demo_path / "project.yaml").exists()
+        assert (demo_path / "evidence.yaml").exists()
+
+
 class TestSpecRoundTrip:
     """Verify ArchSpec serializes and deserializes correctly."""
 

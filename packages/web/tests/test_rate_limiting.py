@@ -58,6 +58,7 @@ class TestRateLimiterDirect:
         import collections
 
         limiter._buckets["1.2.3.4"] = collections.deque([time.time() - 2, time.time() - 2])
+        limiter._next_sweep = 0
         allowed, _ = limiter.is_allowed("1.2.3.4")
         assert allowed is True
 

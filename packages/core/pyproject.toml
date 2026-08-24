@@ -29,10 +29,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-cli = ["cloudwright-ai-cli==1.9.0"]
-web = ["cloudwright-ai-cli==1.9.0", "cloudwright-ai-web==1.9.0"]
-mcp = ["cloudwright-ai-mcp==1.9.0"]
-all = ["cloudwright-ai-cli==1.9.0", "cloudwright-ai-web==1.9.0", "cloudwright-ai-mcp==1.9.0", "databricks-sdk>=0.38.0"]
+cli = ["cloudwright-ai-cli==1.10.0"]
+web = ["cloudwright-ai-cli==1.10.0", "cloudwright-ai-web==1.10.0"]
+mcp = ["cloudwright-ai-mcp==1.10.0"]
+all = ["cloudwright-ai-cli==1.10.0", "cloudwright-ai-web==1.10.0", "cloudwright-ai-mcp==1.10.0", "databricks-sdk>=0.38.0"]
 pdf = ["weasyprint", "markdown2"]
 databricks = ["databricks-sdk>=0.38.0"]
 live-import = [
@@ -67,7 +67,7 @@ Changelog = "https://github.com/xmpuspus/cloudwright/blob/main/CHANGELOG.md"
 path = "cloudwright/__init__.py"
 
 [tool.hatch.build]
-artifacts = ["cloudwright/data/catalog.db", "cloudwright/data/icons/**/*.svg", "cloudwright/data/modules/**/*.yaml", "cloudwright/data/compliance_controls.yaml"]
+artifacts = ["cloudwright/data/catalog.db", "cloudwright/data/icons/**/*.svg", "cloudwright/data/modules/**/*.yaml", "cloudwright/data/migration_packs/**/*.yaml", "cloudwright/data/migration_demos/**/*.yaml", "cloudwright/data/compliance_controls.yaml"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["cloudwright"]

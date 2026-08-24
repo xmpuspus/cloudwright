@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from cloudwright.migration.models import (
     AcceptanceCriterion,
@@ -29,6 +29,12 @@ class EvidenceEvaluator:
                 f"evidence assessment id {evidence.assessment_id!r} does not match "
                 f"current assessment id {assessment.assessment_id!r}"
             )
+        evaluated_at = datetime.now(UTC)
+        future_observations = [
+            observation.criterion_id for observation in evidence.observations if observation.observed_at > evaluated_at
+        ]
+        if future_observations:
+            raise ValueError("evidence contains future observation(s): " + ", ".join(sorted(future_observations)))
 
         criterion_ids = {criterion.id for criterion in assessment.assurance.criteria}
         observation_ids = [observation.criterion_id for observation in evidence.observations]

@@ -158,6 +158,14 @@ def test_observation_before_the_assessment_evidence_boundary_cannot_close():
     assert "before" in result.results[0].detail
 
 
+def test_future_dated_observation_is_rejected():
+    evidence = _evidence(True)
+    evidence.observations[0].observed_at = datetime(9999, 1, 1, tzinfo=UTC)
+
+    with pytest.raises(ValueError, match="future"):
+        EvidenceEvaluator().evaluate(_assessment(_criterion("true", True)), evidence)
+
+
 def test_incomplete_transition_cannot_close_even_when_gates_pass():
     result = EvidenceEvaluator().evaluate(
         _assessment(_criterion("true", True), complete=False),

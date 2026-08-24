@@ -217,6 +217,7 @@ The evaluator checks that:
 - Each observation names a known gate once.
 - The observation source matches the gate's needed evidence source.
 - The observation time is on or after the assessment's `evidence_not_before` boundary.
+- The observation time is not in the future when Cloudwright evaluates it.
 - The recorded value satisfies the comparator and target.
 - Every missing gate stays visible in the output.
 

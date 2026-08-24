@@ -43,6 +43,8 @@ Comparator = Literal["eq", "gte", "lte", "zero", "true"]
 ScalarValue = bool | int | float | str
 
 _ID_PATTERN = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_-]*$")
+MAX_MIGRATION_COST_VALUE = 1_000_000_000_000_000.0
+MAX_DUAL_RUN_MONTHS = 1_200.0
 
 
 class YamlModel(BaseModel):
@@ -108,7 +110,7 @@ class EstateAsset(IdentifiedModel):
     lifecycle: str = "active"
     data_classes: list[str] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
-    current_monthly_cost: float = Field(default=0, ge=0)
+    current_monthly_cost: float = Field(default=0, ge=0, le=MAX_MIGRATION_COST_VALUE)
     attributes: dict[str, Any] = Field(default_factory=dict)
     provenance: list[DiscoveryProvenance] = Field(default_factory=list)
 
@@ -160,10 +162,10 @@ class TargetMapping(YamlModel):
     expected_downtime_minutes: int = Field(default=0, ge=0)
     wave_hint: int | None = Field(default=None, ge=1)
     rollback: str = ""
-    one_time_cost: float = Field(default=0, ge=0)
-    target_monthly_cost: float = Field(default=0, ge=0)
-    dual_run_months: float = Field(default=0, ge=0)
-    decommission_credit: float = Field(default=0, ge=0)
+    one_time_cost: float = Field(default=0, ge=0, le=MAX_MIGRATION_COST_VALUE)
+    target_monthly_cost: float = Field(default=0, ge=0, le=MAX_MIGRATION_COST_VALUE)
+    dual_run_months: float = Field(default=0, ge=0, le=MAX_DUAL_RUN_MONTHS)
+    decommission_credit: float = Field(default=0, ge=0, le=MAX_MIGRATION_COST_VALUE)
     attributes: dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("rollback")

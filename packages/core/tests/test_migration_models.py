@@ -227,6 +227,36 @@ observations:
         )
 
 
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("one_time_cost", 1e308),
+        ("target_monthly_cost", 1e308),
+        ("decommission_credit", 1e308),
+        ("dual_run_months", 1e308),
+    ],
+)
+def test_mapping_rejects_cost_values_that_can_overflow_aggregate_economics(field, value):
+    with pytest.raises(ValidationError, match="less_than_equal"):
+        TargetMapping.model_validate(
+            {
+                "source_asset_id": "app",
+                "target_asset_ids": ["app-target"],
+                "disposition": "rehost",
+                "rollback": "restore source route",
+                field: value,
+            }
+        )
+
+
+def test_asset_rejects_monthly_cost_that_can_overflow_aggregate_economics():
+    data = _project_data()
+    data["estate"]["assets"][0]["current_monthly_cost"] = 1e308
+
+    with pytest.raises(ValidationError, match="less_than_equal"):
+        MigrationProject.model_validate(data)
+
+
 @pytest.mark.parametrize("observed_at", ["", "not-a-timestamp", "2026-08-24"])
 def test_evidence_rejects_missing_or_unzoned_timestamps(observed_at):
     with pytest.raises(ValidationError, match="observed_at"):

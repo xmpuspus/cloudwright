@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Migration CLI, API, MCP, and web view.** `cloudwright migrate packs|plan|verify|demo` supports human and
   JSON output, including compact NDJSON with `--stream`. CLI and HTTP evidence checks rebuild the assessment from the submitted project so edited
   planner output cannot remove gates. HTTP routes cap each migration collection at 200 items, and numeric
-  contracts reject non-finite values. A deterministic assessment ID binds evidence to the exact plan revision.
+  contracts reject non-finite or excessive cost values. A deterministic assessment ID binds evidence to the exact plan revision.
 - **Protected migration HTTP routes.** Authentication and rate checks run before request-body validation.
   Four `/api/migration/*` routes return the same core results. The Migration tab accepts a protected
   server's API key and shows the closure decision, supplied economics, dependency route, and evidence groups.

@@ -22,6 +22,7 @@ classifiers = [
 ]
 dependencies = [
     "cloudwright-ai>=1.10.0,<2",
+    "cloudwright-ai-cli>=1.10.0,<2",
     "mcp>=1.12,<2",
 ]
 

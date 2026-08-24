@@ -10,7 +10,7 @@ import math
 from pathlib import Path
 
 import pytest
-from cloudwright.migration import EvidenceInput, MigrationProject
+from cloudwright.migration import EvidenceInput, MigrationProject, TargetMapping
 from pydantic import ValidationError
 
 
@@ -140,6 +140,27 @@ def test_mapping_rejects_unknown_disposition():
         MigrationProject.model_validate(data)
 
 
+@pytest.mark.parametrize(
+    "extra",
+    [
+        {"target_asset_ids": ["replacement"]},
+        {"target_monthly_cost": 500},
+        {"one_time_cost": 100},
+        {"dual_run_months": 1},
+        {"decommission_credit": 50},
+    ],
+)
+def test_retain_mapping_rejects_target_changes_and_migration_costs(extra):
+    with pytest.raises(ValidationError, match="retain mapping"):
+        TargetMapping.model_validate(
+            {
+                "source_asset_id": "app",
+                "disposition": "retain",
+                **extra,
+            }
+        )
+
+
 def test_evidence_input_round_trip_keeps_boolean_and_numeric_values(tmp_path: Path):
     evidence = EvidenceInput.model_validate(
         {
@@ -179,6 +200,24 @@ observations:
     source: reconciliation-job
     observed_at: "2026-08-23T10:00:00Z"
 """
+        )
+
+
+@pytest.mark.parametrize("observed_at", ["", "not-a-timestamp", "2026-08-24"])
+def test_evidence_rejects_missing_or_unzoned_timestamps(observed_at):
+    with pytest.raises(ValidationError, match="observed_at"):
+        EvidenceInput.model_validate(
+            {
+                "project_name": "Plant ERP move",
+                "observations": [
+                    {
+                        "criterion_id": "record-parity",
+                        "value": True,
+                        "source": "reconciliation-job",
+                        "observed_at": observed_at,
+                    }
+                ],
+            }
         )
 
 

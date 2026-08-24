@@ -235,6 +235,21 @@ def test_retirement_waits_for_assets_that_depend_on_it():
     assert assessment.transition.waves[1].prerequisites == ["app"]
 
 
+def test_retirement_is_rejected_when_a_consumer_has_no_mapping():
+    project = _project()
+    project.target.mappings = [
+        TargetMapping(
+            source_asset_id="db",
+            disposition="retire",
+            rollback="restore archived database",
+        )
+    ]
+    project = MigrationProject.model_validate(project.model_dump())
+
+    with pytest.raises(ValueError, match="cannot retire db.*app has no target mapping"):
+        MigrationPlanner().plan(project)
+
+
 def test_economics_use_explicit_source_target_and_dual_run_values():
     economics = MigrationPlanner().plan(_project()).transition.economics
 

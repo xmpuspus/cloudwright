@@ -30,6 +30,17 @@ class MigrationPlanner:
         unresolved = sorted(set(assets) - set(mappings))
         warnings = [f"Source asset {asset_id} has no target mapping" for asset_id in unresolved]
 
+        for dependency in project.estate.dependencies:
+            dependency_mapping = mappings.get(dependency.target)
+            if (
+                dependency.source not in mappings
+                and dependency_mapping is not None
+                and dependency_mapping.disposition == "retire"
+            ):
+                raise ValueError(
+                    f"cannot retire {dependency.target} while dependent asset {dependency.source} has no target mapping"
+                )
+
         dependency_map: dict[str, list[str]] = defaultdict(list)
         for dependency in project.estate.dependencies:
             if dependency.source in mappings and dependency.target in mappings:

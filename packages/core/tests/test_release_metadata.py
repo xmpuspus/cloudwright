@@ -17,6 +17,13 @@ def test_companion_packages_require_this_core_release():
         assert expected in metadata["project"]["dependencies"]
 
 
+def test_standalone_mcp_package_installs_the_cli_launcher():
+    repository_root = Path(__file__).parents[3]
+    metadata = tomllib.loads((repository_root / "packages/mcp/pyproject.toml").read_text())
+
+    assert f"cloudwright-ai-cli>={cloudwright.__version__},<2" in metadata["project"]["dependencies"]
+
+
 def test_mcp_inventory_documents_the_migration_group():
     repository_root = Path(__file__).parents[3]
     readme = (repository_root / "README.md").read_text()

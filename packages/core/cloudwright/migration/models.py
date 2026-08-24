@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Literal, Self
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 AssetKind = Literal[
     "infrastructure",
@@ -175,6 +175,20 @@ class TargetMapping(YamlModel):
         """Need a target for each disposition that moves or replaces an asset."""
         if self.disposition not in {"retain", "retire"} and not self.target_asset_ids:
             raise ValueError(f"{self.disposition} mapping needs at least one target asset")
+        if self.disposition in {"retain", "retire"} and self.target_asset_ids:
+            raise ValueError(f"{self.disposition} mapping cannot reference target assets")
+        if self.disposition == "retain" and any(
+            (
+                self.expected_downtime_minutes,
+                self.wave_hint,
+                self.rollback,
+                self.one_time_cost,
+                self.target_monthly_cost,
+                self.dual_run_months,
+                self.decommission_credit,
+            )
+        ):
+            raise ValueError("retain mapping cannot define migration timing, rollback, or costs")
         return self
 
 
@@ -312,7 +326,7 @@ class EvidenceObservation(YamlModel):
     criterion_id: str
     value: ScalarValue
     source: str
-    observed_at: str
+    observed_at: AwareDatetime
     notes: str = ""
 
 

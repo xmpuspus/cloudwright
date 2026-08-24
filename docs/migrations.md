@@ -378,6 +378,6 @@ Both recorders use local fixtures and unset model keys. They make no cloud calls
 - Users record evidence. Cloudwright does not run a production test or certify its source.
 - HTTP requests accept at most 200 source assets, dependencies, target assets, mappings, or evidence
   observations in one project.
-- Service requests also cap aggregate nested items and scalar text.
+- CLI and service inputs also cap aggregate nested items and scalar text. CLI input files are at most 2 MB each.
 - Each supplied cost is at most 1 quadrillion currency units, and dual-run duration is at most 1,200 months.
 - Cloudwright only plans and checks evidence. A separate execution tool must do the move.

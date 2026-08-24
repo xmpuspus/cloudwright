@@ -154,3 +154,33 @@ def test_migrate_demo_streams_one_compact_ndjson_record():
     assert json.dumps(decoded, separators=(",", ":")) == lines[0]
     payload = decoded["data"]
     assert payload["evidence_pack"]["closed"] is True
+
+
+def test_migrate_plan_rejects_more_than_200_source_assets(tmp_path: Path):
+    project_file = tmp_path / "oversized.yaml"
+    project_file.write_text(
+        yaml.safe_dump(
+            {
+                "name": "Oversized move",
+                "evidence_not_before": "2026-08-24T00:00:00Z",
+                "estate": {
+                    "name": "Current",
+                    "assets": [
+                        {"id": f"asset-{index}", "name": f"Asset {index}", "kind": "application"}
+                        for index in range(201)
+                    ],
+                },
+                "target": {
+                    "name": "Target",
+                    "mappings": [
+                        {"source_asset_id": f"asset-{index}", "disposition": "retain"} for index in range(201)
+                    ],
+                },
+            }
+        )
+    )
+
+    result = runner.invoke(app, ["migrate", "plan", str(project_file)])
+
+    assert result.exit_code == 1
+    assert "201 source assets" in result.output

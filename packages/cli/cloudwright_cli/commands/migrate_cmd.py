@@ -6,14 +6,17 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+import yaml
 from cloudwright.migration import (
     EvidenceEvaluator,
     EvidenceInput,
     MigrationAssessment,
     MigrationPlanner,
     MigrationProject,
+    validate_migration_size,
 )
 from cloudwright.migration.demo import run_demo
+from cloudwright.migration.limits import MAX_MIGRATION_FILE_BYTES
 from cloudwright.migration.packs import list_packs
 from rich.console import Console
 from rich.panel import Panel
@@ -41,6 +44,34 @@ def _emit_machine(ctx: typer.Context, data: dict) -> None:
         emit_stream({"data": data})
     else:
         emit_success(ctx, data)
+
+
+def _read_mapping(path: Path, label: str) -> dict:
+    size = path.stat().st_size
+    if size > MAX_MIGRATION_FILE_BYTES:
+        raise ValueError(f"{label} file has {size} bytes; max allowed is {MAX_MIGRATION_FILE_BYTES}")
+    data = yaml.safe_load(path.read_text())
+    if not isinstance(data, dict):
+        raise ValueError(f"{label} file must contain a mapping")
+    return data
+
+
+def _load_project(project_file: Path, *, pack: str | None = None) -> MigrationProject:
+    project_data = _read_mapping(project_file, "migration project")
+    validate_migration_size(project_data, pack=pack)
+    return MigrationProject.model_validate(project_data)
+
+
+def _load_verification_inputs(
+    project_file: Path,
+    evidence_file: Path,
+    *,
+    pack: str | None = None,
+) -> tuple[MigrationProject, EvidenceInput]:
+    project_data = _read_mapping(project_file, "migration project")
+    evidence_data = _read_mapping(evidence_file, "migration evidence")
+    validate_migration_size(project_data, evidence_data, pack=pack)
+    return MigrationProject.model_validate(project_data), EvidenceInput.model_validate(evidence_data)
 
 
 def _write_yaml(ctx: typer.Context, model, output: Path | None) -> None:
@@ -148,7 +179,7 @@ def plan_migration(
 ) -> None:
     """Build dependency-ordered waves, economics, and acceptance gates."""
     try:
-        project = MigrationProject.from_file(project_file)
+        project = _load_project(project_file, pack=pack)
         assessment = MigrationPlanner().plan(project, pack_name=pack)
         _write_yaml(ctx, assessment, output)
         if is_json_mode(ctx):
@@ -173,9 +204,8 @@ def verify_migration(
 ) -> None:
     """Check recorded evidence and block closure when required gates fail."""
     try:
-        project = MigrationProject.from_file(project_file)
+        project, evidence = _load_verification_inputs(project_file, evidence_file, pack=pack)
         assessment = MigrationPlanner().plan(project, pack_name=pack)
-        evidence = EvidenceInput.from_file(evidence_file)
         evidence_pack = EvidenceEvaluator().evaluate(assessment, evidence)
         _write_yaml(ctx, evidence_pack, output)
         if is_json_mode(ctx):

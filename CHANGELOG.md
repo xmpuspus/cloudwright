@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the same planner and evaluator with no domain pack.
 - **Migration CLI, API, MCP, and web view.** `cloudwright migrate packs|plan|verify|demo` supports human and
   JSON output, including compact NDJSON with `--stream`. CLI and HTTP evidence checks rebuild the assessment from the submitted project so edited
-  planner output cannot remove gates. HTTP routes cap each migration collection at 200 items, and numeric
+  planner output cannot remove gates. CLI, HTTP, and MCP inputs share bounded collections and nested data. Numeric
   contracts reject non-finite or excessive cost values. A deterministic assessment ID binds evidence to the exact plan revision,
   and timestamp checks reject observations recorded before the migration or in the future.
 - **Protected migration HTTP routes.** Authentication and rate checks run before request-body validation.

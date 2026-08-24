@@ -8,6 +8,7 @@ from typing import Any
 MAX_MIGRATION_ITEMS = 200
 MAX_MIGRATION_NESTED_ITEMS = 10_000
 MAX_MIGRATION_TEXT_CHARACTERS = 1_000_000
+MAX_MIGRATION_FILE_BYTES = 2_000_000
 
 
 def _field(value: Any, name: str, default: Any) -> Any:

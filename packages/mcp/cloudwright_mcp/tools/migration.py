@@ -40,7 +40,7 @@ def register(mcp: FastMCP) -> None:
             return {"error": f"Invalid migration project: {exc}"}
         try:
             return MigrationPlanner().plan(project, pack_name=pack).as_dict()
-        except Exception as exc:
+        except ValueError as exc:
             return {"error": f"Migration planning failed: {exc}"}
 
     @mcp.tool()
@@ -83,5 +83,5 @@ def register(mcp: FastMCP) -> None:
         try:
             assessment = MigrationPlanner().plan(project, pack_name=pack)
             return EvidenceEvaluator().evaluate(assessment, evidence).as_dict()
-        except Exception as exc:
+        except ValueError as exc:
             return {"error": f"Migration evidence check failed: {exc}"}

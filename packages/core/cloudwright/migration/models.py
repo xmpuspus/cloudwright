@@ -164,6 +164,12 @@ class TargetMapping(YamlModel):
     decommission_credit: float = Field(default=0, ge=0)
     attributes: dict[str, Any] = Field(default_factory=dict)
 
+    @field_validator("rollback")
+    @classmethod
+    def normalize_rollback(cls, value: str) -> str:
+        """Treat whitespace-only rollback text as missing."""
+        return value.strip()
+
     @model_validator(mode="after")
     def validate_targets_for_disposition(self) -> Self:
         """Need a target for each disposition that moves or replaces an asset."""

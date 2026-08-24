@@ -53,6 +53,19 @@ def test_missing_rollback_procedure_stops_closure_even_with_ready_evidence():
     assert result.closed is False
 
 
+def test_whitespace_only_rollback_procedure_stops_closure():
+    project = MigrationProject.from_file(EXAMPLES / "manufacturing-erp-project.yaml")
+    evidence = EvidenceInput.from_file(EXAMPLES / "manufacturing-erp-evidence.yaml")
+    project.target.mappings[0].rollback = " \t "
+
+    assessment = MigrationPlanner().plan(project)
+    result = EvidenceEvaluator().evaluate(assessment, evidence)
+
+    assert assessment.transition.complete is False
+    assert assessment.transition.waves[0].rollback_procedures == []
+    assert result.closed is False
+
+
 def test_manufacturing_project_uses_same_kernel_without_telco_pack():
     project = MigrationProject.from_file(EXAMPLES / "manufacturing-erp-project.yaml")
     evidence = EvidenceInput.from_file(EXAMPLES / "manufacturing-erp-evidence.yaml")

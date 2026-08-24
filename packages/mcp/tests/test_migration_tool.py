@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 from cloudwright.migration.demo import load_demo
 
 
@@ -77,6 +78,39 @@ class TestMigrationTools:
         result = tools["plan_migration"](project_json=project)
 
         assert result["error"] == "Migration has 201 source assets; max allowed is 200"
+
+    def test_plan_migration_propagates_unexpected_runtime_failures(self, register_tools, monkeypatch):
+        import cloudwright_mcp.tools.migration as mod
+        from cloudwright.migration import MigrationPlanner
+
+        project, _ = load_demo()
+        tools = register_tools(mod)
+
+        def fail_plan(*args, **kwargs):
+            raise OSError("pack resource is unreadable")
+
+        monkeypatch.setattr(MigrationPlanner, "plan", fail_plan)
+
+        with pytest.raises(OSError, match="pack resource is unreadable"):
+            tools["plan_migration"](project_json=project.as_dict())
+
+    def test_verify_migration_propagates_unexpected_runtime_failures(self, register_tools, monkeypatch):
+        import cloudwright_mcp.tools.migration as mod
+        from cloudwright.migration import MigrationPlanner
+
+        project, evidence = load_demo()
+        tools = register_tools(mod)
+
+        def fail_plan(*args, **kwargs):
+            raise OSError("pack resource is unreadable")
+
+        monkeypatch.setattr(MigrationPlanner, "plan", fail_plan)
+
+        with pytest.raises(OSError, match="pack resource is unreadable"):
+            tools["verify_migration"](
+                project_json=project.as_dict(),
+                evidence_json=evidence.as_dict(),
+            )
 
 
 def test_migration_group_is_registered_by_the_server():

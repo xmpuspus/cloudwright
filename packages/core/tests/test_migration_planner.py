@@ -170,6 +170,15 @@ def test_retained_asset_cannot_depend_on_retired_asset():
         MigrationPlanner().plan(project)
 
 
+def test_retained_asset_cannot_depend_on_migrating_asset():
+    project = _project()
+    project.target.mappings[1] = TargetMapping(source_asset_id="app", disposition="retain")
+    project = MigrationProject.model_validate(project.model_dump())
+
+    with pytest.raises(ValueError, match="retained asset app depends on replatform asset db"):
+        MigrationPlanner().plan(project)
+
+
 def test_unmapped_asset_blocks_complete_plan():
     project = _project()
     project.estate.assets.append(EstateAsset(id="files", name="File store", kind="data", current_monthly_cost=500))

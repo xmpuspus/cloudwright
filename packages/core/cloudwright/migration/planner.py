@@ -93,18 +93,22 @@ class MigrationPlanner:
         dependencies: dict[str, list[str]],
         dependency_order: list[str],
     ) -> None:
-        """Reject retained assets whose dependency chain contains a retirement."""
-        retired_dependency: dict[str, str] = {}
+        """Reject retained assets whose dependency chain contains a changed asset."""
+        changed_dependency: dict[str, str] = {}
         for asset_id in dependency_order:
             for dependency_id in dependencies.get(asset_id, []):
-                if mappings[dependency_id].disposition == "retire":
-                    retired_dependency[asset_id] = dependency_id
+                if mappings[dependency_id].disposition != "retain":
+                    changed_dependency[asset_id] = dependency_id
                     break
-                if dependency_id in retired_dependency:
-                    retired_dependency[asset_id] = retired_dependency[dependency_id]
+                if dependency_id in changed_dependency:
+                    changed_dependency[asset_id] = changed_dependency[dependency_id]
                     break
-            if mappings[asset_id].disposition == "retain" and asset_id in retired_dependency:
-                raise ValueError(f"retained asset {asset_id} depends on retired asset {retired_dependency[asset_id]}")
+            if mappings[asset_id].disposition == "retain" and asset_id in changed_dependency:
+                dependency_id = changed_dependency[asset_id]
+                disposition = mappings[dependency_id].disposition
+                if disposition == "retire":
+                    raise ValueError(f"retained asset {asset_id} depends on retired asset {dependency_id}")
+                raise ValueError(f"retained asset {asset_id} depends on {disposition} asset {dependency_id}")
 
     @staticmethod
     def _scheduling_dependencies(

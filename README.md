@@ -67,6 +67,8 @@ billing, usage-record, number-porting, privacy, recovery, and source-shutdown ga
 fixture proves the same planner works without that pack. Missing blocking evidence changes the result to
 `closed: false` and makes `migrate verify` exit with code 2.
 
+MCP clients use the same engine through `plan_migration` and `verify_migration` in the `migration` tool group.
+
 See [Migration planning and evidence](docs/migrations.md) for the file contract, Python API, HTTP routes,
 domain-pack format, limits, and recording commands.
 

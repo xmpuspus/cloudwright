@@ -57,7 +57,7 @@ cloudwright mcp --tools design,cost
 cloudwright mcp --transport sse
 ```
 
-Valid tool group names for `--tools`: `design`, `cost`, `validate`, `analyze`, `export`, `session`, `review`, `compliance`, `plan`.
+Valid tool group names for `--tools`: `design`, `cost`, `validate`, `analyze`, `export`, `session`, `review`, `compliance`, `plan`, `migration`.
 
 ---
 
@@ -163,6 +163,8 @@ Read-only deployability check. Never applies changes.
 | Tool | Description |
 |---|---|
 | `plan_infrastructure` | Export an ArchSpec and run `terraform`/`tofu` `init -backend=false` + `validate` (default), or a full `plan`/`preview` with `run_plan=true`. Returns a structured result. Degrades to `{available: false}` when the IaC toolchain is absent; there is no apply path. |
+| `plan_migration` | Build dependency-ordered migration waves, supplied-cost economics, and acceptance gates from a `MigrationProject`. Read-only. |
+| `verify_migration` | Rebuild the assessment from a `MigrationProject`, check `EvidenceInput`, and return the closure decision with every failed or missing gate. |
 
 ---
 

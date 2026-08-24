@@ -695,7 +695,7 @@ cloudwright mcp [options]
 
 | Option | Default | Description |
 |---|---|---|
-| `--tools` / `-t` | all | Comma-separated tool groups: `design`, `cost`, `validate`, `analyze`, `export`, `session`, `review`, `compliance`, `plan` |
+| `--tools` / `-t` | all | Comma-separated tool groups: `design`, `cost`, `validate`, `analyze`, `export`, `session`, `review`, `compliance`, `plan`, `migration` |
 | `--transport` | `stdio` | `stdio` or `sse` |
 
 See [MCP Reference](mcp-reference.md) for setup instructions.

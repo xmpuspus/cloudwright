@@ -221,9 +221,10 @@ A smaller manufacturing ERP and plant-data project runs through the same planner
 - The PH telco proof project plans and checks evidence without a model or network access.
 - At least one missing or failed blocking observation changes closure to blocked.
 - Schedule each moving dependency before its consumer, and retire a dependency after its moving consumers.
+- Reject a consumer with the `retain` disposition when any direct or transitive dependency changes.
 - The manufacturing fixture completes using the same API with no telco pack.
 - CLI JSON is stable and machine-readable.
-- The API and web panel return the same assessment produced by the core.
+- The API, MCP tools, and web panel return the same assessment produced by the core.
 - The served static bundle has the migration panel.
 - README, detailed docs, CLI reference, package READMEs, CHANGELOG, and GIF assets agree with implemented behavior.
 - Relevant package tests, frontend build, Ruff, and demo verification pass in the current session.

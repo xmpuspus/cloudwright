@@ -131,6 +131,10 @@ available until those consumers move.
 The planner rejects dependency cycles and names the cycle. A `wave_hint` may delay an action, but it
 cannot place the action before one of its dependencies.
 
+An asset with the `retain` disposition may depend only on other `retain` assets. If one of its direct or
+transitive dependencies moves, changes platform, is replaced, or retires, the planner rejects the project
+because it has no action that can reconnect the consumer.
+
 ### Target mappings
 
 Each source asset may have one mapping. Supported dispositions are:
@@ -304,8 +308,17 @@ output cannot remove acceptance gates from an HTTP closure decision.
 
 The Migration tab calls the packaged demo endpoint. It shows the closure result, counts, economics,
 ordered wave route, and evidence grouped by category. It works before an architecture is generated
-in chat. When the server requires `CLOUDWRIGHT_API_KEY`, the tab asks for it after a 401 response,
+in chat. When the server uses `CLOUDWRIGHT_API_KEY`, the tab asks for it after a 401 response,
 keeps it in session storage for the current browser tab, and sends it in `X-API-Key`.
+
+## MCP tools
+
+The optional `migration` tool group registers two read-only tools:
+
+- `plan_migration` accepts a `MigrationProject` dictionary and returns its assessment.
+- `verify_migration` accepts the project and `EvidenceInput`, rebuilds the gates, and returns the evidence pack.
+
+Both tools use the core planner and evaluator. They do not move data, change systems, or run a cutover.
 
 ## Reproduce the GIFs
 

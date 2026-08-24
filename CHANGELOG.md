@@ -12,20 +12,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Read-only migration planning and evidence checks.** New portable models describe estate assets,
   dependencies, target mappings, migration dispositions, costs, waves, acceptance gates, observations,
   and closure results. The planner rejects cycles, orders dependencies first, honors safe wave hints,
-  keeps retiring dependencies available until their consumers move, reports unresolved mappings, and
-  calculates supplied one-time, dual-run, recurring, and retirement costs.
+  keeps retiring dependencies available until their consumers move, rejects a `retain` mapping when its
+  dependency changes, reports unresolved mappings, and calculates supplied one-time, dual-run, recurring,
+  and retirement costs.
 - **External migration domain packs.** Packaged YAML rules add gates by asset kind, data class, and tag
   without adding industry fields to the core. The first `ph_telco` pack adds 17 gates for subscriber,
   billing, usage-record, number-porting, privacy, access, recovery, failover, and source shutdown checks.
 - **Two checked proof projects.** The PH telco hybrid project closes with 22 passing gates across five
   waves. Removing one blocking observation changes closure to blocked. A manufacturing ERP project uses
   the same planner and evaluator with no domain pack.
-- **Migration CLI, API, and web view.** `cloudwright migrate packs|plan|verify|demo` supports human and
+- **Migration CLI, API, MCP, and web view.** `cloudwright migrate packs|plan|verify|demo` supports human and
   JSON output. CLI and HTTP evidence checks rebuild the assessment from the submitted project so edited
   planner output cannot remove gates. HTTP routes cap each migration collection at 200 items, and numeric
   contracts reject non-finite values. Authentication and rate checks run before request-body validation.
   Four `/api/migration/*` routes return the same core results. The Migration tab accepts a protected
   server's API key and shows the closure decision, supplied economics, dependency route, and evidence groups.
+- **Migration MCP tools.** MCP clients get `plan_migration` and `verify_migration` from the optional
+  `migration` tool group. Both tools use the core planner and evidence evaluator.
 - **Reproducible migration GIFs.** Browser and CLI recorders run local proof data with no model key or
   cloud account. A VHS tape supports systems with a working ffmpeg install.
 

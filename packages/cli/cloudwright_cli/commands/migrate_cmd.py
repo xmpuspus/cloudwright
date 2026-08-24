@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import os
+import secrets
 import stat
-import tempfile
 from pathlib import Path
 from typing import Annotated
 
@@ -26,7 +26,6 @@ from rich.panel import Panel
 from rich.table import Table
 
 from cloudwright_cli.output import (
-    confirm_overwrite,
     emit_stream,
     emit_success,
     is_json_mode,
@@ -108,25 +107,71 @@ def _load_verification_inputs(
     return MigrationProject.model_validate(project_data), EvidenceInput.model_validate(evidence_data)
 
 
+def _confirm_output_overwrite(path: Path, directory_descriptor: int, ctx: typer.Context) -> bool:
+    try:
+        os.stat(path.name, dir_fd=directory_descriptor, follow_symlinks=False)
+    except FileNotFoundError:
+        return True
+    if is_json_mode(ctx):
+        return False
+    return typer.confirm(f"File {path} already exists. Overwrite?", default=False)
+
+
 def _write_yaml(ctx: typer.Context, model, output: Path | None) -> None:
     if output is None:
         return
     path = validate_output_path(output)
-    if not confirm_overwrite(path, ctx=ctx):
-        raise ValueError(f"output file already exists: {path}")
-    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    directory_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
     try:
-        with os.fdopen(descriptor, "w", encoding="utf-8") as temporary_file:
+        directory_descriptor = os.open(path.parent, directory_flags)
+    except OSError as exc:
+        raise ValueError(f"output directory cannot be opened safely: {exc.strerror}") from exc
+
+    temporary_name: str | None = None
+    temporary_descriptor: int | None = None
+    try:
+        if not stat.S_ISDIR(os.fstat(directory_descriptor).st_mode):
+            raise ValueError("output parent must be a directory")
+        if not _confirm_output_overwrite(path, directory_descriptor, ctx):
+            raise ValueError(f"output file already exists: {path}")
+
+        create_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+        for _ in range(10):
+            candidate = f".{path.name}.{secrets.token_hex(8)}.tmp"
+            try:
+                temporary_descriptor = os.open(candidate, create_flags, 0o600, dir_fd=directory_descriptor)
+                temporary_name = candidate
+                break
+            except FileExistsError:
+                continue
+        if temporary_descriptor is None or temporary_name is None:
+            raise ValueError("could not allocate a temporary output file")
+
+        temporary_file = os.fdopen(temporary_descriptor, "w", encoding="utf-8")
+        temporary_descriptor = None
+        with temporary_file:
             temporary_file.write(model.to_yaml())
             temporary_file.flush()
             os.fsync(temporary_file.fileno())
-        os.replace(temporary_name, path)
-    except BaseException:
+        os.replace(
+            temporary_name,
+            path.name,
+            src_dir_fd=directory_descriptor,
+            dst_dir_fd=directory_descriptor,
+        )
+        temporary_name = None
+    finally:
+        if temporary_descriptor is not None:
+            os.close(temporary_descriptor)
+        if temporary_name is not None:
+            try:
+                os.unlink(temporary_name, dir_fd=directory_descriptor)
+            except FileNotFoundError:
+                pass
         try:
-            os.unlink(temporary_name)
-        except FileNotFoundError:
+            os.close(directory_descriptor)
+        except OSError:
             pass
-        raise
 
 
 def _render_assessment(assessment: MigrationAssessment) -> None:

@@ -206,12 +206,12 @@ def test_migrate_output_write_does_not_follow_swapped_symlink(tmp_path: Path, mo
     protected = tmp_path / "protected.txt"
     protected.write_text("keep me")
 
-    def swap_output_for_symlink(path: Path, *, ctx=None) -> bool:
+    def swap_output_for_symlink(path: Path, directory_descriptor: int, ctx) -> bool:
         path.unlink()
         path.symlink_to(protected)
         return True
 
-    monkeypatch.setattr(migrate_cmd, "confirm_overwrite", swap_output_for_symlink)
+    monkeypatch.setattr(migrate_cmd, "_confirm_output_overwrite", swap_output_for_symlink)
 
     result = runner.invoke(
         app,
@@ -222,3 +222,33 @@ def test_migrate_output_write_does_not_follow_swapped_symlink(tmp_path: Path, mo
     assert protected.read_text() == "keep me"
     assert output.is_symlink() is False
     assert yaml.safe_load(output.read_text())["project_name"] == "Manufacturing ERP and plant data migration"
+
+
+def test_migrate_output_write_stays_bound_to_validated_directory(tmp_path: Path, monkeypatch):
+    output_directory = tmp_path / "output"
+    output_directory.mkdir()
+    output = output_directory / "assessment.yaml"
+    output.write_text("old assessment")
+    moved_directory = tmp_path / "validated-output"
+    redirected_directory = tmp_path / "redirected-output"
+    redirected_directory.mkdir()
+    redirected_output = redirected_directory / "assessment.yaml"
+    redirected_output.write_text("keep me")
+
+    def replace_parent_with_symlink(path: Path, directory_descriptor: int, ctx) -> bool:
+        output_directory.rename(moved_directory)
+        output_directory.symlink_to(redirected_directory, target_is_directory=True)
+        return True
+
+    monkeypatch.setattr(migrate_cmd, "_confirm_output_overwrite", replace_parent_with_symlink)
+
+    result = runner.invoke(
+        app,
+        ["migrate", "plan", str(EXAMPLES / "manufacturing-erp-project.yaml"), "-o", str(output)],
+    )
+
+    assert result.exit_code == 0
+    assert redirected_output.read_text() == "keep me"
+    assert yaml.safe_load((moved_directory / "assessment.yaml").read_text())["project_name"] == (
+        "Manufacturing ERP and plant data migration"
+    )

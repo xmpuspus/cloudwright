@@ -7,7 +7,7 @@ import os
 import threading
 import time
 import uuid
-from collections import deque
+from collections import OrderedDict, deque
 from urllib.parse import unquote
 
 import structlog
@@ -193,7 +193,7 @@ class _RateLimiter:
         self._max = max_requests
         self._window = window_seconds
         self._max_buckets = max_buckets
-        self._buckets: dict[str, deque] = {}
+        self._buckets: OrderedDict[str, deque] = OrderedDict()
         self._lock = threading.Lock()
         self._next_sweep = 0.0
 
@@ -204,6 +204,14 @@ class _RateLimiter:
                 other_bucket.popleft()
             if not other_bucket:
                 del self._buckets[other_ip]
+
+    def _evict_expired_buckets(self, cutoff: float) -> None:
+        """Evict expired least-recently-used buckets without a full scan."""
+        while self._buckets:
+            _, oldest_bucket = next(iter(self._buckets.items()))
+            if oldest_bucket and oldest_bucket[-1] >= cutoff:
+                break
+            self._buckets.popitem(last=False)
 
     def is_allowed(self, ip: str) -> tuple[bool, int]:
         """Returns (allowed, retry_after_seconds)."""
@@ -218,6 +226,7 @@ class _RateLimiter:
 
             bucket = self._buckets.get(ip)
             if bucket is None:
+                self._evict_expired_buckets(cutoff)
                 if len(self._buckets) >= self._max_buckets:
                     retry_after = max(1, int(self._next_sweep - now) + 1)
                     return False, retry_after
@@ -229,6 +238,7 @@ class _RateLimiter:
                 retry_after = int(self._window - (now - bucket[0])) + 1 if bucket else int(self._window) + 1
                 return False, retry_after
             bucket.append(now)
+            self._buckets.move_to_end(ip)
             return True, 0
 
 

@@ -95,6 +95,21 @@ class TestBucketEviction:
         assert allowed is True
         assert retry_after == 0
 
+    def test_bucket_cap_evicts_entries_that_expired_after_last_sweep(self, monkeypatch):
+        limiter = _RateLimiter(max_requests=5, window_seconds=60, max_buckets=3)
+        times = iter([0, 1, 1, 61, 62])
+        monkeypatch.setattr("cloudwright_web.middleware.time.time", lambda: next(times))
+
+        assert limiter.is_allowed("seed")[0] is True
+        assert limiter.is_allowed("a")[0] is True
+        assert limiter.is_allowed("b")[0] is True
+        assert limiter.is_allowed("first-new")[0] is True
+
+        allowed, retry_after = limiter.is_allowed("second-new")
+
+        assert allowed is True
+        assert retry_after == 0
+
 
 class TestLimitSemanticsUnchanged:
     """Pin the pre-existing behavior so the eviction fix can't drift it."""

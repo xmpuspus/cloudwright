@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from collections import defaultdict, deque
 
 from cloudwright.migration.models import (
@@ -59,7 +61,8 @@ class MigrationPlanner:
         economics = self._calculate_economics(assets, mappings, currency=raw_currency.strip().upper())
         rollbacks_ready = all(action.rollback for wave in waves for action in wave.actions)
 
-        return MigrationAssessment(
+        assessment = MigrationAssessment(
+            assessment_id="0" * 64,
             project_name=project.name,
             industry=project.industry,
             domain_pack=pack_name or project.domain_pack,
@@ -73,6 +76,14 @@ class MigrationPlanner:
             ),
             assurance=assurance,
         )
+        canonical = json.dumps(
+            assessment.model_dump(mode="json", exclude={"assessment_id"}),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )
+        assessment_id = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        return assessment.model_copy(update={"assessment_id": assessment_id})
 
     @staticmethod
     def _dependency_order(mappings: dict[str, TargetMapping], dependencies: dict[str, list[str]]) -> list[str]:

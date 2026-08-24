@@ -22,6 +22,11 @@ class EvidenceEvaluator:
             raise ValueError(
                 f"evidence project {evidence.project_name!r} does not match assessment {assessment.project_name!r}"
             )
+        if evidence.assessment_id != assessment.assessment_id:
+            raise ValueError(
+                f"evidence assessment id {evidence.assessment_id!r} does not match "
+                f"current assessment id {assessment.assessment_id!r}"
+            )
 
         criterion_ids = {criterion.id for criterion in assessment.assurance.criteria}
         observation_ids = [observation.criterion_id for observation in evidence.observations]
@@ -41,6 +46,7 @@ class EvidenceEvaluator:
         failed = sum(not result.passed and result.actual is not None for result in results)
         blocking_failures = sum(not result.passed and result.blocking for result in results)
         return EvidencePack(
+            assessment_id=assessment.assessment_id,
             project_name=assessment.project_name,
             closed=assessment.transition.complete and blocking_failures == 0,
             passed=passed,

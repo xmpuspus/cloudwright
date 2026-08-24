@@ -1,3 +1,4 @@
+assessment_id: 3a201cf611f25fa510fb8a63c70aa9436fb8437b937faf4bbe3ac183251a79d1
 project_name: PH telco hybrid service migration
 observations:
   - {criterion_id: wave-1-rollback-ready, value: true, source: change-record, observed_at: "2026-08-24T01:00:00Z"}

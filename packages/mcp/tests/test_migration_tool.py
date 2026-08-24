@@ -93,6 +93,21 @@ class TestMigrationTools:
         assert "error" in result
         assert "text characters" in result["error"]
 
+    def test_plan_migration_rejects_unbounded_pack_override(self, register_tools):
+        import cloudwright_mcp.tools.migration as mod
+        from cloudwright.migration.limits import MAX_MIGRATION_TEXT_CHARACTERS
+
+        project, _ = load_demo()
+        tools = register_tools(mod)
+
+        result = tools["plan_migration"](
+            project_json=project.as_dict(),
+            pack="x" * (MAX_MIGRATION_TEXT_CHARACTERS + 1),
+        )
+
+        assert "error" in result
+        assert "text characters" in result["error"]
+
     def test_plan_migration_propagates_unexpected_runtime_failures(self, register_tools, monkeypatch):
         import cloudwright_mcp.tools.migration as mod
         from cloudwright.migration import MigrationPlanner

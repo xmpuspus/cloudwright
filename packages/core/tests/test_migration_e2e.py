@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from cloudwright.migration import EvidenceEvaluator, EvidenceInput, MigrationPlanner, MigrationProject
 
 ROOT = Path(__file__).parents[3]
@@ -46,6 +47,7 @@ def test_missing_rollback_procedure_stops_closure_even_with_ready_evidence():
     project.target.mappings[0].rollback = ""
 
     assessment = MigrationPlanner().plan(project)
+    evidence.assessment_id = assessment.assessment_id
     result = EvidenceEvaluator().evaluate(assessment, evidence)
 
     assert assessment.transition.complete is False
@@ -59,11 +61,25 @@ def test_whitespace_only_rollback_procedure_stops_closure():
     project.target.mappings[0].rollback = " \t "
 
     assessment = MigrationPlanner().plan(project)
+    evidence.assessment_id = assessment.assessment_id
     result = EvidenceEvaluator().evaluate(assessment, evidence)
 
     assert assessment.transition.complete is False
     assert assessment.transition.waves[0].rollback_procedures == []
     assert result.closed is False
+
+
+def test_evidence_from_an_older_target_plan_cannot_close_a_revision():
+    project = MigrationProject.from_file(EXAMPLES / "manufacturing-erp-project.yaml")
+    evidence = EvidenceInput.from_file(EXAMPLES / "manufacturing-erp-evidence.yaml")
+    original_assessment = MigrationPlanner().plan(project)
+    assert evidence.assessment_id == original_assessment.assessment_id
+
+    project.target.mappings[0].target_monthly_cost += 100
+    revised_assessment = MigrationPlanner().plan(project)
+
+    with pytest.raises(ValueError, match="assessment id"):
+        EvidenceEvaluator().evaluate(revised_assessment, evidence)
 
 
 def test_manufacturing_project_uses_same_kernel_without_telco_pack():

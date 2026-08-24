@@ -313,6 +313,7 @@ class MigrationAssessment(YamlModel):
     """Planner output consumed by the CLI, API, UI, and evaluator."""
 
     schema_version: str = "1.0"
+    assessment_id: str = Field(pattern=r"^[0-9a-f]{64}$")
     project_name: str
     industry: str = "general"
     domain_pack: str | None = None
@@ -333,6 +334,7 @@ class EvidenceObservation(YamlModel):
 class EvidenceInput(YamlModel):
     """Recorded evidence submitted for one migration project."""
 
+    assessment_id: str = Field(pattern=r"^[0-9a-f]{64}$")
     project_name: str
     observations: list[EvidenceObservation]
 
@@ -355,6 +357,7 @@ class EvidencePack(YamlModel):
     """Closure decision and complete result set for a migration."""
 
     schema_version: str = "1.0"
+    assessment_id: str = Field(pattern=r"^[0-9a-f]{64}$")
     project_name: str
     closed: bool
     passed: int = Field(ge=0)

@@ -63,7 +63,7 @@ def _validate_nested_item_budget(*values: Any) -> None:
         stack.extend(children)
 
 
-def validate_migration_size(project: Any, evidence: Any = None) -> None:
+def validate_migration_size(project: Any, evidence: Any = None, pack: Any = None) -> None:
     """Reject oversized project and evidence collections before deeper work."""
     estate = _field(project, "estate", {})
     target = _field(project, "target", {})
@@ -78,4 +78,4 @@ def validate_migration_size(project: Any, evidence: Any = None) -> None:
         count = _count(items)
         if count > MAX_MIGRATION_ITEMS:
             raise ValueError(f"Migration has {count} {label}; max allowed is {MAX_MIGRATION_ITEMS}")
-    _validate_nested_item_budget(project, evidence)
+    _validate_nested_item_budget(project, evidence, pack)

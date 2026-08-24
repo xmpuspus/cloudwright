@@ -31,7 +31,7 @@ def register(mcp: FastMCP) -> None:
         from cloudwright.migration import MigrationPlanner, MigrationProject, validate_migration_size
 
         try:
-            validate_migration_size(project_json)
+            validate_migration_size(project_json, pack=pack)
         except ValueError as exc:
             return {"error": str(exc)}
         try:
@@ -72,7 +72,7 @@ def register(mcp: FastMCP) -> None:
         )
 
         try:
-            validate_migration_size(project_json, evidence_json)
+            validate_migration_size(project_json, evidence_json, pack=pack)
         except ValueError as exc:
             return {"error": str(exc)}
         try:

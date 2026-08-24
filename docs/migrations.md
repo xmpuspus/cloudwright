@@ -142,7 +142,7 @@ Each source asset may have one mapping. Supported dispositions are:
 | Disposition | Meaning |
 |---|---|
 | `retain` | Keep the source asset as it is. |
-| `retire` | Remove the source asset after the other moves. A target is optional. |
+| `retire` | Remove the source asset after the other moves. It has no target asset. |
 | `rehost` | Move the asset with minimal design change. |
 | `relocate` | Move the existing platform or workload to another location. |
 | `replatform` | Change the runtime or managed service without redesigning the whole system. |
@@ -158,6 +158,8 @@ even when submitted evidence marks its rollback gate ready.
 ## Planner output
 
 `MigrationPlanner.plan()` returns a `MigrationAssessment` with two parts.
+It also returns a deterministic `assessment_id` for the exact waves, economics, and gates.
+Evidence must carry that ID. Evidence from an older target or cutover plan cannot close a revised assessment.
 
 ### Transition
 
@@ -191,6 +193,8 @@ decommissioning. Comparators are `eq`, `gte`, `lte`, `zero`, and `true`.
 An observation names one gate, one value, its source, and its observation time.
 
 ```yaml
+# Copy this value from the matching planner output.
+assessment_id: 09dae7ea13d5f888055cdf2fff7d69a06a50df1ccb4b98afacad4f1e48c045b9
 project_name: ERP transition
 observations:
   - criterion_id: wave-1-rollback-ready
@@ -202,6 +206,7 @@ observations:
 The evaluator checks that:
 
 - The evidence belongs to the assessment's project.
+- The evidence carries the exact `assessment_id` produced for that plan revision.
 - Each observation names a known gate once.
 - The observation source matches the gate's needed evidence source.
 - The recorded value satisfies the comparator and target.
@@ -323,10 +328,22 @@ Both tools use the core planner and evaluator. They do not move data, change sys
 
 ## Reproduce the GIFs
 
-Start the local server, then record the browser view:
+Install the recorder dependencies once:
+
+```bash
+python3 -m pip install pillow playwright
+python3 -m playwright install chromium
+```
+
+Start the local server in one terminal:
 
 ```bash
 python3 scripts/_serve_with_mock_llm.py 8765
+```
+
+Record the browser view in a second terminal:
+
+```bash
 python3 scripts/record_migration_demo.py --url http://127.0.0.1:8765
 ```
 
@@ -352,4 +369,5 @@ Both recorders use local fixtures and unset model keys. They make no cloud calls
 - Users record evidence. Cloudwright does not run a production test or certify its source.
 - HTTP requests accept at most 200 source assets, dependencies, target assets, mappings, or evidence
   observations in one project.
+- Service requests also cap aggregate nested items and scalar text.
 - Cloudwright only plans and checks evidence. A separate execution tool must do the move.

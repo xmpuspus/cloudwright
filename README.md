@@ -65,7 +65,8 @@ cloudwright migrate verify examples/migrations/ph-telco-project.yaml examples/mi
 The core has no telco fields. The first proof project selects an external `ph_telco` pack for subscriber,
 billing, usage-record, number-porting, privacy, recovery, and source-shutdown gates. A manufacturing ERP
 fixture proves the same planner works without that pack. Missing blocking evidence changes the result to
-`closed: false` and makes `migrate verify` exit with code 2.
+`closed: false` and makes `migrate verify` exit with code 2. Each evidence file carries the deterministic
+assessment ID, so observations from an older target or cutover plan cannot close a revised assessment.
 
 MCP clients use the same engine through `plan_migration` and `verify_migration` in the `migration` tool group.
 

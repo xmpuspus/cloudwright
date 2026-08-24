@@ -119,6 +119,18 @@ def test_migration_plan_rejects_more_than_200_assets(client: TestClient):
     assert response.json()["code"] == "migration_too_large"
 
 
+def test_migration_plan_rejects_unbounded_pack_override(client: TestClient):
+    project, _ = load_demo()
+
+    response = client.post(
+        "/api/migration/plan",
+        json={"project": project.as_dict(), "pack": "x" * 1_000_001},
+    )
+
+    assert response.status_code == 413
+    assert response.json()["code"] == "payload_too_large"
+
+
 def test_migration_verify_rejects_more_than_200_observations(client: TestClient):
     project, evidence = load_demo()
     evidence.observations = [evidence.observations[0]] * 201

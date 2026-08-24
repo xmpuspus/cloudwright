@@ -16,6 +16,7 @@ from cloudwright.migration.evidence import EvidenceEvaluator
 
 def _assessment(*criteria: AcceptanceCriterion, complete: bool = True) -> MigrationAssessment:
     return MigrationAssessment(
+        assessment_id="a" * 64,
         project_name="Test move",
         transition=TransitionSpec(
             project_name="Test move",
@@ -49,6 +50,7 @@ def _criterion(
 def _evidence(value, *, criterion_id: str = "gate", source: str = "test-run") -> EvidenceInput:
     return EvidenceInput.model_validate(
         {
+            "assessment_id": "a" * 64,
             "project_name": "Test move",
             "observations": [
                 {
@@ -81,7 +83,7 @@ def test_supported_comparators_close_when_observation_meets_target(comparator, t
 
 
 def test_missing_blocking_evidence_blocks_closure_and_stays_visible():
-    evidence = EvidenceInput(project_name="Test move", observations=[])
+    evidence = EvidenceInput(assessment_id="a" * 64, project_name="Test move", observations=[])
 
     result = EvidenceEvaluator().evaluate(_assessment(_criterion("true", True)), evidence)
 
@@ -128,6 +130,14 @@ def test_project_name_must_match_assessment():
     evidence.project_name = "Different move"
 
     with pytest.raises(ValueError, match="Different move"):
+        EvidenceEvaluator().evaluate(_assessment(_criterion("true", True)), evidence)
+
+
+def test_assessment_id_must_match_exact_plan_revision():
+    evidence = _evidence(True)
+    evidence.assessment_id = "b" * 64
+
+    with pytest.raises(ValueError, match="assessment id"):
         EvidenceEvaluator().evaluate(_assessment(_criterion("true", True)), evidence)
 
 

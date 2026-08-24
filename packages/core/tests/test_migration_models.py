@@ -164,6 +164,7 @@ def test_retain_mapping_rejects_target_changes_and_migration_costs(extra):
 def test_evidence_input_round_trip_keeps_boolean_and_numeric_values(tmp_path: Path):
     evidence = EvidenceInput.model_validate(
         {
+            "assessment_id": "a" * 64,
             "project_name": "Plant ERP move",
             "observations": [
                 {
@@ -193,7 +194,8 @@ def test_evidence_input_round_trip_keeps_boolean_and_numeric_values(tmp_path: Pa
 def test_evidence_rejects_non_finite_numeric_values():
     with pytest.raises(ValidationError, match="finite_number"):
         EvidenceInput.from_yaml(
-            """project_name: Plant ERP move
+            """assessment_id: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+project_name: Plant ERP move
 observations:
   - criterion_id: record-parity
     value: .inf
@@ -208,6 +210,7 @@ def test_evidence_rejects_missing_or_unzoned_timestamps(observed_at):
     with pytest.raises(ValidationError, match="observed_at"):
         EvidenceInput.model_validate(
             {
+                "assessment_id": "a" * 64,
                 "project_name": "Plant ERP move",
                 "observations": [
                     {

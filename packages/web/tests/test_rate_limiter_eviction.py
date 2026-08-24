@@ -29,6 +29,7 @@ class TestBucketEviction:
         # Backdate every entry in 1.1.1.1's bucket past the window so the
         # next sweep prunes it to empty.
         limiter._buckets["1.1.1.1"] = collections.deque([time.time() - 5])
+        limiter._next_sweep = 0
 
         # A completely different IP triggers the sweep; 1.1.1.1 never calls
         # back, which is exactly the churn scenario the finding describes.
@@ -45,10 +46,39 @@ class TestBucketEviction:
             limiter._buckets[f"10.0.0.{i}"] = collections.deque([time.time() - 5])
 
         # One more call should sweep and evict all the stale one-off buckets.
+        limiter._next_sweep = 0
         limiter.is_allowed("9.9.9.9")
 
         stale_remaining = [k for k in limiter._buckets if k.startswith("10.0.0.")]
         assert stale_remaining == []
+
+    def test_active_buckets_are_not_fully_swept_on_every_request(self, monkeypatch):
+        limiter = _RateLimiter(max_requests=5, window_seconds=60)
+        original = limiter._sweep_expired
+        sweep_calls = 0
+
+        def track_sweep(cutoff):
+            nonlocal sweep_calls
+            sweep_calls += 1
+            return original(cutoff)
+
+        monkeypatch.setattr(limiter, "_sweep_expired", track_sweep)
+
+        for index in range(100):
+            limiter.is_allowed(f"10.0.0.{index}")
+
+        assert sweep_calls == 1
+
+    def test_active_ip_bucket_cap_fails_closed(self):
+        limiter = _RateLimiter(max_requests=5, window_seconds=60, max_buckets=2)
+
+        assert limiter.is_allowed("1.1.1.1")[0] is True
+        assert limiter.is_allowed("2.2.2.2")[0] is True
+        allowed, retry_after = limiter.is_allowed("3.3.3.3")
+
+        assert allowed is False
+        assert retry_after > 0
+        assert len(limiter._buckets) == 2
 
 
 class TestLimitSemanticsUnchanged:
@@ -86,5 +116,6 @@ class TestLimitSemanticsUnchanged:
         assert blocked is False
 
         limiter._buckets["1.2.3.4"] = collections.deque([time.time() - 2, time.time() - 2])
+        limiter._next_sweep = 0
         allowed, _ = limiter.is_allowed("1.2.3.4")
         assert allowed is True

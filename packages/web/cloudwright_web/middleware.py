@@ -189,31 +189,39 @@ def check_api_key(request: Request):
 class _RateLimiter:
     """Simple in-memory per-IP rate limiter."""
 
-    def __init__(self, max_requests: int = 30, window_seconds: int = 60):
+    def __init__(self, max_requests: int = 30, window_seconds: int = 60, max_buckets: int = 10_000):
         self._max = max_requests
         self._window = window_seconds
+        self._max_buckets = max_buckets
         self._buckets: dict[str, deque] = {}
         self._lock = threading.Lock()
+        self._next_sweep = 0.0
+
+    def _sweep_expired(self, cutoff: float) -> None:
+        """Remove buckets that have no request inside the active window."""
+        for other_ip, other_bucket in list(self._buckets.items()):
+            while other_bucket and other_bucket[0] < cutoff:
+                other_bucket.popleft()
+            if not other_bucket:
+                del self._buckets[other_ip]
 
     def is_allowed(self, ip: str) -> tuple[bool, int]:
         """Returns (allowed, retry_after_seconds)."""
         now = time.time()
         cutoff = now - self._window
         with self._lock:
-            # Sweep every IP's bucket, not just the one making this request.
-            # Pruning only the current IP's bucket never actually shrinks the
-            # dict: a one-off caller (rotating IP, scanner, CDN churn) is
-            # never seen again to trigger its own prune, so its entry sits
-            # forever. Sweeping all buckets here bounds dict size by the
-            # number of distinct IPs active within the last window, not the
-            # number ever seen over the life of the process.
-            for other_ip, other_bucket in list(self._buckets.items()):
-                while other_bucket and other_bucket[0] < cutoff:
-                    other_bucket.popleft()
-                if not other_bucket:
-                    del self._buckets[other_ip]
+            if now >= self._next_sweep:
+                self._sweep_expired(cutoff)
+                self._next_sweep = now + self._window
+            if self._max <= 0:
+                return False, int(self._window) + 1
 
-            bucket = self._buckets.setdefault(ip, deque())
+            bucket = self._buckets.get(ip)
+            if bucket is None:
+                if len(self._buckets) >= self._max_buckets:
+                    retry_after = max(1, int(self._next_sweep - now) + 1)
+                    return False, retry_after
+                bucket = self._buckets.setdefault(ip, deque())
             if len(bucket) >= self._max:
                 retry_after = int(self._window - (now - bucket[0])) + 1 if bucket else int(self._window) + 1
                 return False, retry_after

@@ -40,6 +40,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `docs/migrations.md`, README examples, CLI reference entries, package notes, limitations, pack
   extension steps, source references, and GIF reproduction commands.
 
+### Fixed
+
+- The per-IP rate limiter cleans expired buckets once per window instead of scanning every active IP on
+  every request. It caps active IP buckets at 10,000 and rejects new buckets when that bound is full.
+
 ## [1.9.0] - 2026-08-01
 
 The canvas audit. v1.8.0 rebuilt the interface around the canvas and never measured the canvas

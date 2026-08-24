@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 from cloudwright.migration.demo import load_demo, run_demo
@@ -22,6 +23,17 @@ def test_packaged_demo_runs_offline_to_a_closed_evidence_pack():
     assert result.evidence_pack.closed is True
     assert len(result.assessment.transition.waves) == 5
     assert result.evidence_pack.passed == 22
+
+
+def test_packaged_demo_evidence_is_not_future_dated_on_release_day(monkeypatch):
+    class ReleaseMorning(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 8, 24, 8, 39, tzinfo=UTC)
+
+    monkeypatch.setattr("cloudwright.migration.evidence.datetime", ReleaseMorning)
+
+    assert run_demo("ph_telco").evidence_pack.closed is True
 
 
 def test_cli_demo_tape_creates_its_temporary_parent_directory():

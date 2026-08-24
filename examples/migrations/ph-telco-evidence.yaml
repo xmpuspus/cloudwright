@@ -1,91 +1,91 @@
-assessment_id: 1eeed007559cd90177a3368e71cb66bd15b32d1460e0cf5aa955ac0a574953ae
+assessment_id: 334b93e64f6d1710f083bcdba506065392ffde0028203b633a15fa2df47ce439
 project_name: PH telco hybrid service migration
 observations:
   - criterion_id: wave-1-rollback-ready
     value: true
     source: change-record
-    observed_at: "2026-08-24T01:00:00Z"
+    observed_at: "2020-01-02T01:00:00Z"
   - criterion_id: wave-2-rollback-ready
     value: true
     source: change-record
-    observed_at: "2026-08-24T02:00:00Z"
+    observed_at: "2020-01-02T02:00:00Z"
   - criterion_id: wave-3-rollback-ready
     value: true
     source: change-record
-    observed_at: "2026-08-24T03:00:00Z"
+    observed_at: "2020-01-02T03:00:00Z"
   - criterion_id: wave-4-rollback-ready
     value: true
     source: change-record
-    observed_at: "2026-08-24T04:00:00Z"
+    observed_at: "2020-01-02T04:00:00Z"
   - criterion_id: wave-5-rollback-ready
     value: true
     source: change-record
-    observed_at: "2026-08-24T05:00:00Z"
+    observed_at: "2020-01-02T05:00:00Z"
   - criterion_id: subscriber-record-parity
     value: 100
     source: reconciliation-job
-    observed_at: "2026-08-24T06:00:00Z"
+    observed_at: "2020-01-02T06:00:00Z"
   - criterion_id: sim-activation-journey
     value: true
     source: journey-test
-    observed_at: "2026-08-24T06:10:00Z"
+    observed_at: "2020-01-02T06:10:00Z"
   - criterion_id: sim-deactivation-journey
     value: true
     source: journey-test
-    observed_at: "2026-08-24T06:20:00Z"
+    observed_at: "2020-01-02T06:20:00Z"
   - criterion_id: prepaid-balance-delta
     value: 0.004
     source: financial-reconciliation
-    observed_at: "2026-08-24T06:30:00Z"
+    observed_at: "2020-01-02T06:30:00Z"
   - criterion_id: billing-total-delta
     value: 0.006
     source: financial-reconciliation
-    observed_at: "2026-08-24T06:40:00Z"
+    observed_at: "2020-01-02T06:40:00Z"
   - criterion_id: cdr-completeness
     value: 100
     source: event-reconciliation
-    observed_at: "2026-08-24T06:50:00Z"
+    observed_at: "2020-01-02T06:50:00Z"
   - criterion_id: mnp-porting-duration
     value: 2
     source: porting-test
-    observed_at: "2026-08-24T07:00:00Z"
+    observed_at: "2020-01-02T07:00:00Z"
   - criterion_id: mnp-cutover-outage
     value: 0.2
     source: porting-test
-    observed_at: "2026-08-24T07:10:00Z"
+    observed_at: "2020-01-02T07:10:00Z"
   - criterion_id: voice-journey
     value: true
     source: journey-test
-    observed_at: "2026-08-24T07:20:00Z"
+    observed_at: "2020-01-02T07:20:00Z"
   - criterion_id: sms-journey
     value: true
     source: journey-test
-    observed_at: "2026-08-24T07:30:00Z"
+    observed_at: "2020-01-02T07:30:00Z"
   - criterion_id: data-session-journey
     value: true
     source: journey-test
-    observed_at: "2026-08-24T07:40:00Z"
+    observed_at: "2020-01-02T07:40:00Z"
   - criterion_id: privacy-impact-assessment
     value: true
     source: privacy-review
-    observed_at: "2026-08-24T07:50:00Z"
+    observed_at: "2020-01-02T07:50:00Z"
   - criterion_id: authorized-access-review
     value: true
     source: access-review
-    observed_at: "2026-08-24T08:00:00Z"
+    observed_at: "2020-01-02T08:00:00Z"
   - criterion_id: backup-restore
     value: true
     source: recovery-test
-    observed_at: "2026-08-24T08:10:00Z"
+    observed_at: "2020-01-02T08:10:00Z"
   - criterion_id: regional-failover
     value: true
     source: recovery-test
-    observed_at: "2026-08-24T08:20:00Z"
+    observed_at: "2020-01-02T08:20:00Z"
   - criterion_id: source-writes-zero
     value: 0
     source: source-monitoring
-    observed_at: "2026-08-24T08:30:00Z"
+    observed_at: "2020-01-02T08:30:00Z"
   - criterion_id: source-traffic-zero
     value: 0
     source: source-monitoring
-    observed_at: "2026-08-24T08:40:00Z"
+    observed_at: "2020-01-02T08:40:00Z"

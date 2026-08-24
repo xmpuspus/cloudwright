@@ -61,7 +61,7 @@ The source estate must contain at least one asset.
 ```yaml
 schema_version: "1.0"
 name: ERP transition
-evidence_not_before: "2026-08-24T00:00:00Z"
+evidence_not_before: "2020-01-01T00:00:00Z"
 industry: manufacturing
 estate:
   name: Current estate
@@ -207,7 +207,7 @@ observations:
   - criterion_id: wave-1-rollback-ready
     value: true
     source: change-record
-    observed_at: "2026-08-24T01:00:00Z"
+    observed_at: "2020-01-02T01:00:00Z"
 ```
 
 The evaluator checks that:

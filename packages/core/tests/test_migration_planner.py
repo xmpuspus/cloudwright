@@ -252,6 +252,14 @@ def test_retirement_is_rejected_when_a_consumer_has_no_mapping():
         MigrationPlanner().plan(project)
 
 
+def test_dependency_change_is_rejected_when_a_consumer_has_no_mapping():
+    project = _project()
+    project.target.mappings = [project.target.mappings[0]]
+
+    with pytest.raises(ValueError, match="cannot replatform db.*app has no target mapping"):
+        MigrationPlanner().plan(project)
+
+
 def test_economics_use_explicit_source_target_and_dual_run_values():
     economics = MigrationPlanner().plan(_project()).transition.economics
 

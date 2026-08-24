@@ -37,10 +37,11 @@ class MigrationPlanner:
             if (
                 dependency.source not in mappings
                 and dependency_mapping is not None
-                and dependency_mapping.disposition == "retire"
+                and dependency_mapping.disposition != "retain"
             ):
                 raise ValueError(
-                    f"cannot retire {dependency.target} while dependent asset {dependency.source} has no target mapping"
+                    f"cannot {dependency_mapping.disposition} {dependency.target} while dependent asset "
+                    f"{dependency.source} has no target mapping"
                 )
 
         dependency_map: dict[str, list[str]] = defaultdict(list)

@@ -304,7 +304,8 @@ output cannot remove acceptance gates from an HTTP closure decision.
 
 The Migration tab calls the packaged demo endpoint. It shows the closure result, counts, economics,
 ordered wave route, and evidence grouped by category. It works before an architecture is generated
-in chat.
+in chat. When the server requires `CLOUDWRIGHT_API_KEY`, the tab asks for it after a 401 response,
+keeps it in session storage for the current browser tab, and sends it in `X-API-Key`.
 
 ## Reproduce the GIFs
 

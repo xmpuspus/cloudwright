@@ -130,3 +130,25 @@ def test_migration_verify_rejects_more_than_200_observations(client: TestClient)
 
     assert response.status_code == 422
     assert response.json()["code"] == "migration_too_large"
+
+
+def test_migration_auth_runs_before_body_validation(client: TestClient, monkeypatch):
+    import cloudwright_web.middleware as middleware
+
+    monkeypatch.setattr(middleware, "_API_KEY", "server-secret")
+
+    response = client.post("/api/migration/verify", json={})
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid or missing API key"
+
+
+def test_migration_rate_limit_runs_before_body_validation(client: TestClient, monkeypatch):
+    import cloudwright_web.middleware as middleware
+
+    monkeypatch.setattr(middleware, "_rate_limiter", middleware._RateLimiter(max_requests=0, window_seconds=60))
+
+    response = client.post("/api/migration/verify", json={})
+
+    assert response.status_code == 429
+    assert response.json()["code"] == "rate_limited"

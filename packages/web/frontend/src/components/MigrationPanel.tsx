@@ -74,6 +74,16 @@ interface MigrationPanelProps {
   apiBase: string;
 }
 
+const API_KEY_STORAGE = "cloudwright-api-key";
+
+function savedApiKey() {
+  try {
+    return sessionStorage.getItem(API_KEY_STORAGE) ?? "";
+  } catch {
+    return "";
+  }
+}
+
 function money(value: number, currency: string) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -92,20 +102,44 @@ export default function MigrationPanel({ apiBase }: MigrationPanelProps) {
   const [result, setResult] = useState<MigrationDemoResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState(savedApiKey);
+  const [apiKeyDraft, setApiKeyDraft] = useState(apiKey);
+  const [needsApiKey, setNeedsApiKey] = useState(false);
 
-  const runDemo = useCallback(async () => {
+  const runDemo = useCallback(async (key = apiKey) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${apiBase}/migration/demo`);
+      const response = await fetch(`${apiBase}/migration/demo`, {
+        headers: key ? { "X-API-Key": key } : undefined,
+      });
+      if (response.status === 401) {
+        setNeedsApiKey(true);
+        throw new Error("This server requires its API key.");
+      }
       if (!response.ok) throw new Error(await parseApiError(response));
+      setNeedsApiKey(false);
       setResult((await response.json()) as MigrationDemoResponse);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "The proof project could not run.");
     } finally {
       setLoading(false);
     }
-  }, [apiBase]);
+  }, [apiBase, apiKey]);
+
+  const submitApiKey = useCallback((event: React.FormEvent) => {
+    event.preventDefault();
+    const key = apiKeyDraft.trim();
+    if (!key) return;
+    try {
+      sessionStorage.setItem(API_KEY_STORAGE, key);
+    } catch {
+      // The key still works for this page when browser storage is unavailable.
+    }
+    setApiKey(key);
+    setNeedsApiKey(false);
+    void runDemo(key);
+  }, [apiKeyDraft, runDemo]);
 
   const evidenceByCategory = useMemo(() => {
     const grouped: Record<string, CriterionResult[]> = {};
@@ -129,7 +163,7 @@ export default function MigrationPanel({ apiBase }: MigrationPanelProps) {
             evidence gates. The engine stays industry-neutral; optional packs add domain rules.
           </p>
         </div>
-        <button className="btn btn--primary migration__run" onClick={runDemo} disabled={loading}>
+        <button className="btn btn--primary migration__run" onClick={() => void runDemo()} disabled={loading}>
           {loading ? <span className="spinner" /> : <Icon name="route" size={15} />}
           {loading ? "Running proof project..." : "Run PH telco proof project"}
         </button>
@@ -139,10 +173,25 @@ export default function MigrationPanel({ apiBase }: MigrationPanelProps) {
         This view plans and checks evidence. It does not move data or change systems.
       </div>
 
+      {needsApiKey && (
+        <form className="migration__auth" onSubmit={submitApiKey}>
+          <label className="field-label" htmlFor="migration-api-key">Server API key</label>
+          <input
+            id="migration-api-key"
+            className="field"
+            type="password"
+            autoComplete="current-password"
+            value={apiKeyDraft}
+            onChange={(event) => setApiKeyDraft(event.target.value)}
+          />
+          <button className="btn btn--primary" type="submit">Save and retry</button>
+        </form>
+      )}
+
       {error && (
         <div className="callout callout--danger migration__error">
           <span>{error}</span>
-          <button className="btn btn--sm" onClick={runDemo}>Retry proof project</button>
+          <button className="btn btn--sm" onClick={() => void runDemo()}>Retry proof project</button>
         </div>
       )}
 
@@ -151,7 +200,7 @@ export default function MigrationPanel({ apiBase }: MigrationPanelProps) {
           <div>
             <span className="migration__empty-mark">1</span>
             <strong>Dependency order</strong>
-            <p>Every declared dependency moves before the asset that relies on it.</p>
+            <p>Move dependencies first. Retire them after their moving consumers.</p>
           </div>
           <div>
             <span className="migration__empty-mark">2</span>

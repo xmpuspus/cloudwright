@@ -57,6 +57,9 @@ def test_migration_view_names_its_action_and_outcome_for_assistive_technology():
     source = MIGRATION.read_text()
 
     assert "fetch(`${apiBase}/migration/demo`" in source
+    assert '"X-API-Key"' in source
+    assert "sessionStorage" in source
+    assert "Server API key" in source
     assert "Run PH telco proof project" in source
     assert 'role="status"' in source
     assert "Ready to close" in source

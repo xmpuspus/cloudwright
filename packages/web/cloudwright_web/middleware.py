@@ -87,6 +87,32 @@ class _BodyTooLargeError(Exception):
     pass
 
 
+class MigrationRequestGuardMiddleware:
+    """Authenticate and rate-limit migration routes before body parsing."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        path = scope.get("path", "")
+        if scope["type"] == "http" and path.startswith("/api/migration/") and scope.get("method") != "OPTIONS":
+            request = Request(scope)
+            try:
+                check_api_key(request)
+            except HTTPException as exc:
+                response = JSONResponse(
+                    status_code=exc.status_code,
+                    content={"detail": exc.detail},
+                    headers=exc.headers,
+                )
+                await response(scope, receive, send)
+                return
+            if response := check_rate_limit(request):
+                await response(scope, receive, send)
+                return
+        await self.app(scope, receive, send)
+
+
 class PathTraversalMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         raw_path = request.scope.get("path", "") or request.url.path

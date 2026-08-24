@@ -12,10 +12,10 @@ from cloudwright.migration import (
 )
 from cloudwright.migration.demo import run_demo
 from cloudwright.migration.packs import list_packs
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from cloudwright_web.middleware import check_api_key, check_migration_limit, check_rate_limit
+from cloudwright_web.middleware import check_migration_limit
 
 log = logging.getLogger(__name__)
 router = APIRouter()
@@ -37,20 +37,14 @@ class MigrationVerifyRequest(BaseModel):
 
 
 @router.get("/migration/packs")
-def migration_packs(request: Request):
+def migration_packs():
     """List installed migration domain packs."""
-    check_api_key(request)
-    if error := check_rate_limit(request):
-        return error
     return {"packs": [summary.as_dict() for summary in list_packs()]}
 
 
 @router.post("/migration/plan")
-def migration_plan(req: MigrationPlanRequest, request: Request):
+def migration_plan(req: MigrationPlanRequest):
     """Build dependency-ordered waves, economics, and acceptance gates."""
-    check_api_key(request)
-    if error := check_rate_limit(request):
-        return error
     if error := check_migration_limit(req.project):
         return error
     try:
@@ -64,11 +58,8 @@ def migration_plan(req: MigrationPlanRequest, request: Request):
 
 
 @router.post("/migration/verify")
-def migration_verify(req: MigrationVerifyRequest, request: Request):
+def migration_verify(req: MigrationVerifyRequest):
     """Evaluate evidence and return a visible closure decision."""
-    check_api_key(request)
-    if error := check_rate_limit(request):
-        return error
     if error := check_migration_limit(req.project, req.evidence):
         return error
     try:
@@ -83,11 +74,8 @@ def migration_verify(req: MigrationVerifyRequest, request: Request):
 
 
 @router.get("/migration/demo")
-def migration_demo(request: Request):
+def migration_demo():
     """Run the installed PH telco proof project without external calls."""
-    check_api_key(request)
-    if error := check_rate_limit(request):
-        return error
     try:
         return run_demo("ph_telco").as_dict()
     except Exception as exc:

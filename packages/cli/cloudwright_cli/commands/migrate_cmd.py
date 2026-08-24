@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+import stat
+import tempfile
 from pathlib import Path
 from typing import Annotated
 
@@ -46,11 +49,42 @@ def _emit_machine(ctx: typer.Context, data: dict) -> None:
         emit_success(ctx, data)
 
 
+def _read_bounded_regular_file(path: Path, label: str) -> str:
+    flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(path, flags)
+    except OSError as exc:
+        raise ValueError(f"{label} must be a readable regular file: {exc.strerror}") from exc
+
+    try:
+        file_info = os.fstat(descriptor)
+        if not stat.S_ISREG(file_info.st_mode):
+            raise ValueError(f"{label} must be a regular file")
+        if file_info.st_size > MAX_MIGRATION_FILE_BYTES:
+            raise ValueError(f"{label} file has {file_info.st_size} bytes; max allowed is {MAX_MIGRATION_FILE_BYTES}")
+
+        chunks: list[bytes] = []
+        remaining = MAX_MIGRATION_FILE_BYTES + 1
+        while remaining:
+            chunk = os.read(descriptor, min(65_536, remaining))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+    finally:
+        os.close(descriptor)
+
+    raw = b"".join(chunks)
+    if len(raw) > MAX_MIGRATION_FILE_BYTES:
+        raise ValueError(f"{label} file exceeds the {MAX_MIGRATION_FILE_BYTES}-byte limit")
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError(f"{label} file must be UTF-8 text") from exc
+
+
 def _read_mapping(path: Path, label: str) -> dict:
-    size = path.stat().st_size
-    if size > MAX_MIGRATION_FILE_BYTES:
-        raise ValueError(f"{label} file has {size} bytes; max allowed is {MAX_MIGRATION_FILE_BYTES}")
-    data = yaml.safe_load(path.read_text())
+    data = yaml.safe_load(_read_bounded_regular_file(path, label))
     if not isinstance(data, dict):
         raise ValueError(f"{label} file must contain a mapping")
     return data
@@ -80,7 +114,19 @@ def _write_yaml(ctx: typer.Context, model, output: Path | None) -> None:
     path = validate_output_path(output)
     if not confirm_overwrite(path, ctx=ctx):
         raise ValueError(f"output file already exists: {path}")
-    path.write_text(model.to_yaml())
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as temporary_file:
+            temporary_file.write(model.to_yaml())
+            temporary_file.flush()
+            os.fsync(temporary_file.fileno())
+        os.replace(temporary_name, path)
+    except BaseException:
+        try:
+            os.unlink(temporary_name)
+        except FileNotFoundError:
+            pass
+        raise
 
 
 def _render_assessment(assessment: MigrationAssessment) -> None:

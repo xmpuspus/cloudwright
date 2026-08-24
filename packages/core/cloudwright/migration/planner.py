@@ -77,8 +77,12 @@ class MigrationPlanner:
             ),
             assurance=assurance,
         )
+        fingerprint_payload = {
+            "project": project.model_dump(mode="json"),
+            "assessment": assessment.model_dump(mode="json", exclude={"assessment_id"}),
+        }
         canonical = json.dumps(
-            assessment.model_dump(mode="json", exclude={"assessment_id"}),
+            fingerprint_payload,
             sort_keys=True,
             separators=(",", ":"),
             ensure_ascii=False,

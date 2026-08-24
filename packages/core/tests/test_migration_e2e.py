@@ -82,6 +82,16 @@ def test_evidence_from_an_older_target_plan_cannot_close_a_revision():
         EvidenceEvaluator().evaluate(revised_assessment, evidence)
 
 
+def test_evidence_from_an_older_target_asset_cannot_close_a_revision():
+    project = MigrationProject.from_file(EXAMPLES / "manufacturing-erp-project.yaml")
+    original_assessment = MigrationPlanner().plan(project)
+
+    project.target.assets[0].provider = "public_cloud"
+    revised_assessment = MigrationPlanner().plan(project)
+
+    assert revised_assessment.assessment_id != original_assessment.assessment_id
+
+
 def test_manufacturing_project_uses_same_kernel_without_telco_pack():
     project = MigrationProject.from_file(EXAMPLES / "manufacturing-erp-project.yaml")
     evidence = EvidenceInput.from_file(EXAMPLES / "manufacturing-erp-evidence.yaml")

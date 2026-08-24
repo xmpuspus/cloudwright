@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
+import pytest
 import yaml
+from cloudwright_cli.commands import migrate_cmd
 from cloudwright_cli.main import app
 from typer.testing import CliRunner
 
@@ -184,3 +187,38 @@ def test_migrate_plan_rejects_more_than_200_source_assets(tmp_path: Path):
 
     assert result.exit_code == 1
     assert "201 source assets" in result.output
+
+
+@pytest.mark.skipif(not hasattr(os, "mkfifo"), reason="named pipes are not available")
+def test_migrate_plan_rejects_named_pipe_input(tmp_path: Path):
+    project_file = tmp_path / "project.yaml"
+    os.mkfifo(project_file)
+
+    result = runner.invoke(app, ["migrate", "plan", str(project_file)])
+
+    assert result.exit_code == 1
+    assert "regular file" in result.output
+
+
+def test_migrate_output_write_does_not_follow_swapped_symlink(tmp_path: Path, monkeypatch):
+    output = tmp_path / "assessment.yaml"
+    output.write_text("old assessment")
+    protected = tmp_path / "protected.txt"
+    protected.write_text("keep me")
+
+    def swap_output_for_symlink(path: Path, *, ctx=None) -> bool:
+        path.unlink()
+        path.symlink_to(protected)
+        return True
+
+    monkeypatch.setattr(migrate_cmd, "confirm_overwrite", swap_output_for_symlink)
+
+    result = runner.invoke(
+        app,
+        ["migrate", "plan", str(EXAMPLES / "manufacturing-erp-project.yaml"), "-o", str(output)],
+    )
+
+    assert result.exit_code == 0
+    assert protected.read_text() == "keep me"
+    assert output.is_symlink() is False
+    assert yaml.safe_load(output.read_text())["project_name"] == "Manufacturing ERP and plant data migration"

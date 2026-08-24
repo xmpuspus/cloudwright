@@ -1,4 +1,4 @@
-assessment_id: 0b586e70cfbcdb6a8d790a568104237d9e1f97c9147b909b1753044030a6a885
+assessment_id: 4f3202eb433203d487182b73308cbc5280b314cbc725aebb99fa54ff4207dd4c
 project_name: Manufacturing ERP and plant data migration
 observations:
   - criterion_id: wave-1-rollback-ready

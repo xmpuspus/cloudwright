@@ -48,7 +48,7 @@ _ID_PATTERN = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_-]*$")
 class YamlModel(BaseModel):
     """Base model with strict fields and safe YAML helpers."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
     def as_dict(self) -> dict[str, Any]:
         """Return a JSON-safe dictionary."""

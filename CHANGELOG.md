@@ -22,7 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the same planner and evaluator with no domain pack.
 - **Migration CLI, API, and web view.** `cloudwright migrate packs|plan|verify|demo` supports human and
   JSON output. CLI and HTTP evidence checks rebuild the assessment from the submitted project so edited
-  planner output cannot remove gates. Four `/api/migration/*` routes return the same core results. The
+  planner output cannot remove gates. HTTP routes cap each migration collection at 200 items, and numeric
+  contracts reject non-finite values. Four `/api/migration/*` routes return the same core results. The
   Migration tab shows the closure decision, supplied economics, dependency route, and evidence groups.
 - **Reproducible migration GIFs.** Browser and CLI recorders run local proof data with no model key or
   cloud account. A VHS tape supports systems with a working ffmpeg install.

@@ -15,7 +15,7 @@ from cloudwright.migration.packs import list_packs
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
-from cloudwright_web.middleware import check_api_key, check_rate_limit
+from cloudwright_web.middleware import check_api_key, check_migration_limit, check_rate_limit
 
 log = logging.getLogger(__name__)
 router = APIRouter()
@@ -51,6 +51,8 @@ def migration_plan(req: MigrationPlanRequest, request: Request):
     check_api_key(request)
     if error := check_rate_limit(request):
         return error
+    if error := check_migration_limit(req.project):
+        return error
     try:
         assessment = MigrationPlanner().plan(req.project, pack_name=req.pack)
         return {"assessment": assessment.as_dict()}
@@ -66,6 +68,8 @@ def migration_verify(req: MigrationVerifyRequest, request: Request):
     """Evaluate evidence and return a visible closure decision."""
     check_api_key(request)
     if error := check_rate_limit(request):
+        return error
+    if error := check_migration_limit(req.project, req.evidence):
         return error
     try:
         assessment = MigrationPlanner().plan(req.project, pack_name=req.pack)

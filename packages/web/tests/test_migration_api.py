@@ -96,3 +96,37 @@ def test_migration_plan_rejects_invalid_project_shape(client: TestClient):
     )
 
     assert response.status_code == 422
+
+
+def test_migration_plan_rejects_more_than_200_assets(client: TestClient):
+    project = {
+        "name": "Oversized move",
+        "estate": {
+            "name": "Current",
+            "assets": [
+                {"id": f"asset-{index}", "name": f"Asset {index}", "kind": "application"} for index in range(201)
+            ],
+        },
+        "target": {
+            "name": "Target",
+            "mappings": [{"source_asset_id": f"asset-{index}", "disposition": "retain"} for index in range(201)],
+        },
+    }
+
+    response = client.post("/api/migration/plan", json={"project": project})
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "migration_too_large"
+
+
+def test_migration_verify_rejects_more_than_200_observations(client: TestClient):
+    project, evidence = load_demo()
+    evidence.observations = [evidence.observations[0]] * 201
+
+    response = client.post(
+        "/api/migration/verify",
+        json={"project": project.as_dict(), "evidence": evidence.as_dict()},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "migration_too_large"

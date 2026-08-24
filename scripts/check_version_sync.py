@@ -6,6 +6,7 @@ passed as the first CLI arg, e.g. a git tag stripped of its leading "v"):
 
   - __version__ in each of the 4 packages/*/*/__init__.py files
   - the ==X.Y.Z extras pins in packages/core/pyproject.toml
+  - the cloudwright-ai>=X.Y.Z dependency floor in each companion package
   - server.json top-level "version"
   - server.json "packages"[0]["version"]
 
@@ -29,10 +30,12 @@ INIT_FILES = [
 ]
 
 CORE_PYPROJECT = ROOT / "packages/core/pyproject.toml"
+COMPANION_PYPROJECTS = [ROOT / f"packages/{name}/pyproject.toml" for name in ("cli", "web", "mcp")]
 SERVER_JSON = ROOT / "server.json"
 
 VERSION_ASSIGN_RE = re.compile(r'__version__\s*=\s*"([^"]+)"')
 EXTRAS_PIN_RE = re.compile(r"cloudwright-ai-(\w+)==([\d.]+)")
+CORE_FLOOR_RE = re.compile(r'"cloudwright-ai>=([\d.]+),<2"')
 
 
 class SourceError(RuntimeError):
@@ -53,6 +56,13 @@ def read_pyproject_pins(path: Path) -> list[tuple[str, str]]:
     if not matches:
         raise SourceError(f"no cloudwright-ai-*==X.Y.Z pins found in {path}")
     return [(f"cloudwright-ai-{name}", version) for name, version in matches]
+
+
+def read_core_floor(path: Path) -> str:
+    match = CORE_FLOOR_RE.search(path.read_text())
+    if not match:
+        raise SourceError(f"no cloudwright-ai>=X.Y.Z,<2 dependency found in {path}")
+    return match.group(1)
 
 
 def read_server_json(path: Path) -> list[tuple[str, str]]:
@@ -78,6 +88,10 @@ def collect_sources() -> list[tuple[str, str]]:
     for i, (name, version) in enumerate(read_pyproject_pins(CORE_PYPROJECT), start=1):
         label = f"packages/core/pyproject.toml pin #{i} ({name})"
         sources.append((label, version))
+
+    for path in COMPANION_PYPROJECTS:
+        label = f"{path.relative_to(ROOT)} cloudwright-ai floor"
+        sources.append((label, read_core_floor(path)))
 
     for label, version in read_server_json(SERVER_JSON):
         sources.append((label, version))

@@ -335,4 +335,6 @@ Both recorders use local fixtures and unset model keys. They make no cloud calls
 - Target mappings are explicit. The planner does not choose a migration disposition for the user.
 - Users supply cost values. Cloudwright does not quote prices.
 - Users record evidence. Cloudwright does not run a production test or certify its source.
+- HTTP requests accept at most 200 source assets, dependencies, target assets, mappings, or evidence
+  observations in one project.
 - Cloudwright only plans and checks evidence. A separate execution tool must do the move.

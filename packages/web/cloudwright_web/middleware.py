@@ -229,9 +229,10 @@ def check_rate_limit(request: Request):
     return None
 
 
-# --- Spec size cap ---
+# --- Request work caps ---
 
 MAX_SPEC_COMPONENTS = 200
+MAX_MIGRATION_ITEMS = 200
 
 
 def check_component_limit(spec) -> JSONResponse | None:
@@ -252,4 +253,25 @@ def check_component_limit(spec) -> JSONResponse | None:
             "Split the architecture into smaller specs",
             422,
         )
+    return None
+
+
+def check_migration_limit(project, evidence=None) -> JSONResponse | None:
+    """Reject migration collections that exceed the request work limit."""
+    collections = (
+        ("source assets", project.estate.assets),
+        ("dependencies", project.estate.dependencies),
+        ("target assets", project.target.assets),
+        ("target mappings", project.target.mappings),
+        ("evidence observations", evidence.observations if evidence is not None else []),
+    )
+    for label, items in collections:
+        count = len(items)
+        if count > MAX_MIGRATION_ITEMS:
+            return error_response(
+                "migration_too_large",
+                f"Migration has {count} {label}; max allowed is {MAX_MIGRATION_ITEMS}",
+                "Split the migration into smaller projects",
+                422,
+            )
     return None

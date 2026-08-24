@@ -169,6 +169,19 @@ def test_evidence_input_round_trip_keeps_boolean_and_numeric_values(tmp_path: Pa
     assert math.isclose(restored.observations[1].value, 0.005)
 
 
+def test_evidence_rejects_non_finite_numeric_values():
+    with pytest.raises(ValidationError, match="finite_number"):
+        EvidenceInput.from_yaml(
+            """project_name: Plant ERP move
+observations:
+  - criterion_id: record-parity
+    value: .inf
+    source: reconciliation-job
+    observed_at: "2026-08-23T10:00:00Z"
+"""
+        )
+
+
 def test_file_loader_rejects_non_mapping_yaml(tmp_path: Path):
     path = tmp_path / "bad.yaml"
     path.write_text("- not\n- a\n- project\n")

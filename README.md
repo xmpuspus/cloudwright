@@ -116,8 +116,8 @@ Copilot, Zed, Codex CLI, Junie, Kiro and Antigravity. Aider gets a CLI-pipe reci
 no MCP. Every client wants a different shape: Zed wants `context_servers`, Copilot wants `servers`, and Codex
 wants a TOML table.
 
-The server exposes 22 tools in 9 groups: design, cost, validate, analyze, export, session, review, compliance
-and plan. Full matrix in [docs/integrations.md](docs/integrations.md).
+The server exposes 24 tools in 10 groups: design, cost, validate, analyze, export, session, review, compliance,
+plan and migration. Full matrix in [docs/integrations.md](docs/integrations.md).
 
 ## Offline commands grade, scan, compare, and plan
 

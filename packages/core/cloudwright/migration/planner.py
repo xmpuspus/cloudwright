@@ -42,7 +42,10 @@ class MigrationPlanner:
         orders = self._schedule_orders(mappings, scheduling_dependencies, dependency_order)
         waves = self._build_waves(assets, mappings, scheduling_dependencies, orders, warnings)
         assurance = self._build_assurance(waves, project, mappings, pack_name)
-        economics = self._calculate_economics(assets, mappings)
+        raw_currency = project.metadata.get("currency", "USD")
+        if not isinstance(raw_currency, str) or not raw_currency.strip():
+            raise ValueError("metadata.currency must be a non-empty currency code")
+        economics = self._calculate_economics(assets, mappings, currency=raw_currency.strip().upper())
         rollbacks_ready = all(action.rollback for wave in waves for action in wave.actions)
 
         return MigrationAssessment(
@@ -272,7 +275,9 @@ class MigrationPlanner:
         return AssurancePlan(criteria=criteria)
 
     @staticmethod
-    def _calculate_economics(assets: dict[str, EstateAsset], mappings: dict[str, TargetMapping]) -> MigrationEconomics:
+    def _calculate_economics(
+        assets: dict[str, EstateAsset], mappings: dict[str, TargetMapping], *, currency: str = "USD"
+    ) -> MigrationEconomics:
         current = sum(asset.current_monthly_cost for asset in assets.values())
         target = sum(asset.current_monthly_cost for asset_id, asset in assets.items() if asset_id not in mappings)
         one_time = 0.0
@@ -292,7 +297,7 @@ class MigrationPlanner:
         net = one_time + dual_run - credit
         monthly_delta = target - current
         savings = current - target
-        payback = round(net / savings, 2) if savings > 0 and net > 0 else (0.0 if net <= 0 else None)
+        payback = round(net / savings, 2) if savings > 0 and net > 0 else (0.0 if savings > 0 else None)
         return MigrationEconomics(
             current_monthly_cost=round(current, 2),
             target_monthly_cost=round(target, 2),
@@ -302,4 +307,5 @@ class MigrationPlanner:
             decommission_credit=round(credit, 2),
             net_migration_cost=round(net, 2),
             payback_months=payback,
+            currency=currency,
         )

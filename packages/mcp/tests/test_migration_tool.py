@@ -79,6 +79,20 @@ class TestMigrationTools:
 
         assert result["error"] == "Migration has 201 source assets; max allowed is 200"
 
+    def test_plan_migration_rejects_unbounded_scalar_text(self, register_tools):
+        import cloudwright_mcp.tools.migration as mod
+        from cloudwright.migration.limits import MAX_MIGRATION_TEXT_CHARACTERS
+
+        project, _ = load_demo()
+        project_json = project.as_dict()
+        project_json["metadata"]["note"] = "x" * (MAX_MIGRATION_TEXT_CHARACTERS + 1)
+        tools = register_tools(mod)
+
+        result = tools["plan_migration"](project_json=project_json)
+
+        assert "error" in result
+        assert "text characters" in result["error"]
+
     def test_plan_migration_propagates_unexpected_runtime_failures(self, register_tools, monkeypatch):
         import cloudwright_mcp.tools.migration as mod
         from cloudwright.migration import MigrationPlanner

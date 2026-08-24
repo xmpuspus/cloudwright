@@ -7,6 +7,7 @@ from typing import Any
 
 MAX_MIGRATION_ITEMS = 200
 MAX_MIGRATION_NESTED_ITEMS = 10_000
+MAX_MIGRATION_TEXT_CHARACTERS = 1_000_000
 
 
 def _field(value: Any, name: str, default: Any) -> Any:
@@ -27,14 +28,25 @@ def _validate_nested_item_budget(*values: Any) -> None:
     stack = list(values)
     seen: set[int] = set()
     total = 0
+    text_characters = 0
     while stack:
         value = stack.pop()
         if hasattr(value, "model_dump"):
             value = value.model_dump()
+        if isinstance(value, str):
+            text_characters += len(value)
+            if text_characters > MAX_MIGRATION_TEXT_CHARACTERS:
+                raise ValueError(
+                    f"Migration has more than {MAX_MIGRATION_TEXT_CHARACTERS} text characters; "
+                    "reduce descriptions, metadata, or evidence details"
+                )
+            continue
         if isinstance(value, Mapping):
-            children = list(value.values())
+            children = [*value.keys(), *value.values()]
+            item_count = len(value)
         elif isinstance(value, (list, tuple, set, frozenset)):
             children = list(value)
+            item_count = len(children)
         else:
             continue
 
@@ -42,7 +54,7 @@ def _validate_nested_item_budget(*values: Any) -> None:
         if identity in seen:
             continue
         seen.add(identity)
-        total += len(children)
+        total += item_count
         if total > MAX_MIGRATION_NESTED_ITEMS:
             raise ValueError(
                 f"Migration has more than {MAX_MIGRATION_NESTED_ITEMS} nested items; "

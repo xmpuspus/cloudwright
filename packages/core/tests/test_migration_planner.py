@@ -248,6 +248,30 @@ def test_economics_use_explicit_source_target_and_dual_run_values():
     assert math.isclose(economics.payback_months, 21.67, abs_tol=0.01)
 
 
+def test_economics_use_the_project_currency():
+    project = _project()
+    project.metadata["currency"] = "PHP"
+
+    economics = MigrationPlanner().plan(project).transition.economics
+
+    assert economics.currency == "PHP"
+
+
+def test_economics_have_no_payback_without_monthly_savings():
+    project = _project()
+    project.target.mappings = [
+        TargetMapping(source_asset_id="db", disposition="retain"),
+        TargetMapping(source_asset_id="app", disposition="retain"),
+    ]
+    project = MigrationProject.model_validate(project.model_dump())
+
+    economics = MigrationPlanner().plan(project).transition.economics
+
+    assert economics.monthly_delta == 0
+    assert economics.net_migration_cost == 0
+    assert economics.payback_months is None
+
+
 def test_each_wave_has_generic_rollback_gate():
     assurance = MigrationPlanner().plan(_project()).assurance
 

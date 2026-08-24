@@ -1,6 +1,6 @@
 # MCP Reference
 
-Cloudwright exposes 22 tools across 9 groups as a Model Context Protocol (MCP) server. Almost every popular coding agent is an MCP client (Claude Code, Cursor, Cline, Windsurf, GitHub Copilot, Zed, OpenAI Codex CLI, JetBrains Junie, Kiro, Antigravity), so one server puts these tools in all of their agent loops. Run `cloudwright integrate --harness <name>` to generate the wiring for your client. See [integrations.md](integrations.md).
+Cloudwright exposes 24 tools across 10 groups through a Model Context Protocol (MCP) server. Supported clients include Claude Code, Cursor, Cline, Windsurf, GitHub Copilot, Zed, Codex CLI, Junie, Kiro, and Antigravity. Run `cloudwright integrate --harness <name>` to generate the wiring for your client. See [integrations.md](integrations.md).
 
 Related: [Getting Started](getting-started.md) | [CLI Reference](cli-reference.md) | [Troubleshooting](troubleshooting.md) | [README](../README.md)
 
@@ -47,7 +47,7 @@ Restart Claude Desktop after editing the file.
 ## Start the server manually
 
 ```bash
-# All 22 tools, stdio transport (default)
+# All 24 tools, stdio transport (default)
 cloudwright mcp
 
 # Subset of tool groups
@@ -65,7 +65,7 @@ Valid tool group names for `--tools`: `design`, `cost`, `validate`, `analyze`, `
 
 ### design (3 tools)
 
-LLM-powered tools for creating and evolving architectures. These call an LLM and require `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`.
+LLM-powered tools for creating and changing architectures. These tools need `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`.
 
 | Tool | Description |
 |---|---|
@@ -77,7 +77,7 @@ LLM-powered tools for creating and evolving architectures. These call an LLM and
 
 ### cost (2 tools)
 
-Pricing computation. Both tools are pure offline calculation — no LLM, no network, no API cost.
+Pricing computation. Both tools calculate offline, with no LLM, network, or API cost.
 
 | Tool | Description |
 |---|---|
@@ -88,7 +88,7 @@ Pricing computation. Both tools are pure offline calculation — no LLM, no netw
 
 ### validate (4 tools)
 
-Static analysis and compliance checks. All tools are offline — no LLM, no network, read-only.
+Static analysis and compliance checks. All tools are offline, read-only, and use no LLM or network.
 
 | Tool | Description |
 |---|---|
@@ -125,7 +125,7 @@ IaC generation and catalog lookup. All tools are offline.
 
 ### session (4 tools)
 
-Stateful multi-turn conversation sessions. `chat_send` calls an LLM (requires an API key); the others are offline.
+Stateful multi-turn conversation sessions. `chat_send` calls an LLM and needs an API key. The other tools are offline.
 
 | Tool | Description |
 |---|---|
@@ -163,6 +163,15 @@ Read-only deployability check. Never applies changes.
 | Tool | Description |
 |---|---|
 | `plan_infrastructure` | Export an ArchSpec and run `terraform`/`tofu` `init -backend=false` + `validate` (default), or a full `plan`/`preview` with `run_plan=true`. Returns a structured result. Degrades to `{available: false}` when the IaC toolchain is absent; there is no apply path. |
+
+---
+
+### migration (2 tools)
+
+Read-only migration planning and evidence checks. These tools do not need an LLM or cloud credential, and they do not write infrastructure.
+
+| Tool | Description |
+|---|---|
 | `plan_migration` | Build dependency-ordered migration waves, supplied-cost economics, and acceptance gates from a `MigrationProject`. Read-only. |
 | `verify_migration` | Rebuild the assessment from a `MigrationProject`, check `EvidenceInput`, and return the closure decision with every failed or missing gate. |
 
@@ -197,7 +206,7 @@ Sessions persist across Claude Desktop restarts (stored on disk in `~/.cloudwrig
 
 ## Which tools need an API key
 
-Tools that call an LLM (`ANTHROPIC_API_KEY` or `OPENAI_API_KEY` required):
+Tools that call an LLM need `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`:
 
 - `design_architecture`
 - `modify_architecture`
@@ -243,6 +252,6 @@ The server listens on a local port. Configure the client with the SSE endpoint U
 
 **`cloudwright-ai-mcp` not installed:** Run `pip install cloudwright-ai-mcp` and confirm the `cloudwright` binary is the one from that environment.
 
-**LLM tools return errors:** Set `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` in the shell environment where Claude Desktop runs (on macOS, this may require setting it in `~/.zshenv` rather than `~/.zshrc`).
+**LLM tools return errors:** Set `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` in the shell environment where Claude Desktop runs. On macOS, you may need to set it in `~/.zshenv` instead of `~/.zshrc`.
 
 See [Troubleshooting](troubleshooting.md) for more.

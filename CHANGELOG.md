@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   waves. Removing one blocking observation changes closure to blocked. A manufacturing ERP project uses
   the same planner and evaluator with no domain pack.
 - **Migration CLI, API, MCP, and web view.** `cloudwright migrate packs|plan|verify|demo` supports human and
-  JSON output. CLI and HTTP evidence checks rebuild the assessment from the submitted project so edited
+  JSON output, including compact NDJSON with `--stream`. CLI and HTTP evidence checks rebuild the assessment from the submitted project so edited
   planner output cannot remove gates. HTTP routes cap each migration collection at 200 items, and numeric
   contracts reject non-finite values. A deterministic assessment ID binds evidence to the exact plan revision.
 - **Protected migration HTTP routes.** Authentication and rate checks run before request-body validation.

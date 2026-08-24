@@ -141,3 +141,16 @@ def test_migrate_demo_runs_packaged_project_in_human_and_json_modes():
     payload = json.loads(machine.output)["data"]
     assert payload["assessment"]["domain_pack"] == "ph_telco"
     assert payload["evidence_pack"]["closed"] is True
+
+
+def test_migrate_demo_streams_one_compact_ndjson_record():
+    result = runner.invoke(app, ["--json", "--stream", "migrate", "demo"])
+
+    assert result.exit_code == 0
+    lines = result.output.splitlines()
+    assert len(lines) == 1
+    assert lines[0] == lines[0].strip()
+    decoded = json.loads(lines[0])
+    assert json.dumps(decoded, separators=(",", ":")) == lines[0]
+    payload = decoded["data"]
+    assert payload["evidence_pack"]["closed"] is True

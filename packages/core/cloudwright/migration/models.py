@@ -134,6 +134,8 @@ class EstateSpec(YamlModel):
     @model_validator(mode="after")
     def validate_asset_graph(self) -> Self:
         """Reject duplicate asset IDs and dangling dependency references."""
+        if not self.assets:
+            raise ValueError("migration estate needs at least one asset")
         asset_ids = [asset.id for asset in self.assets]
         if len(asset_ids) != len(set(asset_ids)):
             raise ValueError("estate asset ids must be unique")
@@ -189,6 +191,8 @@ class TargetMapping(YamlModel):
             )
         ):
             raise ValueError("retain mapping cannot define migration timing, rollback, or costs")
+        if self.disposition == "retire" and (self.target_monthly_cost or self.dual_run_months):
+            raise ValueError("retire mapping cannot define target or dual-run costs")
         return self
 
 

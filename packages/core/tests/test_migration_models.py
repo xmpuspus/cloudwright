@@ -140,6 +140,16 @@ def test_mapping_rejects_unknown_disposition():
         MigrationProject.model_validate(data)
 
 
+def test_project_rejects_an_empty_source_estate():
+    data = _project_data()
+    data["estate"]["assets"] = []
+    data["estate"]["dependencies"] = []
+    data["target"]["mappings"] = []
+
+    with pytest.raises(ValidationError, match="at least one asset"):
+        MigrationProject.model_validate(data)
+
+
 @pytest.mark.parametrize(
     "extra",
     [
@@ -156,6 +166,18 @@ def test_retain_mapping_rejects_target_changes_and_migration_costs(extra):
             {
                 "source_asset_id": "app",
                 "disposition": "retain",
+                **extra,
+            }
+        )
+
+
+@pytest.mark.parametrize("extra", [{"target_monthly_cost": 500}, {"dual_run_months": 1}])
+def test_retire_mapping_rejects_target_and_dual_run_costs(extra):
+    with pytest.raises(ValidationError, match="retire mapping"):
+        TargetMapping.model_validate(
+            {
+                "source_asset_id": "app",
+                "disposition": "retire",
                 **extra,
             }
         )

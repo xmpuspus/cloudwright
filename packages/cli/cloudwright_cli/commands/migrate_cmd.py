@@ -19,7 +19,14 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from cloudwright_cli.output import confirm_overwrite, emit_success, is_json_mode, validate_output_path
+from cloudwright_cli.output import (
+    confirm_overwrite,
+    emit_stream,
+    emit_success,
+    is_json_mode,
+    should_stream,
+    validate_output_path,
+)
 from cloudwright_cli.utils import handle_error
 
 migrate_app = typer.Typer(
@@ -27,6 +34,13 @@ migrate_app = typer.Typer(
     no_args_is_help=True,
 )
 console = Console()
+
+
+def _emit_machine(ctx: typer.Context, data: dict) -> None:
+    if should_stream(ctx):
+        emit_stream({"data": data})
+    else:
+        emit_success(ctx, data)
 
 
 def _write_yaml(ctx: typer.Context, model, output: Path | None) -> None:
@@ -109,7 +123,7 @@ def packs(ctx: typer.Context) -> None:
     try:
         summaries = list_packs()
         if is_json_mode(ctx):
-            emit_success(ctx, {"packs": [summary.as_dict() for summary in summaries]})
+            _emit_machine(ctx, {"packs": [summary.as_dict() for summary in summaries]})
             return
         table = Table(title="Migration domain packs")
         table.add_column("Name")
@@ -138,7 +152,7 @@ def plan_migration(
         assessment = MigrationPlanner().plan(project, pack_name=pack)
         _write_yaml(ctx, assessment, output)
         if is_json_mode(ctx):
-            emit_success(ctx, {"assessment": assessment.as_dict()})
+            _emit_machine(ctx, {"assessment": assessment.as_dict()})
             return
         _render_assessment(assessment)
         if output:
@@ -165,7 +179,7 @@ def verify_migration(
         evidence_pack = EvidenceEvaluator().evaluate(assessment, evidence)
         _write_yaml(ctx, evidence_pack, output)
         if is_json_mode(ctx):
-            emit_success(ctx, {"evidence_pack": evidence_pack.as_dict()})
+            _emit_machine(ctx, {"evidence_pack": evidence_pack.as_dict()})
         else:
             _render_evidence(evidence_pack)
             if output:
@@ -184,7 +198,7 @@ def migration_demo(ctx: typer.Context) -> None:
     try:
         result = run_demo("ph_telco")
         if is_json_mode(ctx):
-            emit_success(
+            _emit_machine(
                 ctx,
                 {
                     "assessment": result.assessment.as_dict(),

@@ -55,6 +55,7 @@ still prints or writes the full evidence pack, including each missing or failed 
 ## Project file
 
 A `MigrationProject` joins the current estate to a proposed target.
+The source estate must contain at least one asset.
 
 ```yaml
 schema_version: "1.0"
@@ -154,6 +155,10 @@ Mappings hold the strategy, owner, downtime allowance, rollback procedure, targe
 explicit cost inputs. Any source asset without a mapping appears as unresolved and keeps the plan
 incomplete. A moving or retiring action without a rollback procedure also keeps the plan incomplete,
 even when submitted evidence marks its rollback gate ready.
+
+A `retain` mapping has no target, migration timing, rollback, or migration cost. A `retire` mapping
+has no target asset, target monthly cost, or dual-run period. Retirement can still carry its removal
+cost, rollback procedure, and decommission credit.
 
 ## Planner output
 

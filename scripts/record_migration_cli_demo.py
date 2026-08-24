@@ -136,14 +136,14 @@ def main() -> int:
         )
         verify_output = run_command(
             root,
-            ["migrate", "verify", assessment_arg, evidence_path],
+            ["migrate", "verify", project_path, evidence_path],
             environment,
         )
 
     plan_comment = "# Build dependency-ordered waves and explicit migration costs"
     plan_command = f"cloudwright migrate plan {project_path} -o assessment.yaml"
     verify_comment = "# Recorded evidence decides whether the migration can close"
-    verify_command = f"cloudwright migrate verify assessment.yaml {evidence_path}"
+    verify_command = f"cloudwright migrate verify {project_path} {evidence_path}"
 
     frames: list[tuple[Image.Image, int]] = [terminal_frame([plan_comment, "$ "], 700, font)]
     frames.extend(typing_frames([plan_comment], plan_command, font))

@@ -328,7 +328,7 @@ cloudwright migrate <command> [options]
 |---|---|
 | `packs` | List installed migration domain packs. |
 | `plan PROJECT` | Build ordered waves, supplied-cost economics, and acceptance gates. |
-| `verify ASSESSMENT EVIDENCE` | Check observations. Exit 2 when blocking gates fail or are missing. |
+| `verify PROJECT EVIDENCE` | Rebuild the gates, then check observations. Exit 2 when blocking gates fail or are missing. |
 | `demo` | Run the packaged PH telco project and evidence from start to finish. |
 
 `plan` options:
@@ -343,13 +343,14 @@ cloudwright migrate <command> [options]
 | Option | Default | Description |
 |---|---|---|
 | `--output` / `-o` | none | Write the checked evidence pack as YAML. |
+| `--pack` | project value | Replace the project's optional domain-pack selection. |
 
 Examples:
 
 ```bash
 cloudwright migrate packs
 cloudwright migrate plan examples/migrations/ph-telco-project.yaml -o assessment.yaml
-cloudwright migrate verify assessment.yaml examples/migrations/ph-telco-evidence.yaml -o evidence-pack.yaml
+cloudwright migrate verify examples/migrations/ph-telco-project.yaml examples/migrations/ph-telco-evidence.yaml -o evidence-pack.yaml
 cloudwright migrate demo
 cloudwright --json migrate demo
 ```

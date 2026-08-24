@@ -37,7 +37,7 @@ All four commands run offline and need no model key.
 ```bash
 cloudwright migrate packs
 cloudwright migrate plan examples/migrations/ph-telco-project.yaml -o assessment.yaml
-cloudwright migrate verify assessment.yaml examples/migrations/ph-telco-evidence.yaml -o evidence-pack.yaml
+cloudwright migrate verify examples/migrations/ph-telco-project.yaml examples/migrations/ph-telco-evidence.yaml -o evidence-pack.yaml
 cloudwright migrate demo
 ```
 
@@ -48,8 +48,9 @@ cloudwright --json migrate demo
 cloudwright --json migrate plan examples/migrations/manufacturing-erp-project.yaml
 ```
 
-`verify` exits with code 2 when the result is blocked. It still prints or writes the full evidence pack,
-including each missing or failed gate.
+`verify` rebuilds the assessment from the project file before it checks evidence. Edited assessment output
+cannot remove gates from the CLI decision. The command exits with code 2 when the result is blocked. It
+still prints or writes the full evidence pack, including each missing or failed gate.
 
 ## Project file
 
@@ -123,7 +124,9 @@ Asset kinds are `infrastructure`, `application`, `data`, `platform`, `network`, 
 ### Dependencies
 
 `source` depends on `target`. The planner schedules `target` first. In the example above,
-the database moves before the application.
+the database moves before the application. When `target` is being retired, the planner reverses the
+cutover order: every moving consumer becomes a prerequisite for retirement, so the dependency stays
+available until those consumers move.
 
 The planner rejects dependency cycles and names the cycle. A `wave_hint` may delay an action, but it
 cannot place the action before one of its dependencies.

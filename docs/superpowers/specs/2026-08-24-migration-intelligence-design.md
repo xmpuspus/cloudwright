@@ -79,7 +79,7 @@ Retired assets may have no target. Every other non-retained source asset must ma
 
 The planner produces ordered `MigrationWave` records. Each wave has actions, prerequisites, rollback procedures, and gate IDs. A transition also has planning warnings, unresolved assets, and a `MigrationEconomics` summary.
 
-Dependency direction is explicit: `source` depends on `target`, so the target dependency migrates first. Cycles are rejected with a readable path because silently choosing an order would make the plan unsafe.
+Dependency direction is explicit: `source` depends on `target`, so the target dependency migrates first. If the target will be retired, its moving consumers become retirement prerequisites and cut over first. Cycles are rejected with a readable path because silently choosing an order would make the plan unsafe.
 
 Wave hints may postpone an action but may not place it before a dependency.
 
@@ -97,7 +97,7 @@ An acceptance criterion has:
 - Optional control references.
 - The wave that consumes it.
 
-The planner always creates generic rollback and dependency criteria. A selected domain pack adds requirements by matching asset kinds, data classes, and tags.
+The planner always creates a generic rollback criterion for each wave. A selected domain pack adds requirements by matching asset kinds, data classes, and tags.
 
 ### EvidencePack
 
@@ -144,7 +144,7 @@ Costs come from explicit mapping and estate values. The migration engine will no
 
 - `packs`: list available domain packs.
 - `plan PROJECT`: build and print or write a migration assessment.
-- `verify ASSESSMENT EVIDENCE`: evaluate evidence and return a non-zero exit when blocking criteria fail.
+- `verify PROJECT EVIDENCE`: rebuild the assessment, evaluate evidence, and return a non-zero exit when blocking criteria fail.
 - `demo`: run the packaged PH telco project and evidence end to end.
 
 Global `--json` continues to use the existing success envelope. Human output uses concise summary, wave, economics, and gate tables.
@@ -220,7 +220,7 @@ A smaller manufacturing ERP and plant-data project runs through the same planner
 
 - The PH telco proof project plans and checks evidence without a model or network access.
 - At least one missing or failed blocking observation changes closure to blocked.
-- Schedule each dependency before the asset that depends on it.
+- Schedule each moving dependency before its consumer, and retire a dependency after its moving consumers.
 - The manufacturing fixture completes using the same API with no telco pack.
 - CLI JSON is stable and machine-readable.
 - The API and web panel return the same assessment produced by the core.

@@ -35,10 +35,12 @@ class MigrationPlanner:
             if dependency.source in mappings and dependency.target in mappings:
                 dependency_map[dependency.source].append(dependency.target)
 
-        dependency_order = self._dependency_order(mappings, dependency_map)
-        self._check_retained_dependencies(mappings, dependency_map, dependency_order)
-        orders = self._schedule_orders(mappings, dependency_map, dependency_order)
-        waves = self._build_waves(assets, mappings, dependency_map, orders, warnings)
+        source_dependency_order = self._dependency_order(mappings, dependency_map)
+        self._check_retained_dependencies(mappings, dependency_map, source_dependency_order)
+        scheduling_dependencies = self._scheduling_dependencies(mappings, dependency_map)
+        dependency_order = self._dependency_order(mappings, scheduling_dependencies)
+        orders = self._schedule_orders(mappings, scheduling_dependencies, dependency_order)
+        waves = self._build_waves(assets, mappings, scheduling_dependencies, orders, warnings)
         assurance = self._build_assurance(waves, project, mappings, pack_name)
         economics = self._calculate_economics(assets, mappings)
 
@@ -105,6 +107,21 @@ class MigrationPlanner:
                 raise ValueError(f"retained asset {asset_id} depends on retired asset {retired_dependency[asset_id]}")
 
     @staticmethod
+    def _scheduling_dependencies(
+        mappings: dict[str, TargetMapping], dependencies: dict[str, list[str]]
+    ) -> dict[str, list[str]]:
+        """Keep dependencies available until every moving consumer has cut over."""
+        scheduled: dict[str, list[str]] = defaultdict(list)
+        for asset_id, dependency_ids in dependencies.items():
+            for dependency_id in dependency_ids:
+                if mappings[dependency_id].disposition == "retire" and mappings[asset_id].disposition != "retain":
+                    if asset_id not in scheduled[dependency_id]:
+                        scheduled[dependency_id].append(asset_id)
+                elif dependency_id not in scheduled[asset_id]:
+                    scheduled[asset_id].append(dependency_id)
+        return scheduled
+
+    @staticmethod
     def _schedule_orders(
         mappings: dict[str, TargetMapping],
         dependencies: dict[str, list[str]],
@@ -114,6 +131,8 @@ class MigrationPlanner:
 
         for asset_id in dependency_order:
             mapping = mappings[asset_id]
+            if mapping.disposition == "retire":
+                continue
             if mapping.disposition == "retain":
                 orders[asset_id] = 0
                 continue
@@ -130,13 +149,27 @@ class MigrationPlanner:
                 )
             orders[asset_id] = max(minimum, mapping.wave_hint or 1)
 
-        movable_orders = [
-            order for asset_id, order in orders.items() if mappings[asset_id].disposition not in {"retain", "retire"}
-        ]
-        retirement_order = max(movable_orders, default=0) + 1
-        for asset_id, mapping in mappings.items():
-            if mapping.disposition == "retire":
-                orders[asset_id] = max(retirement_order, mapping.wave_hint or retirement_order)
+        retirement_floor = max(
+            (order for asset_id, order in orders.items() if mappings[asset_id].disposition not in {"retain", "retire"}),
+            default=0,
+        )
+        for asset_id in dependency_order:
+            mapping = mappings[asset_id]
+            if mapping.disposition != "retire":
+                continue
+            dependency_orders = [orders[item] for item in dependencies.get(asset_id, [])]
+            minimum = max([retirement_floor, *dependency_orders]) + 1
+            if mapping.wave_hint is not None and mapping.wave_hint < minimum:
+                blocker = max(
+                    dependencies.get(asset_id, []),
+                    key=lambda item: orders.get(item, 0),
+                    default="moving assets",
+                )
+                raise ValueError(
+                    f"wave hint for {asset_id} runs before dependency {blocker}; minimum wave is {minimum}"
+                )
+            orders[asset_id] = max(minimum, mapping.wave_hint or minimum)
+
         return orders
 
     @staticmethod

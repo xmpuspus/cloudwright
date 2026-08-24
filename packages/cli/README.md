@@ -29,7 +29,7 @@ switch traffic, or run a cutover.
 ```bash
 cloudwright migrate packs
 cloudwright migrate plan project.yaml -o assessment.yaml
-cloudwright migrate verify assessment.yaml evidence.yaml -o evidence-pack.yaml
+cloudwright migrate verify project.yaml evidence.yaml -o evidence-pack.yaml
 cloudwright --json migrate demo
 ```
 

@@ -66,26 +66,20 @@ def test_migrate_plan_has_stable_json_envelope():
 
 
 def test_migrate_verify_closes_and_writes_evidence_pack(tmp_path: Path):
-    assessment = tmp_path / "assessment.yaml"
     evidence_pack = tmp_path / "evidence-pack.yaml"
-    plan_result = runner.invoke(
-        app,
-        ["migrate", "plan", str(EXAMPLES / "ph-telco-project.yaml"), "-o", str(assessment)],
-    )
 
     result = runner.invoke(
         app,
         [
             "migrate",
             "verify",
-            str(assessment),
+            str(EXAMPLES / "ph-telco-project.yaml"),
             str(EXAMPLES / "ph-telco-evidence.yaml"),
             "-o",
             str(evidence_pack),
         ],
     )
 
-    assert plan_result.exit_code == 0
     assert result.exit_code == 0
     assert "Ready to close" in result.output
     assert evidence_pack.exists()
@@ -93,12 +87,7 @@ def test_migrate_verify_closes_and_writes_evidence_pack(tmp_path: Path):
 
 
 def test_migrate_verify_returns_nonzero_for_missing_blocking_evidence(tmp_path: Path):
-    assessment = tmp_path / "assessment.yaml"
     blocked_evidence = tmp_path / "blocked-evidence.yaml"
-    runner.invoke(
-        app,
-        ["migrate", "plan", str(EXAMPLES / "ph-telco-project.yaml"), "-o", str(assessment)],
-    )
     evidence = yaml.safe_load((EXAMPLES / "ph-telco-evidence.yaml").read_text())
     evidence["observations"] = [
         item for item in evidence["observations"] if item["criterion_id"] != "subscriber-record-parity"
@@ -107,13 +96,38 @@ def test_migrate_verify_returns_nonzero_for_missing_blocking_evidence(tmp_path: 
 
     result = runner.invoke(
         app,
-        ["--json", "migrate", "verify", str(assessment), str(blocked_evidence)],
+        ["--json", "migrate", "verify", str(EXAMPLES / "ph-telco-project.yaml"), str(blocked_evidence)],
     )
 
     assert result.exit_code == 2
     payload = json.loads(result.output)["data"]
     assert payload["evidence_pack"]["closed"] is False
     assert payload["evidence_pack"]["blocking_failures"] == 1
+
+
+def test_migrate_verify_rejects_a_client_supplied_assessment(tmp_path: Path):
+    forged_assessment = tmp_path / "forged-assessment.yaml"
+    forged_assessment.write_text(
+        yaml.safe_dump(
+            {
+                "project_name": "prod-cutover",
+                "transition": {
+                    "project_name": "prod-cutover",
+                    "complete": True,
+                    "waves": [],
+                    "economics": {},
+                },
+                "assurance": {"criteria": []},
+            }
+        )
+    )
+    evidence = tmp_path / "evidence.yaml"
+    evidence.write_text(yaml.safe_dump({"project_name": "prod-cutover", "observations": []}))
+
+    result = runner.invoke(app, ["migrate", "verify", str(forged_assessment), str(evidence)])
+
+    assert result.exit_code != 0
+    assert "Ready to close" not in result.output
 
 
 def test_migrate_demo_runs_packaged_project_in_human_and_json_modes():

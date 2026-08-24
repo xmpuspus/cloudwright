@@ -57,7 +57,7 @@ or runs a cutover.
 
 ```bash
 cloudwright migrate plan examples/migrations/ph-telco-project.yaml -o assessment.yaml
-cloudwright migrate verify assessment.yaml examples/migrations/ph-telco-evidence.yaml
+cloudwright migrate verify examples/migrations/ph-telco-project.yaml examples/migrations/ph-telco-evidence.yaml
 ```
 
 <p align="center"><img src="examples/cloudwright-migration-cli-demo.gif" alt="The offline CLI builds five PH telco migration waves and costs. It checks 22 gates and returns Ready to close." width="760"></p>

@@ -152,13 +152,15 @@ def plan_migration(
 @migrate_app.command("verify")
 def verify_migration(
     ctx: typer.Context,
-    assessment_file: Annotated[Path, typer.Argument(help="Migration assessment YAML or JSON file")],
+    project_file: Annotated[Path, typer.Argument(help="Migration project YAML or JSON file")],
     evidence_file: Annotated[Path, typer.Argument(help="Evidence YAML or JSON file")],
     output: Annotated[Path | None, typer.Option("--output", "-o", help="Write evidence-pack YAML")] = None,
+    pack: Annotated[str | None, typer.Option("--pack", help="Override the project's domain pack")] = None,
 ) -> None:
     """Check recorded evidence and block closure when required gates fail."""
     try:
-        assessment = MigrationAssessment.from_file(assessment_file)
+        project = MigrationProject.from_file(project_file)
+        assessment = MigrationPlanner().plan(project, pack_name=pack)
         evidence = EvidenceInput.from_file(evidence_file)
         evidence_pack = EvidenceEvaluator().evaluate(assessment, evidence)
         _write_yaml(ctx, evidence_pack, output)

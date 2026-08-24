@@ -211,6 +211,21 @@ def test_retirement_runs_after_moving_assets():
     assert last_wave.actions[0].disposition == "retire"
 
 
+def test_retirement_waits_for_assets_that_depend_on_it():
+    project = _project()
+    project.target.mappings[0] = TargetMapping(source_asset_id="db", disposition="retire")
+    project = MigrationProject.model_validate(project.model_dump())
+
+    assessment = MigrationPlanner().plan(project)
+
+    assert [[action.source_asset_id for action in wave.actions] for wave in assessment.transition.waves] == [
+        ["app"],
+        ["db"],
+    ]
+    assert [wave.order for wave in assessment.transition.waves] == [1, 2]
+    assert assessment.transition.waves[1].prerequisites == ["app"]
+
+
 def test_economics_use_explicit_source_target_and_dual_run_values():
     economics = MigrationPlanner().plan(_project()).transition.economics
 

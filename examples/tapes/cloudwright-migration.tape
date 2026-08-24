@@ -37,7 +37,7 @@ Show
 Type "# Recorded evidence decides whether the migration can close"
 Enter
 Sleep 600ms
-Type 'python3 -m cloudwright_cli migrate verify "$migration_demo_dir/assessment.yaml" examples/migrations/ph-telco-evidence.yaml'
+Type 'python3 -m cloudwright_cli migrate verify examples/migrations/ph-telco-project.yaml examples/migrations/ph-telco-evidence.yaml'
 Sleep 300ms
 Enter
 Sleep 4s

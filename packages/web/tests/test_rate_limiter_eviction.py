@@ -80,6 +80,21 @@ class TestBucketEviction:
         assert retry_after > 0
         assert len(limiter._buckets) == 2
 
+    def test_returning_ip_prunes_its_expired_requests_between_sweeps(self, monkeypatch):
+        limiter = _RateLimiter(max_requests=1, window_seconds=60)
+        times = iter([0, 60, 61, 121, 123])
+        monkeypatch.setattr("cloudwright_web.middleware.time.time", lambda: next(times))
+
+        assert limiter.is_allowed("a")[0] is True
+        assert limiter.is_allowed("b")[0] is True
+        assert limiter.is_allowed("victim")[0] is True
+        assert limiter.is_allowed("b")[0] is True
+
+        allowed, retry_after = limiter.is_allowed("victim")
+
+        assert allowed is True
+        assert retry_after == 0
+
 
 class TestLimitSemanticsUnchanged:
     """Pin the pre-existing behavior so the eviction fix can't drift it."""

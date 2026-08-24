@@ -222,6 +222,9 @@ class _RateLimiter:
                     retry_after = max(1, int(self._next_sweep - now) + 1)
                     return False, retry_after
                 bucket = self._buckets.setdefault(ip, deque())
+            else:
+                while bucket and bucket[0] < cutoff:
+                    bucket.popleft()
             if len(bucket) >= self._max:
                 retry_after = int(self._window - (now - bucket[0])) + 1 if bucket else int(self._window) + 1
                 return False, retry_after

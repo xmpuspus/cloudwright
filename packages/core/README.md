@@ -7,7 +7,7 @@
 
 Architecture intelligence for cloud engineers.
 
-Cloudwright bridges the gap between a whiteboard sketch and deployable infrastructure. Describe a system in natural language, and Cloudwright produces a structured architecture spec, cost estimates, compliance reports, Terraform/CloudFormation code, diagrams, and diffs — all from a single format called **ArchSpec**.
+Cloudwright bridges the gap between a whiteboard sketch and deployable infrastructure. Describe a system in natural language, and Cloudwright produces a structured architecture spec, cost estimates, compliance reports, Terraform/CloudFormation code, diagrams, and diffs. Every output starts from **ArchSpec**.
 
 ```
 "HIPAA-compliant 3-tier app on AWS, budget $3k/month"
@@ -29,11 +29,11 @@ Cloudwright bridges the gap between a whiteboard sketch and deployable infrastru
 
 ## Why Cloudwright
 
-Most cloud tooling assumes you already know what to build (IaC) or already have it deployed (cost dashboards, security scanners). Cloudwright operates in the design phase — the gap where architects currently rely on tribal knowledge, ad-hoc spreadsheets, and copy-pasting last quarter's Terraform.
+Most cloud tooling assumes you already know what to build (IaC) or already have it deployed (cost dashboards, security scanners). Cloudwright operates in the design phase. Architects often fill this gap with team knowledge, spreadsheets, and old Terraform.
 
-**One spec, many outputs.** ArchSpec is the universal interchange format. Every module — design, cost, compliance, export, diff, lint, score — reads and writes it. No glue code, no format conversion.
+**One spec, many outputs.** ArchSpec is the interchange format. Design, cost, compliance, export, diff, lint, and score read and write it. No glue code or format conversion is needed.
 
-### How it compares
+### Feature comparison with infrastructure tools
 
 | Capability | Cloudwright | Terraform | Pulumi Neo | Brainboard | Infracost | Checkov |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|
@@ -48,14 +48,14 @@ Most cloud tooling assumes you already know what to build (IaC) or already have 
 | Open source | Y | BSL / OpenTofu | Engine only | - | CLI only | Y |
 | Runs locally | Y | Y | Y | - | Y | Y |
 
-Terraform and Infracost are deployment/cost tools that sit *downstream* — Cloudwright generates the Terraform code and estimates costs before any code exists. Checkov and Prowler scan *after* code is written; Cloudwright validates at design time. Brainboard is the closest direct competitor (NL-to-arch + TF), but it's SaaS-only and doesn't do compliance or cost estimation.
+Terraform and Infracost are deployment and cost tools that run later. Cloudwright generates Terraform and estimates costs before code exists. Checkov and Prowler scan after code is written. Cloudwright validates at design time. Brainboard is the closest direct competitor (NL-to-arch + TF), but it is SaaS-only and does not check compliance or estimate cost.
 
 Full competitor analysis covering 30 tools across IaC, cost, compliance, and diagramming: [competitor-landscape.md](docs/competitor-landscape.md)
 
 ## Quick Start
 
 ```bash
-pip install cloudwright[cli]
+pip install 'cloudwright-ai[cli]'
 ```
 
 Set an LLM provider key:
@@ -141,7 +141,7 @@ cloudwright validate spec.yaml --well-architected
 cloudwright validate spec.yaml --compliance fedramp --report audit-report.md
 ```
 
-Exit code 1 on failures, making it CI-friendly.
+The command returns exit code 1 on failures. CI jobs can use this code as a gate.
 
 ### Infrastructure Export
 
@@ -280,6 +280,34 @@ cloudwright import cloudformation-template.yaml -o spec.yaml
 
 Auto-detects format from file extension and content. Plugin support for custom importers via the `cloudwright.importers` entry point.
 
+### Migration Planning and Evidence
+
+Describe source assets, dependencies, target mappings, costs, rollback paths, and acceptance gates in
+portable YAML. The planner orders dependencies first, groups actions into waves, calculates supplied
+migration costs, and checks recorded evidence. It never copies data, applies infrastructure, switches
+traffic, or runs a cutover.
+
+```python
+from cloudwright.migration import (
+    EvidenceEvaluator,
+    EvidenceInput,
+    MigrationPlanner,
+    MigrationProject,
+)
+
+project = MigrationProject.from_file("project.yaml")
+assessment = MigrationPlanner().plan(project)
+evidence = EvidenceInput.from_file("evidence.yaml")
+result = EvidenceEvaluator().evaluate(assessment, evidence)
+```
+
+The core model works across infrastructure, data, applications, platforms, networks, facilities, and
+business services. Industry rules stay in optional YAML packs. The supplied PH telco pack is the first
+proof project. A manufacturing ERP fixture proves the planner works without a pack.
+
+See [Migration planning and evidence](../../docs/migrations.md) for the schemas, CLI, API, pack format,
+limits, and checked examples.
+
 ### Templates
 
 14 starter architectures across three providers:
@@ -300,20 +328,21 @@ cloudwright init --project                           # create .cloudwright/ proj
 FastAPI backend + React frontend for browser-based architecture design.
 
 ```bash
-pip install cloudwright[web]
+pip install 'cloudwright-ai[web]'
 cloudwright chat --web
 ```
 
-10 API endpoints: design, modify, cost, validate, export, diff, catalog search, catalog compare, chat, health.
+The FastAPI package serves design, cost, compliance, migration, catalog, diagram, chat, and health routes.
+The React workspace has a standalone Migration tab for the packaged proof project.
 
 ### Plugin System
 
 Four extension points via Python entry points:
 
-- `cloudwright.exporters` — custom export formats
-- `cloudwright.validators` — custom compliance frameworks
-- `cloudwright.policies` — custom policy checks
-- `cloudwright.importers` — custom infrastructure importers
+- `cloudwright.exporters`: custom export formats
+- `cloudwright.validators`: custom compliance frameworks
+- `cloudwright.policies`: custom policy checks
+- `cloudwright.importers`: custom infrastructure importers
 
 ```bash
 cloudwright --list-plugins  # discover installed plugins
@@ -389,6 +418,7 @@ Components use a 5-tier system for vertical positioning: Edge (0), Ingress (1), 
 | `export <spec>` | Export to IaC/diagram/SBOM with `--format`, `--output` |
 | `diff <spec_a> <spec_b>` | Structured diff with cost delta and compliance impact |
 | `import <source>` | Import from Terraform state or CloudFormation |
+| `migrate packs\|plan\|verify\|demo` | Plan migration waves and check closure evidence offline |
 | `chat` | Interactive multi-turn design session (`--web` for browser UI) |
 | `init` | Initialize from template with `--template`, `--project` |
 | `lint <spec>` | Anti-pattern detection (`--strict` fails on warnings) |
@@ -446,7 +476,7 @@ print(f"Grade: {report.grade} ({report.overall:.0f}/100)")
 
 ## Service Catalog
 
-Ships as a SQLite database bundled with the package. No network calls required.
+Ships as a SQLite database bundled with the package. No network calls needed.
 
 - Compute, database, networking, and storage pricing for AWS, GCP, and Azure
 - 4 pricing tiers (on-demand, reserved 1yr/3yr, spot)
@@ -483,9 +513,9 @@ Full results: [benchmark/results/benchmark_report.md](benchmark/results/benchmar
 ```
 cloudwright/
   packages/
-    core/       pip install cloudwright          Models, architect, catalog, cost, validators, exporters
-    cli/        pip install cloudwright[cli]     Typer CLI with Rich formatting
-    web/        pip install cloudwright[web]     FastAPI + React web UI
+    core/       pip install cloudwright-ai          Models, planning, cost, validation, and export
+    cli/        pip install cloudwright-ai[cli]     Typer CLI with Rich formatting
+    web/        pip install cloudwright-ai[web]     FastAPI and React web UI
   catalog/                                      Service catalog JSON (compute, database, storage, networking)
   benchmark/                                    54 use cases + evaluation framework
 ```
@@ -504,7 +534,7 @@ pytest packages/core/tests/           # 689 tests
 ruff check packages/ && ruff format packages/
 ```
 
-LLM-dependent tests (architect, chat) require an API key and are skipped by default:
+LLM-dependent tests (architect, chat) need an API key and skip by default:
 
 ```bash
 ANTHROPIC_API_KEY=sk-ant-... pytest packages/core/tests/test_architect.py -v

@@ -21,6 +21,7 @@ const PATHS: Record<string, string> = {
   grid: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
   chat: "M21 12a8 8 0 01-11.6 7.1L4 20l1-4.5A8 8 0 1121 12z",
   refresh: "M20 12a8 8 0 10-2.3 5.6M20 6v6h-6",
+  route: "M5 4a2 2 0 110 4 2 2 0 010-4zM19 16a2 2 0 110 4 2 2 0 010-4zM7 6h5a4 4 0 014 4v0a4 4 0 01-4 4H9a4 4 0 00-4 4v0M16 10l2-2m-2 2l2 2",
 };
 
 export type IconName = keyof typeof PATHS | string;

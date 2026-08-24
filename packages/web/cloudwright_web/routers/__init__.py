@@ -8,6 +8,7 @@ from cloudwright_web.routers.design import router as design_router
 from cloudwright_web.routers.diagram import router as diagram_router
 from cloudwright_web.routers.export import router as export_router
 from cloudwright_web.routers.health import router as health_router
+from cloudwright_web.routers.migration import router as migration_router
 from cloudwright_web.routers.modules import router as modules_router
 from cloudwright_web.routers.plan import router as plan_router
 from cloudwright_web.routers.review import router as review_router
@@ -22,6 +23,7 @@ __all__ = [
     "diagram_router",
     "export_router",
     "health_router",
+    "migration_router",
     "modules_router",
     "plan_router",
     "review_router",

@@ -1,6 +1,6 @@
 # Cloudwright
 
-*Describe a cloud architecture in English. Get Terraform, costs, and a compliance check.*
+*Design a cloud architecture or plan a migration. Get costs, controls, code, and checked evidence.*
 
 [![PyPI](https://img.shields.io/pypi/v/cloudwright-ai.svg)](https://pypi.org/project/cloudwright-ai/) [![CI](https://github.com/xmpuspus/cloudwright/actions/workflows/ci.yml/badge.svg)](https://github.com/xmpuspus/cloudwright/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Python 3.12+](https://img.shields.io/pypi/pyversions/cloudwright-ai)](https://pypi.org/project/cloudwright-ai/) [![xmpuspus/cloudwright MCP server](https://glama.ai/mcp/servers/xmpuspus/cloudwright/badges/score.svg)](https://glama.ai/mcp/servers/xmpuspus/cloudwright)
 
@@ -13,10 +13,11 @@ cloudwright design "HIPAA healthcare API on AWS with Postgres and Redis"
 ```
 
 Cloudwright turns one line of English into a typed spec, a cost breakdown, a control-mapped compliance report,
-and infrastructure code. It covers AWS, GCP, Azure and Databricks across 114 service keys. Only `design`,
-`modify`, `chat` and `adr` call a model. Every other command runs offline and needs no API key.
+and infrastructure code. A source estate and target become ordered migration waves, explicit costs,
+and evidence gates. It covers AWS, GCP, Azure and Databricks across 114 service keys. Only `design`, `modify`,
+`chat` and `adr` call a model. Every other command runs offline and needs no API key.
 
-[Quickstart](#quickstart) &middot; [Compliance](#every-finding-carries-the-control-id-it-violates) &middot; [Agents](#one-mcp-server-reaches-11-coding-agents) &middot; [Docs](docs/) &middot; [Changelog](CHANGELOG.md)
+[Quickstart](#quickstart) &middot; [Migrations](#migration-plans-stop-when-evidence-is-missing) &middot; [Compliance](#every-finding-carries-the-control-id-it-violates) &middot; [Agents](#one-mcp-server-reaches-11-coding-agents) &middot; [Docs](docs/) &middot; [Changelog](CHANGELOG.md)
 
 ## A prompt produces a spec, a cost, a control-mapped report, and Terraform
 
@@ -39,17 +40,42 @@ cloudwright cost spec.yaml --workload-profile medium
 cloudwright compliance spec.yaml --frameworks hipaa,soc2
 cloudwright export spec.yaml --format terraform -o ./infra
 cloudwright plan spec.yaml --target terraform          # proves it deploys, never applies
+cloudwright migrate demo                               # packaged migration proof, fully offline
 cloudwright chat --web                                 # canvas at http://localhost:8765
 ```
 
 Add `--json` before any subcommand for machine-readable output, or `--stream` to watch tokens arrive. Set `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` for the four commands that need a model.
+
+## Migration plans stop when evidence is missing
+
+<p align="center"><img src="examples/cloudwright-migration-web-demo.gif" alt="The Migration tab runs the PH telecommunications proof project. It reports five ordered waves, migration economics, 22 passing evidence gates, and a Ready to close result. The view then scrolls through the dependency route and evidence groups." width="820"></p>
+
+The migration model covers infrastructure, applications, data, platforms, networks, facilities, and business
+services in one dependency graph. It works for on-premises, cloud, cross-cloud, hybrid, data-center, and
+application moves. It plans and checks work. It never copies data, applies infrastructure, switches traffic,
+or runs a cutover.
+
+```bash
+cloudwright migrate plan examples/migrations/ph-telco-project.yaml -o assessment.yaml
+cloudwright migrate verify assessment.yaml examples/migrations/ph-telco-evidence.yaml
+```
+
+<p align="center"><img src="examples/cloudwright-migration-cli-demo.gif" alt="The offline CLI builds five PH telco migration waves and costs. It checks 22 gates and returns Ready to close." width="760"></p>
+
+The core has no telco fields. The first proof project selects an external `ph_telco` pack for subscriber,
+billing, usage-record, number-porting, privacy, recovery, and source-shutdown gates. A manufacturing ERP
+fixture proves the same planner works without that pack. Missing blocking evidence changes the result to
+`closed: false` and makes `migrate verify` exit with code 2.
+
+See [Migration planning and evidence](docs/migrations.md) for the file contract, Python API, HTTP routes,
+domain-pack format, limits, and recording commands.
 
 ## Every finding carries the control ID it violates
 
 <p align="center"><img src="examples/cloudwright-controls-web-demo.gif" alt="The web canvas Compliance tab shows a per-framework table for HIPAA, SOC 2 and FedRAMP. Each row carries satisfied and violated control IDs. The Plan tab then returns a DEPLOYABLE verdict." width="820"></p>
 
 Other tools scan infrastructure after you deploy it. Cloudwright maps each finding to its control before any
-resource exists. The fix then costs a spec edit, not a change ticket. HIPAA `164.312(a)(2)(iv)`, SOC 2 `CC6.1`
+resource exists. The fix then costs a spec edit instead of a change ticket. HIPAA `164.312(a)(2)(iv)`, SOC 2 `CC6.1`
 and FedRAMP `SC-28` come from the built-in scanner, with no extra tooling. Checkov folds into the same report
 when it sits on your PATH.
 
@@ -91,7 +117,7 @@ wants a TOML table.
 The server exposes 22 tools in 9 groups: design, cost, validate, analyze, export, session, review, compliance
 and plan. Full matrix in [docs/integrations.md](docs/integrations.md).
 
-## Nine offline commands grade, scan and compare a spec
+## Offline commands grade, scan, compare, and plan
 
 `lint` runs 10 anti-pattern checks. `score` grades 5 dimensions. `analyze` reports blast radius and single
 points of failure. `policy` enforces policy-as-code with 9 built-in rules. `security` scans the spec and the
@@ -114,18 +140,22 @@ findings = Validator().validate(spec, compliance=["hipaa", "pci-dss"])
 hcl = export_spec(spec, "terraform", output_dir="./infra")
 ```
 
-## v1.9.0 gave the diagram arrowheads and got the canvas off React Flow's defaults
+## v1.10.0 adds migration planning with evidence-based closure
 
-Measured by driving all 16 `init` templates through the running app, and 8 interactions at 1920, 1440 and 390px.
+- **One model covers the full estate.** Infrastructure, data, applications, platforms, networks,
+  facilities, and business services share one dependency graph.
+- **Dependencies determine the waves.** The planner schedules prerequisites first, rejects cycles,
+  checks rollback paths, and reports unresolved mappings.
+- **Closure needs evidence.** Missing or failed blocking observations prevent closure and make
+  `migrate verify` return exit code 2.
+- **Industry rules stay outside the engine.** Optional YAML packs add acceptance gates without adding
+  industry fields to the core.
+- **PH telco is the first proof.** The product remains industry-neutral. A manufacturing ERP fixture
+  runs through the same planner with no domain pack.
 
-- **Every connection draws an arrowhead.** The computed `markerEnd` was `none` on every edge.
-- **Connection lines clear 3:1 contrast.** They ran at 1.42:1 in light and 1.81:1 in dark.
-- **The canvas fits a phone.** The 0.5 zoom floor left 2 of 8 nodes off the pane at 390px; the floor is 0.12.
-- **A drag inside a VPC pans the canvas.** It used to drag the box out of shape and save nothing.
-- **A node moves the distance you drag it.** A tight boundary plus `extent: "parent"` allowed 5 to 10px.
-- **Connections stop hiding behind cards.** 17 of them did across the 16 templates; 5 still do.
-
-Earlier releases added control-ID mapping and `plan` (v1.5.0), the self-correcting architect and OSCAL (v1.6.0), `cloudwright integrate` (v1.7.0), and the dark theme and responsive layout (v1.8.0). Full history in [CHANGELOG.md](CHANGELOG.md).
+Earlier releases added control-ID mapping and `plan` (v1.5.0), the self-correcting architect and OSCAL
+(v1.6.0), `cloudwright integrate` (v1.7.0), the responsive dark-theme canvas (v1.8.0), and measured
+canvas interaction fixes (v1.9.0). Full history in [CHANGELOG.md](CHANGELOG.md).
 
 ## Compatibility
 

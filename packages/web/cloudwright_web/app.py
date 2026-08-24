@@ -30,6 +30,7 @@ from cloudwright_web.routers import (
     diagram_router,
     export_router,
     health_router,
+    migration_router,
     modules_router,
     plan_router,
     review_router,
@@ -126,6 +127,7 @@ def create_app() -> FastAPI:
     application.include_router(modules_router, prefix="/api")
     application.include_router(diagram_router, prefix="/api")
     application.include_router(chat_router, prefix="/api")
+    application.include_router(migration_router, prefix="/api")
 
     from cloudwright_web.routers.diff import router as diff_router
 

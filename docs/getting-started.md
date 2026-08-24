@@ -2,7 +2,7 @@
 
 This guide gets you from zero to a deployable architecture spec in about five minutes.
 
-Related: [CLI Reference](cli-reference.md) | [Troubleshooting](troubleshooting.md) | [MCP Reference](mcp-reference.md) | [README](../README.md)
+Related: [CLI Reference](cli-reference.md) | [Migration Guide](migrations.md) | [Troubleshooting](troubleshooting.md) | [MCP Reference](mcp-reference.md) | [README](../README.md)
 
 ---
 
@@ -36,7 +36,7 @@ All extras together:
 pip install 'cloudwright-ai[all]'
 ```
 
-Requires Python 3.12 or later.
+Needs Python 3.12 or later.
 
 ---
 
@@ -64,7 +64,9 @@ Cloudwright picks up whichever key is present. Anthropic (Claude Sonnet for desi
 cloudwright design "3-tier web app on AWS with PostgreSQL and Redis"
 ```
 
-This runs the LLM, prints an ASCII diagram and cost table, and auto-saves a `spec.yaml` in the current directory. v1.6 adds a generate->critique->repair loop: blocking findings (missing encryption, single points of failure) are fed back to the model before the spec is returned.
+This calls the model, prints an ASCII diagram and cost table, and saves `spec.yaml` in the current directory.
+Since v1.6, `design` runs a generate->critique->repair loop. The model gets blocking findings such as
+missing encryption or single points of failure before it returns the spec.
 
 Common options:
 
@@ -117,7 +119,9 @@ cloudwright validate spec.yaml --compliance pci-dss --report report.md
 
 Available frameworks: `hipaa`, `pci-dss`, `soc2`, `fedramp`, `gdpr`, plus `well-architected`. Exit code is non-zero when any check fails.
 
-For a deeper scan that maps each finding to its specific control ID (HIPAA `164.312`, SOC 2 `CC6.1`, FedRAMP `SC-28`, PCI-DSS, GDPR, ISO 27001, NIST 800-53) and optionally folds in Checkov against the generated Terraform:
+For a deeper scan, run `compliance`. It maps findings to HIPAA `164.312`, SOC 2 `CC6.1`,
+FedRAMP `SC-28`, PCI-DSS, GDPR, ISO 27001, and NIST 800-53 controls. With Checkov, it also scans
+the generated Terraform.
 
 ```bash
 cloudwright compliance spec.yaml --frameworks hipaa,soc2
@@ -146,7 +150,7 @@ All IaC exporters apply safe defaults: S3 public-access blocks, RDS encryption a
 
 ---
 
-## Prove the export deploys (requires Terraform or Pulumi on PATH)
+## Prove the export deploys (needs Terraform or Pulumi on PATH)
 
 ```bash
 # Offline proof: runs terraform validate, no cloud credentials needed
@@ -164,7 +168,7 @@ Nothing is applied. The verdict is `DEPLOYABLE` or `NOT DEPLOYABLE`.
 
 No LLM call, no cloud API call, no environment variables needed:
 
-| Command | What it does |
+| Command | Result |
 |---|---|
 | `cost` | Estimate monthly bill from bundled catalog |
 | `validate` | Compliance and Well-Architected checks |
@@ -182,14 +186,15 @@ No LLM call, no cloud API call, no environment variables needed:
 | `catalog search` | Search cloud instance catalog |
 | `catalog compare` | Compare instance types side by side |
 | `init` | Create a spec from a pre-built template |
+| `migrate packs\|plan\|verify\|demo` | Plan migration waves and check recorded evidence |
 
-Commands that call an LLM (require `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`):
+Commands that call an LLM (need `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`):
 
-- `design` — generate a new architecture
-- `modify` — update an existing spec with a natural-language instruction
-- `compare` — translate a spec to other providers
-- `chat` — multi-turn terminal or web session
-- `adr` — generate an Architecture Decision Record
+- `design`: generate a new architecture
+- `modify`: update an existing spec with a natural-language instruction
+- `compare`: translate a spec to other providers
+- `chat`: multi-turn terminal or web session
+- `adr`: generate an Architecture Decision Record
 
 ---
 
@@ -201,7 +206,7 @@ cloudwright chat --web
 ```
 
 Opens `http://localhost:8765`. Chat to design, then drag components, edit fields, and add
-resources from the catalog drawer. Compliance, Plan, Review and Export all run in the UI.
+resources from the catalog drawer. Compliance, Migration, Plan, Review and Export all run in the UI.
 
 Use a different port:
 
@@ -209,9 +214,9 @@ Use a different port:
 cloudwright chat --web --port 9000
 ```
 
-### Nine workspace tabs
+### Ten workspace tabs
 
-`diagram`, `cost`, `validate`, `compliance`, `plan`, `review`, `export`, `spec`, `modify`.
+`diagram`, `cost`, `validate`, `compliance`, `plan`, `migration`, `review`, `export`, `spec`, `modify`.
 Each tab keeps its own results. A tab switch never throws away a finished scan.
 
 ### Keyboard
@@ -254,6 +259,7 @@ cloudwright --json --stream security spec.yaml
 
 ## Next steps
 
-- [CLI Reference](cli-reference.md) — every command with all options
-- [Troubleshooting](troubleshooting.md) — common errors and fixes
-- [MCP Reference](mcp-reference.md) — use Cloudwright from Claude Desktop or Cursor
+- [CLI Reference](cli-reference.md): every command with all options
+- [Migration Guide](migrations.md): project files, packs, evidence, and limits
+- [Troubleshooting](troubleshooting.md): common errors and fixes
+- [MCP Reference](mcp-reference.md): use Cloudwright from Claude Desktop or Cursor

@@ -1,0 +1,167 @@
+schema_version: "1.0"
+name: PH telco hybrid service migration
+industry: telecommunications
+domain_pack: ph_telco
+estate:
+  name: Metro Manila production estate
+  assets:
+    - id: dc-platform
+      name: VMware production platform
+      kind: infrastructure
+      provider: on_prem
+      location: metro-manila-a
+      criticality: critical
+      tags: [disaster_recovery, regional_failover]
+      current_monthly_cost: 45000
+    - id: observability
+      name: Operations monitoring
+      kind: platform
+      provider: on_prem
+      criticality: high
+      current_monthly_cost: 7000
+    - id: subscriber-db
+      name: Subscriber and SIM records
+      kind: data
+      provider: on_prem
+      criticality: critical
+      data_classes: [subscriber_identity, personal_data]
+      tags: [sim_registration, decommission]
+      current_monthly_cost: 18000
+    - id: charging-app
+      name: Online charging
+      kind: application
+      provider: on_prem
+      criticality: critical
+      data_classes: [financial_balance]
+      tags: [charging, voice, sms, data_session]
+      current_monthly_cost: 25000
+    - id: billing-app
+      name: Convergent billing
+      kind: application
+      provider: on_prem
+      criticality: critical
+      data_classes: [financial_balance]
+      tags: [billing]
+      current_monthly_cost: 20000
+    - id: cdr-lake
+      name: Usage record lake
+      kind: data
+      provider: on_prem
+      criticality: high
+      data_classes: [usage_records]
+      tags: [cdr, decommission]
+      current_monthly_cost: 14000
+    - id: crm
+      name: Customer care and orders
+      kind: application
+      provider: on_prem
+      criticality: high
+      data_classes: [personal_data]
+      tags: [crm]
+      current_monthly_cost: 12000
+    - id: mnp-service
+      name: Mobile number portability
+      kind: business_service
+      provider: on_prem
+      criticality: critical
+      tags: [mnp]
+      current_monthly_cost: 5000
+    - id: legacy-monitor
+      name: Legacy infrastructure monitor
+      kind: application
+      provider: on_prem
+      criticality: low
+      current_monthly_cost: 2000
+  dependencies:
+    - {source: subscriber-db, target: dc-platform, kind: hosting, criticality: critical}
+    - {source: charging-app, target: subscriber-db, kind: runtime, criticality: critical}
+    - {source: charging-app, target: observability, kind: operations, criticality: high}
+    - {source: billing-app, target: charging-app, kind: financial, criticality: critical}
+    - {source: cdr-lake, target: charging-app, kind: event-stream, criticality: high}
+    - {source: crm, target: subscriber-db, kind: runtime, criticality: high}
+    - {source: mnp-service, target: subscriber-db, kind: identity, criticality: critical}
+target:
+  name: Philippine hybrid and regional cloud target
+  assets:
+    - {id: hybrid-platform-target, name: Local hybrid platform, kind: infrastructure, provider: private_cloud}
+    - {id: observability-target, name: Unified operations platform, kind: platform, provider: private_cloud}
+    - {id: subscriber-db-target, name: Replicated subscriber data platform, kind: data, provider: private_cloud}
+    - {id: charging-target, name: Container charging platform, kind: application, provider: private_cloud}
+    - {id: billing-target, name: Modern billing platform, kind: application, provider: private_cloud}
+    - {id: cdr-target, name: Regional usage data platform, kind: data, provider: aws}
+    - {id: crm-target, name: Customer care platform, kind: application, provider: aws}
+    - {id: mnp-target, name: Portability integration service, kind: business_service, provider: private_cloud}
+  mappings:
+    - source_asset_id: dc-platform
+      target_asset_ids: [hybrid-platform-target]
+      disposition: relocate
+      strategy: Build local colocation and regional recovery before workload moves.
+      rollback: Keep the source platform ready until recovery passes.
+      one_time_cost: 120000
+      target_monthly_cost: 30000
+      dual_run_months: 3
+    - source_asset_id: observability
+      target_asset_ids: [observability-target]
+      disposition: replatform
+      strategy: Send telemetry to both platforms before alert cutover.
+      rollback: Restore source alert routing.
+      one_time_cost: 15000
+      target_monthly_cost: 5000
+      dual_run_months: 2
+    - source_asset_id: subscriber-db
+      target_asset_ids: [subscriber-db-target]
+      disposition: replatform
+      strategy: Replicate, reconcile, freeze writes, and promote the target.
+      rollback: Resume source writes and restore subscriber routes.
+      one_time_cost: 80000
+      target_monthly_cost: 14000
+      dual_run_months: 3
+    - source_asset_id: charging-app
+      target_asset_ids: [charging-target]
+      disposition: refactor
+      strategy: Shadow charging events before service cutover.
+      rollback: Restore source charging routes and replay queued events.
+      one_time_cost: 110000
+      target_monthly_cost: 18000
+      dual_run_months: 2
+    - source_asset_id: billing-app
+      target_asset_ids: [billing-target]
+      disposition: replace
+      strategy: Run two bill cycles in shadow mode before account cutover.
+      rollback: Restore source billing and replay held usage records.
+      one_time_cost: 140000
+      target_monthly_cost: 16000
+      dual_run_months: 3
+    - source_asset_id: cdr-lake
+      target_asset_ids: [cdr-target]
+      disposition: replatform
+      strategy: Backfill usage records and reconcile both stores.
+      rollback: Stop target consumers and resume source analytics.
+      one_time_cost: 55000
+      target_monthly_cost: 10000
+      dual_run_months: 2
+    - source_asset_id: crm
+      target_asset_ids: [crm-target]
+      disposition: replace
+      strategy: Move customer data and switch care channels by cohort.
+      rollback: Return care channels to the source CRM.
+      one_time_cost: 45000
+      target_monthly_cost: 9000
+      dual_run_months: 2
+    - source_asset_id: mnp-service
+      target_asset_ids: [mnp-target]
+      disposition: replatform
+      strategy: Test donor and recipient flows before route changes.
+      rollback: Restore source portability routing.
+      one_time_cost: 25000
+      target_monthly_cost: 4000
+      dual_run_months: 2
+    - source_asset_id: legacy-monitor
+      disposition: retire
+      strategy: Archive history after all alert sources move.
+      rollback: Restore the archived monitor and alert routes.
+      one_time_cost: 10000
+      decommission_credit: 12000
+metadata:
+  proof_project: true
+  currency: USD

@@ -19,6 +19,7 @@ from cloudwright_cli.commands.init_cmd import init
 from cloudwright_cli.commands.integrate_cmd import integrate
 from cloudwright_cli.commands.lint_cmd import lint
 from cloudwright_cli.commands.mcp_cmd import mcp_serve
+from cloudwright_cli.commands.migrate_cmd import migrate_app
 from cloudwright_cli.commands.modify_cmd import modify
 from cloudwright_cli.commands.plan_cmd import plan
 from cloudwright_cli.commands.policy import policy
@@ -92,3 +93,4 @@ app.command()(cloudwright_command()(schema))
 app.command(name="mcp")(cloudwright_command()(mcp_serve))
 app.command(name="integrate")(cloudwright_command()(integrate))
 app.add_typer(catalog_app, name="catalog")
+app.add_typer(migrate_app, name="migrate")

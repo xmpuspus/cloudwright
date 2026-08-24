@@ -1,0 +1,92 @@
+schema_version: "1.0"
+name: Manufacturing ERP and plant data migration
+industry: manufacturing
+estate:
+  name: Plant estate
+  assets:
+    - id: plant-network
+      name: Plant integration network
+      kind: network
+      provider: on_prem
+      location: plant-a
+      owner: operations-technology
+      criticality: critical
+      current_monthly_cost: 4000
+    - id: erp-db
+      name: ERP database
+      kind: data
+      provider: on_prem
+      location: plant-a
+      owner: data-team
+      criticality: critical
+      data_classes: [financial_records]
+      current_monthly_cost: 8000
+    - id: erp-app
+      name: ERP application
+      kind: application
+      provider: on_prem
+      location: plant-a
+      owner: business-systems
+      criticality: high
+      current_monthly_cost: 12000
+  dependencies:
+    - source: erp-db
+      target: plant-network
+      kind: connectivity
+      criticality: critical
+    - source: erp-app
+      target: erp-db
+      kind: runtime
+      criticality: critical
+target:
+  name: Hybrid manufacturing target
+  assets:
+    - id: plant-network-target
+      name: Segmented plant integration network
+      kind: network
+      provider: private_cloud
+      location: plant-a
+      criticality: critical
+    - id: erp-db-target
+      name: Managed ERP database
+      kind: data
+      provider: private_cloud
+      location: regional-colocation
+      criticality: critical
+    - id: erp-app-target
+      name: ERP application platform
+      kind: application
+      provider: private_cloud
+      location: regional-colocation
+      criticality: high
+  mappings:
+    - source_asset_id: plant-network
+      target_asset_ids: [plant-network-target]
+      disposition: replace
+      strategy: Build and test the segmented route before application moves.
+      owner: operations-technology
+      rollback: Restore the original plant route.
+      one_time_cost: 20000
+      target_monthly_cost: 3000
+      dual_run_months: 1
+    - source_asset_id: erp-db
+      target_asset_ids: [erp-db-target]
+      disposition: replatform
+      strategy: Replicate and reconcile the ERP database.
+      owner: data-team
+      rollback: Resume writes on the source ERP database.
+      one_time_cost: 30000
+      target_monthly_cost: 6000
+      dual_run_months: 2
+    - source_asset_id: erp-app
+      target_asset_ids: [erp-app-target]
+      disposition: rehost
+      strategy: Use a blue-green application cutover.
+      owner: business-systems
+      rollback: Restore the source application route.
+      one_time_cost: 25000
+      target_monthly_cost: 9000
+      dual_run_months: 1
+metadata:
+  proof_project: true
+  currency: USD

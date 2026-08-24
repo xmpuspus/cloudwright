@@ -15,6 +15,7 @@ WEB = Path(__file__).resolve().parents[1]
 STATIC = WEB / "cloudwright_web" / "static"
 SRC = WEB / "frontend" / "src"
 DIAGRAM = SRC / "components" / "ArchitectureDiagram.tsx"
+MIGRATION = SRC / "components" / "MigrationPanel.tsx"
 
 
 def _asset(suffix: str) -> str:
@@ -24,7 +25,7 @@ def _asset(suffix: str) -> str:
     return files[0].read_text(encoding="utf-8")
 
 
-# ------------------------------------------------------------- interaction
+# Interaction contracts
 
 
 def test_zoom_floor_is_low_enough_for_a_phone():
@@ -40,6 +41,27 @@ def test_delete_key_removes_a_connection():
     source = DIAGRAM.read_text()
     assert 'const DELETE_KEYS = ["Backspace", "Delete"]' in source
     assert "deleteKeyCode={DELETE_KEYS}" in source
+
+
+def test_workspace_has_a_standalone_migration_view():
+    """Migration planning must work before an architecture is generated in chat."""
+    app = (SRC / "App.tsx").read_text()
+
+    assert 'import MigrationPanel from "./components/MigrationPanel"' in app
+    assert '| "migration"' in app
+    assert '{ key: "migration", icon: "route" }' in app
+    assert "<MigrationPanel apiBase={API_BASE} />" in app
+
+
+def test_migration_view_names_its_action_and_outcome_for_assistive_technology():
+    source = MIGRATION.read_text()
+
+    assert "fetch(`${apiBase}/migration/demo`" in source
+    assert "Run PH telco proof project" in source
+    assert 'role="status"' in source
+    assert "Ready to close" in source
+    assert "Blocked" in source
+    assert "This view plans and checks evidence. It does not move data or change systems." in source
 
 
 def test_boundaries_take_no_drag_and_no_selection():
@@ -68,7 +90,7 @@ def test_handles_are_big_enough_to_hit_when_zoomed_out():
     assert ".react-flow__handle{width:9px;height:9px" in css
 
 
-# ---------------------------------------------------------------- drawing
+# Drawing contracts
 
 
 def test_every_connection_draws_an_arrowhead():

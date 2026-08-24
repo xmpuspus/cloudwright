@@ -1,0 +1,199 @@
+name: ph_telco
+title: Philippine telecommunications
+version: "1.0"
+jurisdiction: PH
+description: Acceptance gates for a Philippine telecommunications migration proof project.
+sources:
+  - title: Data Privacy Act of 2012
+    url: https://privacy.gov.ph/data-privacy-act/
+  - title: SIM Registration Act
+    url: https://lawphil.net/statutes/repacts/ra2022/ra_11934_2022.html
+  - title: Mobile Number Portability Act
+    url: https://lawphil.net/statutes/repacts/ra2019/ra_11202_2019.html
+  - title: NPC Advisory 2024-01 on cross-border transfers
+    url: https://privacy.gov.ph/wp-content/uploads/2024/06/Published-NPC-Advisory-No.-2024-01-Contractual-Clauses-for-Cross-Border-Transfers_30May24.pdf
+criteria:
+  - id: subscriber-record-parity
+    name: Subscriber records reconcile
+    category: data
+    metric: subscriber_record_parity_percent
+    comparator: gte
+    target_value: 100
+    unit: percent
+    blocking: true
+    required_evidence: reconciliation-job
+    control_references: [RA-11934-SEC-6]
+    description: Source and target subscriber records must reconcile before cutover closes.
+    match:
+      data_classes: [subscriber_identity]
+  - id: sim-activation-journey
+    name: SIM activation journey passes
+    category: operational
+    metric: sim_activation_passed
+    comparator: "true"
+    target_value: true
+    blocking: true
+    required_evidence: journey-test
+    control_references: [RA-11934-SEC-4]
+    match:
+      tags: [sim_registration]
+  - id: sim-deactivation-journey
+    name: SIM deactivation journey passes
+    category: operational
+    metric: sim_deactivation_passed
+    comparator: "true"
+    target_value: true
+    blocking: true
+    required_evidence: journey-test
+    control_references: [RA-11934-SEC-6]
+    match:
+      tags: [sim_registration]
+  - id: prepaid-balance-delta
+    name: Prepaid balances reconcile
+    category: financial
+    metric: prepaid_balance_delta_percent
+    comparator: lte
+    target_value: 0.01
+    unit: percent
+    blocking: true
+    required_evidence: financial-reconciliation
+    match:
+      tags: [charging]
+  - id: billing-total-delta
+    name: Billing totals reconcile
+    category: financial
+    metric: billing_total_delta_percent
+    comparator: lte
+    target_value: 0.01
+    unit: percent
+    blocking: true
+    required_evidence: financial-reconciliation
+    match:
+      tags: [billing]
+  - id: cdr-completeness
+    name: Usage records are complete
+    category: data
+    metric: cdr_completeness_percent
+    comparator: gte
+    target_value: 99.999
+    unit: percent
+    blocking: true
+    required_evidence: event-reconciliation
+    match:
+      data_classes: [usage_records]
+  - id: mnp-porting-duration
+    name: Number porting completes within the legal limit
+    category: compliance
+    metric: porting_duration_hours
+    comparator: lte
+    target_value: 48
+    unit: hours
+    blocking: true
+    required_evidence: porting-test
+    control_references: [RA-11202-SEC-4]
+    match:
+      tags: [mnp]
+  - id: mnp-cutover-outage
+    name: Number porting outage stays within the legal limit
+    category: operational
+    metric: porting_cutover_outage_hours
+    comparator: lte
+    target_value: 4
+    unit: hours
+    blocking: true
+    required_evidence: porting-test
+    control_references: [RA-11202-SEC-8]
+    match:
+      tags: [mnp]
+  - id: voice-journey
+    name: Voice journey passes
+    category: operational
+    metric: voice_journey_passed
+    comparator: "true"
+    target_value: true
+    blocking: true
+    required_evidence: journey-test
+    match:
+      tags: [voice]
+  - id: sms-journey
+    name: SMS journey passes
+    category: operational
+    metric: sms_journey_passed
+    comparator: "true"
+    target_value: true
+    blocking: true
+    required_evidence: journey-test
+    match:
+      tags: [sms]
+  - id: data-session-journey
+    name: Data session journey passes
+    category: operational
+    metric: data_session_journey_passed
+    comparator: "true"
+    target_value: true
+    blocking: true
+    required_evidence: journey-test
+    match:
+      tags: [data_session]
+  - id: privacy-impact-assessment
+    name: Privacy impact assessment is approved
+    category: compliance
+    metric: privacy_impact_assessment_approved
+    comparator: "true"
+    target_value: true
+    blocking: true
+    required_evidence: privacy-review
+    control_references: [RA-10173-SEC-20]
+    match:
+      data_classes: [personal_data]
+  - id: authorized-access-review
+    name: Subscriber-data access is reviewed
+    category: security
+    metric: authorized_access_review_passed
+    comparator: "true"
+    target_value: true
+    blocking: true
+    required_evidence: access-review
+    control_references: [RA-11934-SEC-9]
+    match:
+      data_classes: [subscriber_identity]
+  - id: backup-restore
+    name: Backup restore test passes
+    category: resilience
+    metric: backup_restore_passed
+    comparator: "true"
+    target_value: true
+    blocking: true
+    required_evidence: recovery-test
+    match:
+      tags: [disaster_recovery]
+  - id: regional-failover
+    name: Regional failover test passes
+    category: resilience
+    metric: regional_failover_passed
+    comparator: "true"
+    target_value: true
+    blocking: true
+    required_evidence: recovery-test
+    match:
+      tags: [regional_failover]
+  - id: source-writes-zero
+    name: Source production writes stop before closure
+    category: decommissioning
+    metric: source_write_count
+    comparator: zero
+    target_value: 0
+    blocking: true
+    required_evidence: source-monitoring
+    match:
+      tags: [decommission]
+  - id: source-traffic-zero
+    name: Source production traffic stops before closure
+    category: decommissioning
+    metric: source_request_count
+    comparator: zero
+    target_value: 0
+    blocking: true
+    required_evidence: source-monitoring
+    match:
+      tags: [decommission]

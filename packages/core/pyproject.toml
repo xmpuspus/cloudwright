@@ -25,7 +25,7 @@ dependencies = [
     "pyyaml>=6.0,<7",
     "anthropic>=0.58,<1",
     "openai>=1.50,<3",
-    "structlog>=24.1,<25",
+    "structlog>=24.1,<26",
 ]
 
 [project.optional-dependencies]
@@ -42,18 +42,18 @@ live-import = [
     "google-auth>=2.20,<3",
     "azure-identity>=1.15,<2",
     "azure-mgmt-compute>=30,<40",
-    "azure-mgmt-storage>=21,<24",
+    "azure-mgmt-storage>=21,<26",
     "azure-mgmt-sql>=3,<5",
-    "azure-mgmt-containerservice>=28,<40",
+    "azure-mgmt-containerservice>=28,<42",
 ]
 live-import-aws = ["boto3>=1.34,<2"]
 live-import-gcp = ["google-cloud-compute>=1.15,<2", "google-cloud-storage>=2.10,<4", "google-auth>=2.20,<3"]
 live-import-azure = [
     "azure-identity>=1.15,<2",
     "azure-mgmt-compute>=30,<40",
-    "azure-mgmt-storage>=21,<24",
+    "azure-mgmt-storage>=21,<26",
     "azure-mgmt-sql>=3,<5",
-    "azure-mgmt-containerservice>=28,<40",
+    "azure-mgmt-containerservice>=28,<42",
 ]
 compliance = ["checkov>=3,<4"]
 
